@@ -1,0 +1,5 @@
+---
+- name: title
+  value: !ruby/class 'String'
+- name: description
+  value: !ruby/class 'String'

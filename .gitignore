@@ -1,0 +1,13 @@
+*.gem
+*.rbc
+.bundle
+.config
+.yardoc
+_yardoc
+doc/
+lib/bundler/man
+pkg
+rdoc
+spec/reports
+.*.sw[a-z]
+.AppleDouble
