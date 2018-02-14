@@ -7,14 +7,14 @@ describe Component do
   describe 'define' do
     it 'will define a new component type' do
       expect { Component.new('test') }
-          .to raise_error(Component::TypeNotDefined)
+          .to raise_error(Component::NotDefined)
       Component.define('test')
       expect { Component.new('test') }.to_not raise_error
     end
     it 'will raise an exception if the type already exists' do
       Component.define('test')
       expect { Component.define('test') }
-          .to raise_error(Component::TypeAlreadyDefined)
+          .to raise_error(Component::AlreadyDefined)
     end
   end
 
@@ -32,6 +32,11 @@ describe Component do
         title = Component.new(:title)
         expect(title).to be_a(String)
         expect(title.component).to eq(:title)
+      end
+      xit 'will support a default value for the class' do
+        Component.define(:test, String, 'pass')
+        comp = Component.new(:test)
+        expect(test).to eq('pass')
       end
     end
     context 'key/value store' do

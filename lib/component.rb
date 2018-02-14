@@ -2,8 +2,8 @@ require 'facets/hash/symbolize_keys'
 require 'facets/hash/rekey'
 
 module Component
-  class TypeNotDefined < ArgumentError; end
-  class TypeAlreadyDefined < ArgumentError; end
+  class NotDefined < ArgumentError; end
+  class AlreadyDefined < ArgumentError; end
   class TooManyValues < ArgumentError; end
   class InvalidKey < ArgumentError; end
   class ReservedKey < ArgumentError; end
@@ -23,7 +23,7 @@ module Component
     # define a component type
     def define(type, *args)
       type = type.to_sym
-      raise TypeAlreadyDefined if @components.has_key?(type)
+      raise AlreadyDefined if @components.has_key?(type)
 
       klass = @components[type] = begin
         if args.empty?
@@ -81,7 +81,7 @@ module Component
     # allocate an instance of a specific type of component
     def new(type, *args)
       type = type.to_sym
-      raise TypeNotDefined unless @components.has_key?(type)
+      raise NotDefined unless @components.has_key?(type)
 
       @components[type].new(*args)
     end
@@ -94,6 +94,10 @@ module Component
   module InstanceMethods
     def component
       @__component ||= self.class.component
+    end
+
+    def component?
+      true
     end
 
     def inspect

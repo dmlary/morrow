@@ -1,5 +1,8 @@
 ---
-- name: room
+- type: room
   components:
   - title
   - description
+- type: char
+  components:
+  - name

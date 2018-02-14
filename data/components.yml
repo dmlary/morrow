@@ -3,3 +3,5 @@
   value: !ruby/class 'String'
 - name: description
   value: !ruby/class 'String'
+- name: name
+  value: !ruby/class 'String'

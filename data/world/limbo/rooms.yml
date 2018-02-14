@@ -1,0 +1,5 @@
+---
+- type: room
+  components:
+  - title: The Void
+  - description: You are floating in nothing
