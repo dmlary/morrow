@@ -6,6 +6,8 @@ module World
   @entities_by_type = Hash.new { |h,k| h[k] = [] }
   @entities_by_id = {}
 
+  @systems = []
+
   class << self
     # new_entity - allocate a new entity, add it to the world, return it's ID
     #
@@ -44,6 +46,9 @@ module World
     #
     # Returns: self
     def load(dir)
+      @systems << [ System::CommandQueue.new,
+                    proc { |e| e.has_component?(:command_queue) } ]
+
       @base_dir = dir
       rooms = try_load('limbo/rooms.yml') or return
       rooms.each do |config|
@@ -59,6 +64,19 @@ module World
     # get an enum for entities with a specific type
     def by_type(type)
       @entities_by_type[type.to_sym].to_enum
+    end
+
+    # get an entity by id
+    def by_id(id)
+      @entities_by_id[id]
+    end
+
+    # update
+    def update
+      @systems.each do |system, entity_matcher|
+        system.update(@entities.select(&entity_matcher))
+      end
+      true
     end
 
     private

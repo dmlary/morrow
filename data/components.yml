@@ -1,7 +1,19 @@
 ---
 - name: title
-  value: !ruby/class 'String'
+  fields:
+    value:
 - name: description
-  value: !ruby/class 'String'
+  fields:
+    value:
 - name: name
-  value: !ruby/class 'String'
+  fields:
+    value:
+- name: location
+  fields:
+    value:
+- name: command_queue
+  fields:
+    value:
+- name: connection
+  fields:
+    value:

@@ -1,8 +1,16 @@
 ---
 - type: room
   components:
-  - title
-  - description
+  - title: Generic room
+  - description: Four walls, ceiling, and floow
 - type: char
   components:
-  - name
+  - name: Generic character
+  - description
+  - location:
+- type: player
+  include:
+  - char
+  components:
+  - connection:
+  - command_queue

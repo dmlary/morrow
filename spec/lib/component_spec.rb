@@ -16,30 +16,51 @@ describe Component do
       expect { Component.define('test') }
           .to raise_error(Component::AlreadyDefined)
     end
+
+    context 'a component composed of no values' do
+      let(:comp) { Component.define(:test) }
+      it 'will not have any fields' do
+        expect(comp.fields).to be_empty
+      end
+    end
+
+    context 'a component composed of values' do
+      context 'without defaults' do
+        let(:comp) do
+          Component.define('test', 'field_1', 'field_2')
+        end
+        it 'will have two fields named :field_1, and :field_2'
+        it 'will have nil as the default values for both fields'
+      end
+
+      context 'with defaults' do
+        let(:comp) do
+          Component.define('test', field_1: :pass_1, field_2: :pass_2)
+        end
+        it 'will have two fields named :field_1, and :field_2'
+        it 'will have :pass_1 as the default for :field_1'
+        it 'will have :pass_2 as the default for :field_2'
+      end
+
+      context 'reserved word is used as a key' do
+        it 'will error if component is used' do
+          expect { Component.define('test', :component) }
+              .to raise_error(Component::ReservedKey)
+        end
+      end
+    end
   end
 
   describe 'new' do
-    context 'no data' do
+    context 'component with no data' do
       it 'will return an instance of the component' do
         Component.define(:test)
         test = Component.new(:test)
         expect(test.component).to eq(:test)
       end
     end
-    context 'instance value' do
-      it 'will set component to a new instance of the class by default' do
-        Component.define(:title, String)
-        title = Component.new(:title)
-        expect(title).to be_a(String)
-        expect(title.component).to eq(:title)
-      end
-      xit 'will support a default value for the class' do
-        Component.define(:test, String, 'pass')
-        comp = Component.new(:test)
-        expect(test).to eq('pass')
-      end
-    end
-    context 'key/value store' do
+
+    context 'component composed of key/value store' do
       it 'will set value to nil if no default provided' do
         Component.define(:health, :max, :current)
         h = Component.new(:health)
@@ -74,22 +95,14 @@ describe Component do
         expect { Component.new(:test) }.to_not raise_error
       end
       it 'will not have any value' do
-        expect(Component.new(:test)).to be_a_kind_of(Component::Empty)
-      end
-    end
-
-    context 'with a value of String' do
-      before(:each) { Component.import({name: :test, value: String}) }
-      it 'will define the component' do
-        expect { Component.new(:test) }.to_not raise_error
-      end
-      it 'will be a type of String' do
-        expect(Component.new(:test)).to be_a_kind_of(String)
+        expect(Component.new(:test).class.fields).to be_empty
       end
     end
 
     context 'with multiple keys' do
-      before(:each) { Component.import({name: :test, value: [:a, :b]}) }
+      before(:each) do
+        Component.import({name: :test, fields: {a: nil, b: nil}})
+      end
       it 'will define the component' do
         expect { Component.new(:test) }.to_not raise_error
       end
@@ -102,7 +115,9 @@ describe Component do
     end
 
     context 'with multiple keys and defaults' do
-      before(:each) { Component.import({name: :test, value: [:a, b: 3]}) }
+      before(:each) do
+        Component.import({name: :test, fields: {a: nil, b: 3}})
+      end
       it 'will define the component' do
         expect { Component.new(:test) }.to_not raise_error
       end
@@ -119,9 +134,7 @@ describe Component do
         buf =<<~END
         ---
         - name: description
-          value: !ruby/class 'String'
         - name: contents
-          value: !ruby/class 'Array'
         END
         Component.import(YAML.load(buf))
         expect { Component.new(:description) }.to_not raise_error
@@ -134,9 +147,10 @@ describe Component do
       buf =<<~END
       ---
       - name: description
-        value: !ruby/class 'String'
+        fields:
+          value: default description
       - name: contents
-        value: !ruby/class 'Array'
+        fields: {}
       END
       data = YAML.load(buf)
       Component.import(data)

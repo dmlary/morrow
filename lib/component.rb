@@ -1,7 +1,10 @@
 require 'facets/hash/symbolize_keys'
 require 'facets/hash/rekey'
+require 'facets/hash/deep_rekey'
 
 module Component
+  RESERVED_KEYS = %i{ component inspect }
+
   class NotDefined < ArgumentError; end
   class AlreadyDefined < ArgumentError; end
   class TooManyValues < ArgumentError; end
@@ -25,41 +28,28 @@ module Component
       type = type.to_sym
       raise AlreadyDefined if @components.has_key?(type)
 
-      klass = @components[type] = begin
-        if args.empty?
-          Class.new.include(Empty)
-        elsif args.size == 1 && args.first.is_a?(Class)
-          klass = args.first
-          out = Class.new(klass)
-          out.instance_variable_set('@base_class', klass)
-          out.define_singleton_method(:base_class) { @base_class }
-          out
-        else
+      # pop off any parameters
+      p = args.last.is_a?(Hash) ? args.pop : {}
+      defaults = Hash[args.zip([])].merge(p).symbolize_keys
 
-          # pop off any parameters
-          p = args.last.is_a?(Hash) ? args.pop : {}
-          defaults = Hash[args.zip([])].merge(p)
+      reserved = defaults.keys & RESERVED_KEYS
+      raise ReservedKey, reserved.join(", ") unless reserved.empty?
 
-          out = Class.new
-          out.define_singleton_method(:defaults) { @defaults }
-          out.instance_variable_set('@defaults', defaults)
-          out.instance_eval { attr_accessor *defaults.keys }
-          out.include(HashInstanceMethods)
-          out
-        end
-      end
+      klass = Class.new
       klass.include(InstanceMethods)
       klass.extend(ClassMethods)
-      klass.instance_variable_set('@__component_type__', type)
-      klass.define_singleton_method(:component) { @__component_type__ }
+      klass.instance_variable_set('@component', type)
+      klass.instance_variable_set('@defaults', defaults)
+      klass.instance_eval { attr_accessor *defaults.keys }
+      @components[type] = klass
       klass
     end
 
     # load a number of component definitions
     def import(config)
-      [ config ].flatten.map(&:symbolize_keys).each do |type|
-        args = [type[:value]].flatten.compact
-        define(type[:name], *args)
+      [ config ].flatten.each do |type|
+        type = type.deep_rekey { |k| k.to_sym }
+        define(type[:name], type[:fields] || {})
       end
       self
     end
@@ -68,11 +58,7 @@ module Component
     def export
       @components.map do |name,klass|
         h = { 'name' => name.to_s }
-        if klass.respond_to?(:defaults)
-          h['value'] = klass.defaults.rekey { |k| k.to_s }
-        elsif klass.respond_to?(:base_class)
-          h['value'] = klass.base_class
-        end
+        h['fields'] = klass.defaults.rekey { |k| k.to_s }
         h
       end
 
@@ -88,36 +74,18 @@ module Component
   end
 
   module ClassMethods
-    attr_reader :component_type
-  end
+    attr_reader :component, :defaults
 
-  module InstanceMethods
-    def component
-      @__component ||= self.class.component
-    end
-
-    def component?
-      true
+    def fields
+      defaults.keys
     end
 
     def inspect
-      case self
-      when HashInstanceMethods
-        state = instance_variables.map do |name|
-            next if name[0,3] == '@__'
-            "#{name}=" << instance_variable_get(name).inspect
-          end.compact.join(' ')
-        "#<Component:%s:0x%08x %s>" % [ component, __id__, state ]
-      when Empty
-        "#<Component:%s:0x%08x>" % [ component, __id__ ]
-      else
-        "#<Component:%s:0x%08x %s>" % [ component, __id__, super ]
-      end
+      '#<Component:%s %s>' % [ @component, @defaults.inspect ]
     end
   end
 
-  module HashInstanceMethods
-
+  module InstanceMethods
     # new(1,2,3,4)
     # new(1,2, field3: 3, field4: 4)
     def initialize(*values)
@@ -131,7 +99,7 @@ module Component
 
       # Set our values based on argument index
       values.zip(defaults.keys).each do |value,key|
-        raise TooManyValues, "failed on #{value}" if key.nil?
+        raise TooManyValues, "failed on #{value.inspect}" if key.nil?
         instance_variable_set("@#{key}", value)
       end
 
@@ -142,10 +110,23 @@ module Component
         instance_variable_set(key, value)
       end
     end
-  end
 
-  # Just used for tagging empty components; needed for #inspect
-  module Empty; end
+    def component
+      @__component ||= self.class.component
+    end
+
+    def component?
+      true
+    end
+
+    def inspect
+      state = instance_variables.map do |name|
+          next if name[0,3] == '@__'
+          "#{name}=" << instance_variable_get(name).inspect
+        end.compact.join(' ')
+      "#<Component:%s:0x%08x %s>" % [ component, __id__, state ]
+    end
+  end
 end
 
 __END__

@@ -23,21 +23,23 @@ describe Entity do
       it 'will add arguments to components' do
         components = %w{ first second third }
         e = Entity.define(:test, *components)
-        expect(e.components).to contain_exactly(*components.map(&:to_sym))
+        expect(e.components.map(&:first).flatten)
+            .to contain_exactly(*components.map(&:to_sym))
       end
     end
     context 'entity with components as parameters' do
       it 'will add parameters to components' do
         components = %w{ first second third }
         e = Entity.define(:test, components: components)
-        expect(e.components).to contain_exactly(*components.map(&:to_sym))
+        expect(e.components.map(&:first).flatten)
+            .to contain_exactly(*components.map(&:to_sym))
       end
     end
     context 'entity with components as args and params' do
       it 'will add parameters to components' do
         e = Entity.define(:test, :arg1, :arg2,
                           components: [ :param1, :param2 ])
-        expect(e.components)
+        expect(e.components.map(&:first).flatten)
             .to contain_exactly(:arg1, :arg2, :param1, :param2)
       end
     end
@@ -47,6 +49,38 @@ describe Entity do
         e = Entity.define(:test, include: includes)
         expect(e.includes).to contain_exactly(*includes.map(&:to_sym))
       end
+    end
+    context 'components with defaults' do
+      it 'will set default values' do
+        expect { Entity.define(:test, components: [ comp: :default ]) }
+            .to_not raise_error
+      end
+    end
+
+    context 'components with defaults' do
+      context 'expressed as an array' do
+        let(:entity) do
+          Component.reset!
+          Component.define(:health, max: :fail, current: :fail)
+          Component.define(:name, value: 'unnamed')
+          Entity.define(:char,
+              components: [
+                'name',
+                { health: [ :pass, :also_pass ] }
+              ])
+          Entity.new(:char)
+        end
+        it 'will set entity.health.max to :pass' do
+          expect(entity.get(:health).max).to eq(:pass)
+        end
+        it 'will set entity.health.current to :pass' do
+          expect(entity.get(:health).current).to eq(:also_pass)
+        end
+
+      end
+    end
+
+    context 'as key/value pairs' do
     end
   end
 
@@ -153,8 +187,8 @@ describe Entity do
     context 'argument components overriding default entity components' do
       let(:entity) do
         Component.reset!
-        Component.define(:title, String)
-        Component.define(:desc, String)
+        Component.define(:title, :value)
+        Component.define(:desc, :value)
         Entity.define(:e, :title, :desc)
         components = [ Component.new(:title, 'wolf'),
                        Component.new(:desc, 'lala') ]
@@ -162,7 +196,7 @@ describe Entity do
       end
 
       it 'will have title set to "wolf"' do
-        expect(entity.get(:title)).to eq('wolf')
+        expect(entity.get(:title).value).to eq('wolf')
       end
       it 'will have only one instance of component' do
         expect(entity.get(:title, true).size).to eq(1)

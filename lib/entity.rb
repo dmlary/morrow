@@ -12,15 +12,65 @@ class Entity
       @types.clear
     end
 
+    # define a type
+    #
+    # Arguments:
+    #   Array - an array of component types
+    #
+    # Parameters:
+    #   ++:components++ Array of component types, or hash of component/default
+    #   ++:includes++ Array of entity types to include
+    #
     def define(type, *args)
       type = type.to_sym
       raise AlreadyDefined, type if @types.has_key?(type)
 
       p = args.last.is_a?(Hash) ? args.pop : {}
       out = OpenStruct.new(components: [], includes: [])
-      out.components.push(*args.map(&:to_sym))
-      out.components.push(*[p[:components]].flatten.compact.map(&:to_sym))
+
+      # handle the includes first, they are easy
       out.includes.push(*[p[:include]].flatten.compact.map(&:to_sym))
+
+      # components = [
+      #   [ type, default ]
+      # ]
+
+      # for all the arguments, we're just adding components without default
+      # values, so add them to the components list as arrays of a single
+      # element (the type as a symbol).
+      out.components.push(*args.map { |a| [ a.to_sym ] })
+
+      # process the components parameter by type
+      if p[:components].is_a?(Hash)
+        # key/value pairs are type & defaults.  Add them as pairs to the
+        # components
+        p[:components].each_pair do |type, defaults|
+          out.components.push([type.to_sym, defaults])
+        end
+      elsif p[:components].is_a?(Array)
+        # if we got an array, the contents may be an array of types, or a hash
+        # of type/defaults
+        p[:components].each do |component|
+          case component
+          when String, Symbol
+            out.components.push([component.to_sym])
+          when Hash
+            name, default = component.first
+            component = [ name.to_sym ]
+            if default.is_a?(Array)
+              component.push(*default)
+            else
+              component.push(default)
+            end
+            out.components.push(component)
+          else
+            raise ArgumentError, "unsupported type #{component.inspect}"
+          end
+        end
+      elsif p.has_key?(:components)
+        # same if we only got a single argument
+        out.components.push([p[:components].to_sym])
+      end
       @types[type] = out
       out
     end
@@ -68,14 +118,15 @@ class Entity
     types.push(*template.components)
 
     # trim the types for any component types that were provided
-    types -= components.map(&:component)
+    provided = components.map(&:component)
+    types.delete_if { |type,_| provided.include?(type) }
 
     # create all the components
     @components = types
         .uniq
-        .map do |name|
+        .map do |type_and_defaults|
       begin
-        Component.new(name)
+        Component.new(*type_and_defaults)
       rescue Component::NotDefined
         raise Component::NotDefined,
             'type=%s; included from %s' % [ name, @type ]
@@ -104,5 +155,16 @@ class Entity
       component = component.to_sym
       @components.select { |c| c.component == component }
     end
+  end
+
+  def has_component?(type)
+    !!@components.find { |c| c.component == type }
+  end
+
+  def method_missing(name, *args, &block)
+    return super unless name =~ /^get_(.*)$/
+    method = $1
+    comp = get(*args)
+    comp ? comp.send(method) : nil
   end
 end
