@@ -2,12 +2,18 @@ require 'facets/hash/deep_rekey'
 require_relative 'helpers'
 
 module World
+  extend Helpers::Logging
+
   @entities = []
   @entities_by_tag = Hash.new { |h,k| h[k] = [] }
   @entities_by_type = Hash.new { |h,k| h[k] = [] }
   @entities_by_id = {}
 
   @systems = []
+
+  @update_time = Array.new(3600, 0)
+  @update_index = 0
+  @update_frequency = 0.25 # seconds
 
   class << self
     # new_entity - allocate a new entity, add it to the world, return it's ID
@@ -76,9 +82,16 @@ module World
 
     # update
     def update
+      start = Time.now
       @systems.each do |system, entity_matcher|
         system.update(@entities.select(&entity_matcher))
       end
+      delta = Time.now - start
+      warn 'update exceeded time-slice; delta=%.04f > limit=%.04f' %
+          [ delta, @update_frequency ] if delta > @update_frequency
+      @update_time[@update_index] = Time.now - start
+      @update_index += 1
+      @update_index = 0 if @update_index == @update_time.size
       true
     end
 
