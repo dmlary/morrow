@@ -1,4 +1,8 @@
+require_relative '../helpers'
+
 class System::Base
+  include ::Helpers::Logging
+
   def send_data(entity, buf)
     conn = entity.get_value(:connection) or
         raise RuntimeError,

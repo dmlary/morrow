@@ -3,13 +3,14 @@ class TelnetServer::Connection < EventMachine::Connection
   extend Forwardable
 
   attr_accessor :server
-  attr_reader :handler, :host, :port
+  attr_reader :handler, :host, :port, :last_recv
 
   def post_init
     super
     @authenticated = false
     @handler = []
     @port, @host = Socket.unpack_sockaddr_in(get_peername)
+    @last_recv = Time.now
   end
 
   def inspect
@@ -27,6 +28,7 @@ class TelnetServer::Connection < EventMachine::Connection
   def receive_line(line)
     # XXX snoop
     # XXX exception catching/handling/storing
+    @last_recv = Time.now
     send_data @handler.last.input_line(line)
   end
 

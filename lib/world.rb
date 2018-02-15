@@ -1,4 +1,5 @@
 require 'facets/hash/deep_rekey'
+require_relative 'helpers'
 
 module World
   @entities = []
@@ -48,6 +49,8 @@ module World
     def load(dir)
       @systems << [ System::CommandQueue.new,
                     proc { |e| e.has_component?(:command_queue) } ]
+      @systems << [ System::Connections.new,
+                    proc { |e| e.has_component?(:connection) } ]
 
       @base_dir = dir
       rooms = try_load('limbo/rooms.yml') or return
