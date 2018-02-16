@@ -17,3 +17,6 @@
 - name: connection
   fields:
     value:
+- name: config_options
+  fields:
+    color: true

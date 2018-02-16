@@ -14,3 +14,4 @@
   components:
   - connection:
   - command_queue
+  - config_options

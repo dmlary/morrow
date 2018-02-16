@@ -39,7 +39,7 @@ begin
       EventMachine::PeriodicTimer.new(0.25) { World.update }
 
       # Kick off a debugging thread
-      Thread.new { TelnetServer.pry; exit }
+      Thread.new { TelnetServer.pry }
 
       # Start the server
       TelnetServer.start('0.0.0.0', 1234)
