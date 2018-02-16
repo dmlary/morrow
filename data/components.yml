@@ -23,8 +23,12 @@
 - name: exit
   fields:
     direction:
-    room:
+    to_vnum:
     description:
+    room:
 - name: vnum
   fields:
     value:
+- name: contents
+  fields:
+    value: []

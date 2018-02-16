@@ -78,8 +78,7 @@ module System::CommandQueue
       comp = room.get(:exit, true).find { |e| e.direction == 'up' } or
           return "There's no exit in that direction"
 
-      next_room = World.by_type(:room).find { |r| r.get_value(:vnum) == comp.room } or
-          return "Unknown room #{comp.room}"
+      next_room = World.by_id(comp.room) or return "Unknown room #{comp.inspect}"
 
       @entity.get(:location).value = next_room.id
       command_look

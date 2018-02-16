@@ -62,6 +62,17 @@ module World
         room = Entity.new(config[:type], *components)
         add_entity(room)
       end
+
+      # All the rooms have been loaded, let's connect them
+      @rooms_by_vnum = {}
+      exits = []
+      @entities_by_type[:room].each do |room|
+        @rooms_by_vnum[room.get_value(:vnum)] = room
+        exits.push(*room.get(:exit, true))
+      end
+      exits.each do |ex|
+        ex.room = @rooms_by_vnum[ex.to_vnum].id
+      end
     end
     attr_accessor :base_dir
 
