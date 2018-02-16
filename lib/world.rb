@@ -53,11 +53,6 @@ module World
     #
     # Returns: self
     def load(dir)
-      @systems << [ System::CommandQueue.new,
-                    proc { |e| e.has_component?(:command_queue) } ]
-      @systems << [ System::Connections.new,
-                    proc { |e| e.has_component?(:connection) } ]
-
       @base_dir = dir
       rooms = try_load('limbo/rooms.yml') or return
       rooms.each do |config|
@@ -80,11 +75,34 @@ module World
       @entities_by_id[id]
     end
 
+    # register_system - register a system to run during update
+    #
+    # Arguments:
+    #   ++types++ List of Component types
+    #   ++block++ block to run on entities with component types
+    #
+    # Parameters:
+    #   ++:all++ entities must have all ++types++
+    #   ++:any++ entities must have at least one of ++types++
+    #   ++:none++ entities must not have any of ++types++
+    def register_system(*types, &block)
+      p = types.last.is_a?(Hash) ? types.pop : {}
+      @systems << [ types, block ]
+      info 'Registered system for %s' % [ types.inspect ]
+    end
+
     # update
     def update
       start = Time.now
-      @systems.each do |system, entity_matcher|
-        system.update(@entities.select(&entity_matcher))
+      @systems.each do |types, block|
+        @entities.each do |entity|
+          comps = types.inject([]) do |o, type|
+            found = entity.get(type, true)
+            break false if found.empty?
+            o.push(*found)
+          end or next
+          block.call(entity, *comps)
+        end
       end
       delta = Time.now - start
       warn 'update exceeded time-slice; delta=%.04f > limit=%.04f' %

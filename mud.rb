@@ -5,9 +5,9 @@ require_relative 'lib/exception_binding'
 require_relative 'lib/helpers'
 require_relative 'lib/component'
 require_relative 'lib/entity'
+require_relative 'lib/world'
 require_relative 'lib/system'
 require_relative 'lib/telnet_server'
-require_relative 'lib/world'
 
 ExceptionBinding.enable
 

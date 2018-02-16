@@ -2,7 +2,7 @@ class TelnetServer::Connection < EventMachine::Connection
   include EventMachine::Protocols::LineProtocol
   extend Forwardable
 
-  attr_accessor :server
+  attr_accessor :server, :color
   attr_reader :handler, :host, :port, :last_recv
 
   def post_init

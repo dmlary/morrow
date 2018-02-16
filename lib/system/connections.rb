@@ -1,21 +1,23 @@
-class System::Connections < System::Base
-  def update(entities)
-    timeout = Time.now - 60 * 30
+module System::Connections
+  extend System::Base
 
-    entities.each do |entity|
-      next unless conn = (comp = entity.get(:connection)).value
-      if conn.error?
-        # disconnected
-        info("client disconnected; #{conn.inspect}")
-        conn.close_connection
-        comp.value = nil
-      elsif conn.last_recv < timeout
-        # timed out
-        info("client timed out; #{conn.inspect}")
-        send_data(entity, "Timed out; closing connection\n")
-        conn.close_connection_after_writing
-        comp.value = nil
-      end
+  IDLE_TIMEOUT = 5 * 60           # XXX not implemented
+  DISCONNECT_TIMEOUT = 30 * 60
+
+  World.register_system(:connection) do |entity, comp|
+    conn = comp.value or next
+
+    if conn.error?
+      # disconnected
+      info("client disconnected; #{conn.inspect}")
+      conn.close_connection
+      comp.value = nil
+    elsif Time.now > conn.last_recv + DISCONNECT_TIMEOUT
+      # timed out
+      info("client timed out; #{conn.inspect}")
+      send_data("Timed out; closing connection\n", entity: entity)
+      conn.close_connection_after_writing
+      comp.value = nil
     end
   end
 end

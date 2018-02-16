@@ -20,3 +20,11 @@
 - name: config_options
   fields:
     color: true
+- name: exit
+  fields:
+    direction:
+    room:
+    description:
+- name: vnum
+  fields:
+    value:
