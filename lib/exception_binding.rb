@@ -1,4 +1,5 @@
 require 'pry'
+require 'pp'
 require 'colorize'
 
 module ExceptionBinding
@@ -50,7 +51,7 @@ module ExceptionBinding
     end
 
     def stack
-      @stack[Thread.current] if @trace.enabled?
+      @stack[Thread.current].clone if @trace.enabled?
     end
 
     def pry_when(&block)
@@ -74,19 +75,36 @@ module ExceptionBinding
   module ExceptionMethods
     attr_reader :stack
 
+    # XXX this may not be called when an exception is raised from c.  Currently
+    # doesn't happen when we call a method with the wrong number of arguments
     def set_backtrace(backtrace)
       super
+      set_stack
+    end
+
+    def initialize(*args)
+      super
+      set_stack unless @stack
+    end
+
+    private
+
+    def set_stack
       stack = ExceptionBinding.stack or return
 
-      # Find the index of this method within the stack frame; may be present
-      # multiple times
-      frame_index = stack
-          .each_with_index
-          .select { |(m,f,_),i| m == :set_backtrace and f == __FILE__ }
-          .map(&:last)
+      # our stack will include at least these three:
+      #   [:set_backtrace, :set_stack, :stack ]
+      # trim them off the stack
+      stack.pop(3)
+
+      # We also want to pop off the frame for initialize
+      method, file, klass = stack.last
+      stack.pop if method == :initialize and
+          file == __FILE__ and
+          klass == ExceptionBinding::ExceptionMethods
 
       # Pull the stack up to the first call to #set_backtrace
-      @stack = Stack.new(self, stack[0..frame_index.last - 1])
+      @stack = Stack.new(self, stack)
 
       # add this to the global list of exceptions captured
       ExceptionBinding.add_event(self)

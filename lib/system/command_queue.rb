@@ -4,30 +4,26 @@ module System::CommandQueue
   World.register_system(:command_queue) do |entity, queue_comp|
     queue = queue_comp.value
     next if queue.empty?
-
-    @entity = entity
-    begin
-      send_data(handle_command(queue.shift))
-      prompt
-    ensure
-      @entity = nil
-    end
+    send_data(handle_command(entity, queue.shift), entity: entity)
+    send_data("\n> ", entity: entity)
   end
 
   class << self
-    def prompt
-      send_data("\n> ")
-    end
 
-    def handle_command(buf)
-      return if buf.empty?
-
-      name, rest = buf.split(/\s+/, 2)
-      method = 'command_' << name
-      if respond_to?(method)
-        send(method, rest)
-      else
-        "unknown command: #{name}\n"
+    def handle_command(entity, buf)
+      return if buf.nil? or buf.empty?
+  
+      @entity = entity
+      begin
+        name, rest = buf.split(/\s+/, 2)
+        method = 'command_' << name
+        if respond_to?(method)
+          send(method, rest)
+        else
+          "unknown command: #{name}\n"
+        end
+      ensure
+        @entity = nil
       end
     end
 
@@ -46,10 +42,12 @@ module System::CommandQueue
       return "location entity not found; entity=#{@entity.inspect}\n" unless
           room = World.by_id(location_id)
 
-      exits = room.get(:exit, true).map(&:direction)
-      exits = [none] if exits.empty?
+      return room.pretty_inspect if @entity.get_coder(:config_options)
 
-      buf = "&W%s&0\n" % room.get_value(:title)
+      exits = room.get(:exit, true).map(&:direction)
+      exits = [ 'none' ] if exits.empty?
+
+      buf = "&W%s&0\n" % room.get_value(:name)
       buf << room.get_value(:description)
       buf << "\n"
       buf << "&CExits: %s&0" % exits.join(" ")
@@ -61,7 +59,13 @@ module System::CommandQueue
           config = @entity.get(:config_options)
 
       key, value = rest.split(/\s+/, 2) if rest
-      return not_implemented('set <field> ...') if key
+      if key
+        return 'value must be true/false or on/off' unless
+            value =~ /^(true|on|false|off)(\s|$)/
+        value = %w{ true on }.include?($1) 
+        config.send("#{key}=", value)
+        return "#{key} = #{value}"
+      end
 
       fields = config.class.fields
       field_width = fields.map(&:size).max

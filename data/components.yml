@@ -20,6 +20,7 @@
 - name: config_options
   fields:
     color: true
+    coder: false
 - name: exit
   fields:
     direction:

@@ -2,7 +2,7 @@
 - type: room
   components:
   - vnum: 0
-  - title: The Void
+  - name: The Void
   - description: You are floating in nothing
   - exit:
       direction: up
@@ -10,7 +10,7 @@
 - type: room
   components:
   - vnum: 1
-  - title: Limbo
+  - name: Limbo
   - description: |-
       You are floating in a formless void, detached from all sensation of physical
       matter, surrounded by swirling glowing light, which fades into the relative

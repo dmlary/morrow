@@ -1,5 +1,8 @@
+require 'yaml'
 require 'facets/hash/deep_rekey'
 require_relative 'helpers'
+require_relative 'component'
+require_relative 'entity'
 
 module World
   extend Helpers::Logging
@@ -16,6 +19,15 @@ module World
   @update_frequency = 0.25 # seconds
 
   class << self
+    # reset the internal state of the World
+    def reset!
+      @entities.clear
+      @entities_by_tag.clear
+      @entities_by_type.clear
+      @entities_by_id.clear
+      @systems.clear
+    end
+
     # new_entity - allocate a new entity, add it to the world, return it's ID
     #
     # Arguments:
@@ -112,7 +124,13 @@ module World
             break false if found.empty?
             o.push(*found)
           end or next
-          block.call(entity, *comps)
+
+          begin
+            block.call(entity, *comps)
+          rescue Exception => ex
+            ex.stack.pry if ex.stack
+            raise ex
+          end
         end
       end
       delta = Time.now - start

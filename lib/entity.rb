@@ -91,8 +91,10 @@ class Entity
     end
   end
 
-  def initialize(type, *components)
+  def initialize(*args)
+    type, *components = args
     p = components.last.is_a?(Hash) ? components.pop : {}
+    return if type.nil?
 
     raise NotDefined, type unless template = Entity.get(type)
     @type = type.to_sym
@@ -144,6 +146,11 @@ class Entity
   end
   alias << add
   alias id __id__
+
+  def remove(*components)
+    @components.reject! { |c| components.include?(c) }
+    self
+  end
 
   def get(component, multiple=false)
     if multiple == false

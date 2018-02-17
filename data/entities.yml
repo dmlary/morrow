@@ -1,7 +1,7 @@
 ---
 - type: room
   components:
-  - title: Generic room
+  - name: Generic room
   - description: Four walls, ceiling, and floow
 - type: char
   components:
