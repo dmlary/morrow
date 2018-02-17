@@ -2,7 +2,7 @@ module System::CommandQueue
   extend System::Base
 
   World.register_system(:command_queue) do |entity, queue_comp|
-    queue = queue_comp.value
+    queue = queue_comp.value or next
     next if queue.empty?
     send_data(handle_command(entity, queue.shift), entity: entity)
     send_data("\n> ", entity: entity)

@@ -17,4 +17,10 @@ module Helpers::Logging
   def logger
     Helpers::Logging.logger
   end
+
+  def self.log_exception(ex)
+    error("#{ex.class}: #{ex.message}")
+    ex.backtrace.each { |l| error("  " << l) }
+    true
+  end
 end

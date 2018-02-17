@@ -10,6 +10,7 @@ require_relative 'lib/entity'
 require_relative 'lib/world'
 require_relative 'lib/system'
 require_relative 'lib/telnet_server'
+require_relative 'lib/helpers/logging'
 
 ExceptionBinding.enable
 
@@ -17,6 +18,7 @@ begin
   EventMachine::run do
     EventMachine.error_handler do |e|
       TelnetServer.exceptions.push(e)
+      Helpers::Logging.log_exception(e)
       e.stack.pry if e.stack
     end
 
