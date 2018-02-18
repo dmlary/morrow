@@ -14,6 +14,7 @@
 - name: command_queue
   fields:
     value:
+    blocked_until:
 - name: connection
   fields:
     value:
@@ -42,12 +43,87 @@
 - name: long
   fields:
     value:
-- name: observable
+
+# I don't think there is anything that is viewable that is not also targetable.
+# Possible exclusion: the current room, it doesn't have a keyword, but it
+# wouldn't hurt to have them.  Good alternative to vnum?
+#
+# Thinking about room features (extra descriptions for things like picture),
+# they can be an Entity within the room's contents, that the look command can
+# target for viewing, but the look command would not display them when looking
+# at the room.  So short and long would be ignored, but you could look keyword
+# to see description
+#
+# If a viewable item has no long description, it will not show up when looking
+# in the room.  This could allow a container Item that is not listed in the
+# room, but works via keyword... Not sure if I like this...
+#
+# A Decaying Study
+#   Along the east wall stand a row of shelves on the verge of collapse.  Some
+# of the shelves still contain a clustering of books, some of them swollen to
+# bursting with moisture.
+# Exits: south
+#
+# > look shelves
+# The shelves appear to be on the verge of collapse.  A number of the boards
+# have already succumbed to rot, and spilled their load of books across the
+# hardwood floor.
+#
+# the collapsing shelves contain:
+#   a swollen tome
+#   rat droppings
+#   a water stained scroll
+#
+# This would be built by...
+#
+# ---
+# type: room
+#   components:
+#   - vnum: 0
+#   - viewable:
+#       short: A Decaying Study
+#       description: ...
+# type: item
+#   - vnum: 0
+#   - viewable:
+#       short: a swollen tome
+#       long: a tome, swollen with moisture, lies here
+#       keywords: [ tome, swollen ]
+#       description: ...
+#   - location:
+#       vnum: 3
+# type: item
+#   - vnum: 1
+#   - viewable:
+#       short: rat droppings
+#       long: the droppings of a rat are scattered about the room
+#       keywords: [rat, droppings]
+#   - location:
+#       vnum: 3
+# type: item
+#   - vnum: 2
+#   - viewable:
+#       short: a water stained scroll
+#       long: a scroll, showing signs of water damage, rests on the floor
+#       keywords: [ scroll, water, stained ]
+#   - location:
+#       vnum: 3
+# type: feature   ## ?? Does this really differ from item ??
+#   - vnum: 3
+#   - viewable:
+#       short: the collapsing shelves
+#       keywords: [ shelves, collapsing ]
+#   - location: 0
+#
+
+# Is there anything that has keywords, but is not viewable?
+# I think I should split there, maybe a helpfile? Nope, that's viewable.
+- name: viewable
   fields:
+    keywords: []
     short:
     long:
-    examine:
-    keywords:
+    description:
 
 # What is everything we can look at?
 #
