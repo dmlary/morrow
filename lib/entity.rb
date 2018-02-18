@@ -3,6 +3,8 @@ require 'ostruct'
 class Entity
   class NotDefined < ArgumentError; end
   class AlreadyDefined < ArgumentError; end
+  class ComponentNotFound < ArgumentError; end
+  class FieldNotFound < ArgumentError; end
   Id = Integer
 
   @types ||= {}
@@ -92,6 +94,8 @@ class Entity
   end
 
   def initialize(*args)
+    @components = []
+
     type, *components = args
     p = components.last.is_a?(Hash) ? components.pop : {}
     return if type.nil?
@@ -164,6 +168,33 @@ class Entity
     end
   end
 
+  # set a given field of a component to the supplied value
+  #
+  # Arguments:
+  #   ++type++ Component type (Symbol/String)
+  #   ++field++ component field name (default: :value)
+  #   ++value++ value to set field to
+  #
+  # Returns:
+  #   self
+  def set(*args)
+    raise ArgumentError, "insufficient arguments" if args.size < 2
+    raise ArgumentError, "too many arguments" if args.size > 3
+
+    type = args.first
+    field = args.size == 2 ? :value : args[1]
+    value = args.last
+
+    comp = get(type) or raise ComponentNotFound,
+        "type=#{type} entity=#{self.inspect}"
+    method = "#{field}="
+    raise FieldNotFound,
+        "field=#{field} comp=#{comp} entity=#{self.inspect}" unless
+            comp.respond_to?(method)
+    comp.send(method, value)
+    self
+  end
+
   def has_component?(type)
     !!@components.find { |c| c.component == type }
   end
@@ -173,5 +204,11 @@ class Entity
     method = $1
     comp = get(*args)
     comp ? comp.send(method) : nil
+  end
+
+  def encode_with(coder)
+    coder.tag = nil
+    coder['type'] = @type.to_s
+    coder['components'] = @components
   end
 end

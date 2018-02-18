@@ -126,6 +126,23 @@ module Component
         end.compact.join(' ')
       "#<Component:%s:0x%08x %s>" % [ component, __id__, state ]
     end
+
+    def encode_with(coder)
+      coder.tag = nil
+      fields = self.class.fields.reject { |f| f =~ /_id$/ }
+      coder[component.to_s] = begin
+        if fields.empty?
+          nil
+        elsif fields.size == 1
+          send(fields.first)
+        else
+          fields.inject({}) do |h,field|
+            h[field.to_s] = send(field)
+            h
+          end
+        end
+      end
+    end
   end
 end
 

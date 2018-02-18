@@ -26,10 +26,38 @@
     direction:
     to_vnum:
     description:
-    room:
+    room_id:
 - name: vnum
   fields:
     value:
 - name: contents
   fields:
     value: []
+- name: keywords
+  fields:
+    value: []
+- name: short
+  fields:
+    value:
+- name: long
+  fields:
+    value:
+- name: observable
+  fields:
+    short:
+    long:
+    examine:
+    keywords:
+
+# What is everything we can look at?
+#
+#   look        # => look at the current room; see name, description, exits,
+#               #    contents
+#   look char   # => look at a character; see description, condition,
+#               #    equipment, spell affects?, inventory (peek)
+#   look item   # => look at item; see description (maybe keywords)
+#   look exit   # => look at door/exit; scry / see exit description
+#   look feature# => look at some feature in the room; description
+
+# Entities: room, char, item
+# Components: exit, feature

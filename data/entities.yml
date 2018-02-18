@@ -3,11 +3,19 @@
   components:
   - name: Generic room
   - description: Four walls, ceiling, and floow
+  - contents
 - type: char
   components:
   - name: Generic character
   - description
   - location:
+  - keywords
+- type: npc
+  include:
+  - char
+  components:
+  - short
+  - long
 - type: player
   include:
   - char
@@ -15,3 +23,4 @@
   - connection:
   - command_queue
   - config_options
+  - title

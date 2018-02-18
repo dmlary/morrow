@@ -2,6 +2,9 @@ require 'world'
 require 'system'
 
 describe System::CommandQueue do
+  include Entity::Helpers
+  include System::Base
+
   before(:all) do
     World.reset!
     Component.reset!
@@ -14,12 +17,27 @@ describe System::CommandQueue do
     before(:all) do
       World.reset!
       @room = Entity.new(:room)
-      @room.get(:name).value = 'Generic Room Name'
-      @room.get(:description).value = 'A generic room description'
+          .set(:name, 'The Testing Room')
+          .set(:description,
+              'A horrific room where all manner of terifying experiments ' <<
+              'are conducted against hapless, helpless, and hopeless victims.')
+
       @player = Entity.new(:player)
-      @player.get(:location).value = @room.id
+          .set(:name, 'Leonidas')
+          .set(:title, 'the Cursed')
+          .set(:keywords, %w{ leonidas })
+
+      @mob = Entity.new(:npc)
+          .set(:short, 'generic mob')
+          .set(:long, 'a generic mob eyes you warily')
+          .set(:keywords, %w{ generic mob })
+
+      move_to_location(@player, @room)
+      move_to_location(@mob, @room)
+
       World.add_entity(@room)
       World.add_entity(@player)
+      World.add_entity(@mob)
     end
     context 'at the current room' do
       let(:output) { System::CommandQueue.handle_command(@player, 'look') }
@@ -29,6 +47,12 @@ describe System::CommandQueue do
       end
       it 'will include the room description' do
         expect(output).to include(@room.get_value(:description))
+      end
+      it 'will display NPCs in the room' do
+        expect(output).to include(@mob.get_value(:long))
+      end
+      it 'will not display the player in the room' do
+        expect(output).to_not include(@player.get_value(:name))
       end
       context 'autoexit enabled' do
         before(:all) do

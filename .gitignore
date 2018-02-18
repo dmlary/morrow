@@ -11,3 +11,4 @@ rdoc
 spec/reports
 .*.sw[a-z]
 .AppleDouble
+.DS_Store

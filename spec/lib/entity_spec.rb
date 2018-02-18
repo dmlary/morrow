@@ -310,4 +310,63 @@ describe Entity do
       expect(components).to_not include(have_attributes(component: :c))
     end
   end
+
+  describe '#set(type, field=:value, value)' do
+    let(:entity) do
+      Entity.reset!
+      Component.reset!
+      Component.define(:test_comp, value: :unchanged, name: :unchanged)
+      Entity.new.add(Component.new(:test_comp))
+    end
+
+    context 'when no component of type exists in entity' do
+      it 'will raise an error' do
+        expect { entity.set(:fake_component, 3) }
+            .to raise_error(Entity::ComponentNotFound)
+      end
+    end
+
+    context 'when one component of type exists in entity' do
+      context 'when field is supplied' do
+        it 'will set the correct field' do
+          entity.set(:test_comp, :name, :pass)
+          expect(entity.get_name(:test_comp)).to eq(:pass)
+        end
+      end
+      context 'when field is not supplied' do
+        it 'will set the correct field' do
+          entity.set(:test_comp, :pass)
+          expect(entity.get_value(:test_comp)).to eq(:pass)
+        end
+      end
+      context 'when wrong field is supplied' do
+        it 'will raise an error' do
+          expect { entity.set(:test_comp, :bad_field, :fail) }
+              .to raise_error(Entity::FieldNotFound)
+        end
+      end
+    end
+
+    context 'when multiple components of type exist in entity' do
+    end
+    let (:components) do
+      Component.reset!
+      Component.define(:a)
+      Component.define(:b)
+      Component.define(:c)
+      Entity.define(:entity)
+      Entity.new(:entity)
+          .add(Component.new(:a))
+          .add(Component.new(:a))
+          .add(Component.new(:b))
+          .add(Component.new(:c))
+          .get([:a, :b], true)
+    end
+
+    it 'will return all the components of both types' do
+      expect(components).to include(have_attributes(component: :a))
+      expect(components).to include(have_attributes(component: :b))
+      expect(components).to_not include(have_attributes(component: :c))
+    end
+  end
 end

@@ -83,7 +83,7 @@ module World
         exits.push(*room.get(:exit, true))
       end
       exits.each do |ex|
-        ex.room = @rooms_by_vnum[ex.to_vnum].id
+        ex.room_id = @rooms_by_vnum[ex.to_vnum].id
       end
     end
     attr_accessor :base_dir
@@ -95,6 +95,8 @@ module World
 
     # get an entity by id
     def by_id(id)
+      return nil if id.nil?
+      return id if id.is_a?(Entity)
       @entities_by_id[id]
     end
 
