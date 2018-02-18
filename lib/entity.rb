@@ -124,7 +124,7 @@ class Entity
     types.push(*template.components)
 
     # trim the types for any component types that were provided
-    provided = components.map(&:component)
+    provided = components.map(&:type)
     types.delete_if { |type,_| provided.include?(type) }
 
     # create all the components
@@ -156,16 +156,15 @@ class Entity
     self
   end
 
-  def get(component, multiple=false)
-    if multiple == false
-      component = component.to_sym
-      @components.find { |c| c.component == component }
-    elsif component.is_a?(Array)
-      @components.select { |c| component.include?(c.component) }
-    else
-      component = component.to_sym
-      @components.select { |c| c.component == component }
-    end
+  def get_component(type, multiple=false)
+    return @components.select { |c| type.include?(c.type) } if
+        type.is_a?(Array)
+
+    type = type.to_sym
+      
+    multiple == false ?
+      @components.find { |c| c.type == type } :
+      @components.select { |c| c.type == type }
   end
 
   # set a given field of a component to the supplied value
@@ -185,25 +184,25 @@ class Entity
     field = args.size == 2 ? :value : args[1]
     value = args.last
 
-    comp = get(type) or raise ComponentNotFound,
+    comp = get_component(type) or raise ComponentNotFound,
         "type=#{type} entity=#{self.inspect}"
-    method = "#{field}="
-    raise FieldNotFound,
-        "field=#{field} comp=#{comp} entity=#{self.inspect}" unless
-            comp.respond_to?(method)
-    comp.send(method, value)
+    comp.set(field, value)
     self
   end
 
-  def has_component?(type)
-    !!@components.find { |c| c.component == type }
+  # get a given field of a component; return nil if no component match
+  #
+  # Arguments:
+  #   ++type++ Component type (Symbol/String)
+  #   ++field++ component field name (default: :value)
+  #
+  def get(type, field=:value)
+    comp = get_component(type) or return nil
+    comp.get(field)
   end
 
-  def method_missing(name, *args, &block)
-    return super unless name =~ /^get_(.*)$/
-    method = $1
-    comp = get(*args)
-    comp ? comp.send(method) : nil
+  def has_component?(type)
+    !!@components.find { |c| c.type == type }
   end
 
   def encode_with(coder)

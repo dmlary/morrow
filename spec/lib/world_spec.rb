@@ -80,7 +80,7 @@ describe World do
           5.times { World.new_entity(:item) }
           @char = Entity.new(:char)
           World.add_entity(@char)
-          @animate = @char.get(:animate)
+          @animate = @char.get_component(:animate)
         end
           
         it 'will call the system with the entity and requested component' do
@@ -111,8 +111,8 @@ describe World do
           5.times { World.new_entity(:item); World.new_entity(:char) }
           @player = Entity.new(:player)
           World.add_entity(@player)
-          @animate = @player.get(:animate)
-          @conn = @player.get(:connection)
+          @animate = @player.get_component(:animate)
+          @conn = @player.get_component(:connection)
         end
           
         it 'will call the system with entity, and all component' do

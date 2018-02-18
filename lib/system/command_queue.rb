@@ -2,7 +2,7 @@ module System::CommandQueue
   extend System::Base
 
   World.register_system(:command_queue) do |entity, queue_comp|
-    queue = queue_comp.value or next
+    queue = queue_comp.get or next
     next if queue.empty?
     send_data(handle_command(entity, queue.shift), entity: entity)
     send_data("\n> ", entity: entity)
@@ -34,21 +34,17 @@ module System::CommandQueue
     def command_look(target=nil)
       return not_implemented('look <target>') if target
 
-      # pull the location the entity is in
-      return "no location; entity=#{entity.inspect}\n" unless
-          location_id = @entity.get_value(:location)
+      # get room for the actor
+      return "entity location not found; entity=#{@entity.inspect}\n" unless
+          room = get_room(@entity)
 
-      # look up the room by entity id
-      return "location entity not found; entity=#{@entity.inspect}\n" unless
-          room = World.by_id(location_id)
+      return room.pretty_inspect if @entity.get(:config_options, :coder)
 
-      return room.pretty_inspect if @entity.get_coder(:config_options)
-
-      exits = room.get(:exit, true).map(&:direction)
+      exits = room.get_component(:exit, true).map { |e| e.get(:direction) }
       exits = [ 'none' ] if exits.empty?
 
-      buf = "&W%s&0\n" % room.get_value(:name)
-      buf << room.get_value(:description)
+      buf = "&W%s&0\n" % room.get(:name)
+      buf << room.get(:description)
       buf << "\n"
       buf << "&CExits: %s&0" % exits.join(" ")
       buf << "\n"
@@ -56,16 +52,16 @@ module System::CommandQueue
       # XXX need a safe way to pull all the entity ids from an array, map them
       # to entities, and provide an enumerator.  Also, if any entity id doesn't
       # resolve, throw a warning and remove the id from the array.
-      room.get_value(:contents).each do |entity_id|
+      room.get(:contents).each do |entity_id|
         entity = World.by_id(entity_id) or next
         next if entity == @entity
         if entity.has_component?(:long)
-          buf << entity.get_value(:long)
+          buf << entity.get(:long)
           buf << "\n"
         elsif entity.type == :player
-          buf << entity.get_value(:name)
+          buf << entity.get(:name)
           buf << " "
-          buf << entity.get_value(:title)
+          buf << entity.get(:title)
           buf << "\n"
         else
           buf << entity.pretty_inspect
@@ -77,22 +73,22 @@ module System::CommandQueue
 
     def command_set(rest)
       return 'no configuration options found for this entity' unless
-          config = @entity.get(:config_options)
+          config = @entity.get_component(:config_options)
 
       key, value = rest.split(/\s+/, 2) if rest
       if key
         return 'value must be true/false or on/off' unless
             value =~ /^(true|on|false|off)(\s|$)/
         value = %w{ true on }.include?($1) 
-        config.send("#{key}=", value)
+        config.set(key, value)
         return "#{key} = #{value}"
       end
 
-      fields = config.class.fields
+      fields = config.fields
       field_width = fields.map(&:size).max
       buf = "&WConfigration Options:&0\n"
       fields.each do |name|
-        buf << "  &W%#{field_width}s&0: &c%s&0\n" % [ name, config.send(name) ]
+        buf << "  &W%#{field_width}s&0: &c%s&0\n" % [ name, config.get(name) ]
       end
       buf
     end
@@ -100,12 +96,11 @@ module System::CommandQueue
     def command_up(rest)
       room = get_room or return "unable to find what room you are in!"
 
-      comp = room.get(:exit, true).find { |e| e.direction == 'up' } or
-          return "There's no exit in that direction"
+      comp = room.get_component(:exit, true)
+          .find { |e| e.get(:direction) == 'up' } or
+              return "There's no exit in that direction"
 
-      next_room = World.by_id(comp.room_id) or return "Unknown room #{comp.inspect}"
-
-      @entity.get(:location).value = next_room.id
+      move_to_location(@entity, comp.get(:room_id))
       command_look
     end
   end

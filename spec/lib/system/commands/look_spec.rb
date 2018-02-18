@@ -43,16 +43,16 @@ describe System::CommandQueue do
       let(:output) { System::CommandQueue.handle_command(@player, 'look') }
 
       it 'will include the room name' do
-        expect(output).to include(@room.get_value(:name))
+        expect(output).to include(@room.get(:name))
       end
       it 'will include the room description' do
-        expect(output).to include(@room.get_value(:description))
+        expect(output).to include(@room.get(:description))
       end
       it 'will display NPCs in the room' do
-        expect(output).to include(@mob.get_value(:long))
+        expect(output).to include(@mob.get(:long))
       end
       it 'will not display the player in the room' do
-        expect(output).to_not include(@player.get_value(:name))
+        expect(output).to_not include(@player.get(:name))
       end
       context 'autoexit enabled' do
         before(:all) do

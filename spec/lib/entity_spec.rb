@@ -71,10 +71,10 @@ describe Entity do
           Entity.new(:char)
         end
         it 'will set entity.health.max to :pass' do
-          expect(entity.get(:health).max).to eq(:pass)
+          expect(entity.get(:health, :max)).to eq(:pass)
         end
         it 'will set entity.health.current to :pass' do
-          expect(entity.get(:health).current).to eq(:also_pass)
+          expect(entity.get(:health, :current)).to eq(:also_pass)
         end
 
       end
@@ -114,8 +114,8 @@ describe Entity do
       let(:pc) do
         Component.reset!
         Component.define(:health, :max, :current)
-        Component.define(:desc, String)
-        Component.define(:name, String)
+        Component.define(:desc, :value)
+        Component.define(:name, :value)
         Component.define(:conn)
         Entity.define(:char, :health, :desc)
         Entity.define(:pc, :name, include: :char)
@@ -126,14 +126,14 @@ describe Entity do
         expect(pc.type).to eq(:pc)
       end
       it 'will include components passed in as arguments' do
-        expect(pc.components).to include(have_attributes(component: :conn))
+        expect(pc.components).to include(have_attributes(type: :conn))
       end
       it 'will include components defined in Entity type' do
-        expect(pc.components).to include(have_attributes(component: :name))
+        expect(pc.components).to include(have_attributes(type: :name))
       end
       it 'will include components from included Entity types' do
-        expect(pc.components).to include(have_attributes(component: :desc))
-        expect(pc.components).to include(have_attributes(component: :health))
+        expect(pc.components).to include(have_attributes(type: :desc))
+        expect(pc.components).to include(have_attributes(type: :health))
       end
     end
 
@@ -149,7 +149,7 @@ describe Entity do
       end
 
       it 'will include all nested components' do
-        expect(pc.components).to include(have_attributes(component: :nested))
+        expect(pc.components).to include(have_attributes(type: :nested))
       end
     end
 
@@ -165,7 +165,7 @@ describe Entity do
 
       it 'will only have one instance of the duplicate component type' do
         expect(ab.components.size).to eq(1)
-        expect(ab.components).to include(have_attributes(component: :test))
+        expect(ab.components).to include(have_attributes(type: :test))
       end
     end
 
@@ -180,7 +180,7 @@ describe Entity do
 
       it 'will only have one instance of the duplicate component type' do
         expect(aa.components.size).to eq(1)
-        expect(aa.components).to include(have_attributes(component: :test))
+        expect(aa.components).to include(have_attributes(type: :test))
       end
     end
 
@@ -196,10 +196,10 @@ describe Entity do
       end
 
       it 'will have title set to "wolf"' do
-        expect(entity.get(:title).value).to eq('wolf')
+        expect(entity.get(:title)).to eq('wolf')
       end
       it 'will have only one instance of component' do
-        expect(entity.get(:title, true).size).to eq(1)
+        expect(entity.get_component(:title, true).size).to eq(1)
       end
     end
 
@@ -248,7 +248,7 @@ describe Entity do
     it 'will add supplied components to the entity'
   end
 
-  describe '#get(component, multiple=false)' do
+  describe '#get_component(component, multiple=false)' do
     let(:entity) do
       Component.reset!
       Component.define(:a)
@@ -258,15 +258,15 @@ describe Entity do
     end
 
     it 'will return the component if included in the entity' do
-      expect(entity.get(:a)).to_not be_nil
-      expect(entity.get(:a).component).to eq(:a)
+      expect(entity.get_component(:a)).to_not be_nil
+      expect(entity.get_component(:a).type).to eq(:a)
     end
     it 'will return nil if not present in the entity' do
-      expect(entity.get(:x)).to be_nil
+      expect(entity.get_component(:x)).to be_nil
     end
   end
 
-  describe '#get(component, true)' do
+  describe '#get_component(component, true)' do
     let(:entity) do
       Component.reset!
       Component.define(:a)
@@ -279,17 +279,17 @@ describe Entity do
     end
 
     it 'will return all the components of the right type' do
-      components = entity.get(:a, true)
+      components = entity.get_component(:a, true)
       expect(components.size).to eq(2)
-      expect(components).to all(have_attributes(component: :a))
+      expect(components).to all(have_attributes(type: :a))
     end
 
     it 'will return an empty array if no matches' do
-      expect(entity.get(:x, true)).to be_empty
+      expect(entity.get_component(:x, true)).to be_empty
     end
   end
 
-  describe '#get([components], true)' do
+  describe '#get_component([components], true)' do
     let (:components) do
       Component.reset!
       Component.define(:a)
@@ -301,13 +301,13 @@ describe Entity do
           .add(Component.new(:a))
           .add(Component.new(:b))
           .add(Component.new(:c))
-          .get([:a, :b], true)
+          .get_component([:a, :b], true)
     end
 
     it 'will return all the components of both types' do
-      expect(components).to include(have_attributes(component: :a))
-      expect(components).to include(have_attributes(component: :b))
-      expect(components).to_not include(have_attributes(component: :c))
+      expect(components).to include(have_attributes(type: :a))
+      expect(components).to include(have_attributes(type: :b))
+      expect(components).to_not include(have_attributes(type: :c))
     end
   end
 
@@ -330,19 +330,19 @@ describe Entity do
       context 'when field is supplied' do
         it 'will set the correct field' do
           entity.set(:test_comp, :name, :pass)
-          expect(entity.get_name(:test_comp)).to eq(:pass)
+          expect(entity.get(:test_comp, :name)).to eq(:pass)
         end
       end
       context 'when field is not supplied' do
         it 'will set the correct field' do
           entity.set(:test_comp, :pass)
-          expect(entity.get_value(:test_comp)).to eq(:pass)
+          expect(entity.get(:test_comp)).to eq(:pass)
         end
       end
       context 'when wrong field is supplied' do
         it 'will raise an error' do
           expect { entity.set(:test_comp, :bad_field, :fail) }
-              .to raise_error(Entity::FieldNotFound)
+              .to raise_error(Component::InvalidField)
         end
       end
     end
@@ -360,13 +360,13 @@ describe Entity do
           .add(Component.new(:a))
           .add(Component.new(:b))
           .add(Component.new(:c))
-          .get([:a, :b], true)
+          .get_component([:a, :b], true)
     end
 
     it 'will return all the components of both types' do
-      expect(components).to include(have_attributes(component: :a))
-      expect(components).to include(have_attributes(component: :b))
-      expect(components).to_not include(have_attributes(component: :c))
+      expect(components).to include(have_attributes(type: :a))
+      expect(components).to include(have_attributes(type: :b))
+      expect(components).to_not include(have_attributes(type: :c))
     end
   end
 end

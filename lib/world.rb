@@ -79,11 +79,11 @@ module World
       @rooms_by_vnum = {}
       exits = []
       @entities_by_type[:room].each do |room|
-        @rooms_by_vnum[room.get_value(:vnum)] = room
-        exits.push(*room.get(:exit, true))
+        @rooms_by_vnum[room.get(:vnum)] = room
+        exits.push(*room.get_component(:exit, true))
       end
       exits.each do |ex|
-        ex.room_id = @rooms_by_vnum[ex.to_vnum].id
+        ex.set(:room_id, @rooms_by_vnum[ex.get(:to_vnum)].id)
       end
     end
     attr_accessor :base_dir
@@ -122,7 +122,7 @@ module World
       @systems.each do |types, block|
         @entities.each do |entity|
           comps = types.inject([]) do |o, type|
-            found = entity.get(type, true)
+            found = entity.get_component(type, true)
             break false if found.empty?
             o.push(*found)
           end or next

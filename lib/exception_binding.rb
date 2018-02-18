@@ -83,8 +83,12 @@ module ExceptionBinding
     end
 
     def initialize(*args)
-      super
-      set_stack unless @stack
+      # for things like syntax errors (wrong number of arguments),
+      # set_backtrace will never be called.  This causes a problem when we try
+      # to open pry on an exception without a backtrace.  We set one here by
+      # default, and let it be over-written by set_backtrace above
+      super(*args)
+      set_backtrace(caller)
     end
 
     private
@@ -98,7 +102,7 @@ module ExceptionBinding
       stack.pop(3)
 
       # We also want to pop off the frame for initialize
-      method, file, klass = stack.last
+      method, file, line, klass = stack.last
       stack.pop if method == :initialize and
           file == __FILE__ and
           klass == ExceptionBinding::ExceptionMethods
@@ -113,6 +117,7 @@ module ExceptionBinding
       return if @stack.in_pry?
 
       return unless frame = ExceptionBinding.pry?(self)
+
       @stack.pry(frame)
     end
   end
@@ -158,8 +163,13 @@ module ExceptionBinding
       !!@frames.find { |f| f.binding == binding }
     end
 
+    def has_frame_in_class?(klass)
+      !!@frames.find { |f| f.klass == klass }
+    end
+
     # start up pry within this stack
     def pry(frame=nil)
+      frame = nil unless frame.is_a?(Frame)
       @pos = frames.find_index { |f| f == frame } || @frames.size - 1
       frame_binding.pry(exception: @ex, stack: self)
     end

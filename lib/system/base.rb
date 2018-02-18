@@ -5,8 +5,7 @@ module System::Base
 
   def send_data(buf, p={})
     entity = p[:entity] || @entity
-    conn = entity.get_value(:connection) or
-        raise RuntimeError,
+    conn = entity.get(:connection) or raise RuntimeError,
             'send_line(%s) failed; entity has no connection' %
                 entity.inspect
     conn.send_data(buf)
@@ -15,7 +14,7 @@ module System::Base
 
   def get_room(entity=nil)
     entity ||= @entity
-    location_id = entity.get_value(:location) or return nil
+    location_id = entity.get(:location) or return nil
     World.by_id(location_id)
   end
 
@@ -23,11 +22,11 @@ module System::Base
   def move_to_location(entity_id, dest_id)
     dest = World.by_id(dest_id)
     entity = World.by_id(entity_id)
-    source = World.by_id(entity.get_value(:location))
+    source = World.by_id(entity.get(:location))
 
-    source.get(:contents).value.delete(entity_id) if source
+    source.get(:contents).delete(entity_id) if source
     entity.set(:location, dest_id)
-    dest.get(:contents).value.push(entity_id)
+    dest.get(:contents).push(entity_id)
   end
 end
 
@@ -132,6 +131,8 @@ Capabilities:
 
   component.get(field=:value)         # => value || Exception
   component.set(field=:value, value)  # => value || Exception
+  component.fields                    # => [ field_1, field_2, ... ]
+  component.type                      # => :type
 
   
 

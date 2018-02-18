@@ -1,15 +1,13 @@
+require 'facets/kernel/deep_clone'
 require 'facets/hash/symbolize_keys'
 require 'facets/hash/rekey'
 require 'facets/hash/deep_rekey'
 
 module Component
-  RESERVED_KEYS = %i{ component inspect }
-
   class NotDefined < ArgumentError; end
   class AlreadyDefined < ArgumentError; end
   class TooManyValues < ArgumentError; end
-  class InvalidKey < ArgumentError; end
-  class ReservedKey < ArgumentError; end
+  class InvalidField < ArgumentError; end
 
   @components ||= {}
 
@@ -30,17 +28,18 @@ module Component
 
       # pop off any parameters
       p = args.last.is_a?(Hash) ? args.pop : {}
-      defaults = Hash[args.zip([])].merge(p).symbolize_keys
 
-      reserved = defaults.keys & RESERVED_KEYS
-      raise ReservedKey, reserved.join(", ") unless reserved.empty?
+      # our defaults/fields are a hash of field & default value pairs.  For
+      # arguments, we create a hash of field name (argument), and nil.  The
+      # parameters are then merged into that hash, overriding any argument
+      # fields that later had a default specified by parameter.
+      defaults = Hash[args.zip([])].merge(p).symbolize_keys
 
       klass = Class.new
       klass.include(InstanceMethods)
       klass.extend(ClassMethods)
-      klass.instance_variable_set('@component', type)
+      klass.instance_variable_set('@type', type)
       klass.instance_variable_set('@defaults', defaults)
-      klass.instance_eval { attr_accessor *defaults.keys }
       @components[type] = klass
       klass
     end
@@ -61,7 +60,6 @@ module Component
         h['fields'] = klass.defaults.rekey { |k| k.to_s }
         h
       end
-
     end
 
     # allocate an instance of a specific type of component
@@ -74,14 +72,14 @@ module Component
   end
 
   module ClassMethods
-    attr_reader :component, :defaults
+    attr_reader :type, :defaults
 
     def fields
-      defaults.keys
+      @defaults.keys
     end
 
     def inspect
-      '#<Component:%s %s>' % [ @component, @defaults.inspect ]
+      '#<Component:%s %s>' % [ @type, @defaults.inspect ]
     end
   end
 
@@ -90,29 +88,41 @@ module Component
     # new(1,2, field3: 3, field4: 4)
     def initialize(*values)
 
-      # pull and set the default values
-      defaults = self.class.defaults
-      defaults.each { |k,v| instance_variable_set("@#{k}", v) }
+      # pull some things from our class
+      @type = self.class.type
+      @values = self.class.defaults.deep_clone
 
       # pop off the parameters
       p = values.last.is_a?(Hash) ? values.pop : {}
 
       # Set our values based on argument index
-      values.zip(defaults.keys).each do |value,key|
+      values.zip(@values.keys).each do |value,key|
         raise TooManyValues, "failed on #{value.inspect}" if key.nil?
-        instance_variable_set("@#{key}", value)
+        @values[key] = value
       end
 
       # Parameters have higher precident than arguments
-      p.each do |key,value|
-        key = "@#{key}"
-        raise InvalidKey, key unless instance_variable_defined?(key)
-        instance_variable_set(key, value)
-      end
+      p.each { |field, value| set(field, value) }
+    end
+    attr_reader :type
+
+    # set(field=:value, value)
+    def set(*args)
+      field = (args.size == 1 ? :value : args.shift).to_sym
+      value = args.first
+      raise InvalidField, field unless @values.has_key?(field)
+      @values[field] = value
+      self
     end
 
-    def component
-      @__component ||= self.class.component
+    def get(field=:value)
+      field = field.to_sym
+      raise InvalidField, field unless @values.has_key?(field)
+      @values[field]
+    end
+
+    def fields
+      @values.keys
     end
 
     def component?
@@ -120,26 +130,19 @@ module Component
     end
 
     def inspect
-      state = instance_variables.map do |name|
-          next if name[0,3] == '@__'
-          "#{name}=" << instance_variable_get(name).inspect
-        end.compact.join(' ')
-      "#<Component:%s:0x%08x %s>" % [ component, __id__, state ]
+      state = @values.map { |k,v| "#{k}=#{v.inspect}" }.join(' ')
+      "#<Component:%s:0x%08x %s>" % [ type, __id__, state ]
     end
 
     def encode_with(coder)
       coder.tag = nil
-      fields = self.class.fields.reject { |f| f =~ /_id$/ }
-      coder[component.to_s] = begin
-        if fields.empty?
+      coder[type.to_s] = begin
+        if @values.empty?
           nil
-        elsif fields.size == 1
-          send(fields.first)
+        elsif @values.size == 1
+          @values.first.last
         else
-          fields.inject({}) do |h,field|
-            h[field.to_s] = send(field)
-            h
-          end
+          @values.deep_rekey { |k| k.to_s }.reject { |k| k =~ /_id$/ }
         end
       end
     end

@@ -16,36 +16,37 @@ describe Component do
       expect { Component.define('test') }
           .to raise_error(Component::AlreadyDefined)
     end
-
     context 'a component composed of no values' do
       let(:comp) { Component.define(:test) }
       it 'will not have any fields' do
         expect(comp.fields).to be_empty
       end
     end
-
     context 'a component composed of values' do
+      shared_examples 'has both fields' do
+        it 'will have fields for field_1 and field_2' do
+          expect(comp.fields).to contain_exactly(*%i{field_1 field_2})
+        end
+      end
+
       context 'without defaults' do
         let(:comp) do
           Component.define('test', 'field_1', 'field_2')
         end
-        it 'will have two fields named :field_1, and :field_2'
-        it 'will have nil as the default values for both fields'
+        include_examples 'has both fields'
       end
 
       context 'with defaults' do
         let(:comp) do
-          Component.define('test', field_1: :pass_1, field_2: :pass_2)
+          Component.define('test', field_1: :pass, field_2: :also_pass)
         end
-        it 'will have two fields named :field_1, and :field_2'
-        it 'will have :pass_1 as the default for :field_1'
-        it 'will have :pass_2 as the default for :field_2'
-      end
+        include_examples 'has both fields'
 
-      context 'reserved word is used as a key' do
-        it 'will error if component is used' do
-          expect { Component.define('test', :component) }
-              .to raise_error(Component::ReservedKey)
+        it 'will have :pass as the default for :field_1' do
+          expect(comp.defaults[:field_1]).to eq(:pass)
+        end
+        it 'will have :also_pass as the default for :field_2' do
+          expect(comp.defaults[:field_2]).to eq(:also_pass)
         end
       end
     end
@@ -56,7 +57,7 @@ describe Component do
       it 'will return an instance of the component' do
         Component.define(:test)
         test = Component.new(:test)
-        expect(test.component).to eq(:test)
+        expect(test.type).to eq(:test)
       end
     end
 
@@ -64,26 +65,57 @@ describe Component do
       it 'will set value to nil if no default provided' do
         Component.define(:health, :max, :current)
         h = Component.new(:health)
-        expect(h.max).to be_nil
-        expect(h.current).to be_nil
+        expect(h.get(:max)).to be_nil
+        expect(h.get(:current)).to be_nil
       end
       it 'will set default values if provided' do
         Component.define(:health, max: 100, current: 10)
         h = Component.new(:health)
-        expect(h.max).to eq(100)
-        expect(h.current).to eq(10)
+        expect(h.get(:max)).to eq(100)
+        expect(h.get(:current)).to eq(10)
       end
       it 'will accept values as parameters' do
         Component.define(:health, max: 100, current: 10)
         h = Component.new(:health, current: 0)
-        expect(h.max).to eq(100)
-        expect(h.current).to eq(0)
+        expect(h.get(:max)).to eq(100)
+        expect(h.get(:current)).to eq(0)
       end
       it 'will accept values as arguments' do
         Component.define(:health, max: 100, current: 10)
         h = Component.new(:health, 50)
-        expect(h.max).to eq(50)
-        expect(h.current).to eq(10)
+        expect(h.get(:max)).to eq(50)
+        expect(h.get(:current)).to eq(10)
+      end
+    end
+  end
+
+  describe '#get(field=:value)' do
+    let (:comp) { Component.define(:test, value: :pass).new }
+
+    context 'when the field exists' do
+      it 'will return the value' do
+        expect(comp.get(:value)).to eq(:pass)
+      end
+    end
+    context 'when the field does not exist' do
+      it 'will raise an InvalidField error' do
+        expect { comp.get(:bad_field) }.to raise_error(Component::InvalidField)
+      end
+    end
+  end
+
+  describe '#set(field=:value, value)' do
+    let (:comp) { Component.define(:test, value: :fail, other: :fail).new }
+    context 'when no field is supplied' do
+      it 'will set the value' do
+        comp.set(:pass)
+        expect(comp.get(:value)).to eq(:pass)
+      end
+    end
+    context 'when field is supplied' do
+      it 'will set the requested field' do
+        comp.set(:other, :pass)
+        expect(comp.get(:other)).to eq(:pass)
       end
     end
   end
@@ -107,10 +139,10 @@ describe Component do
         expect { Component.new(:test) }.to_not raise_error
       end
       it 'will have nil for :a' do
-        expect(Component.new(:test).a).to eq(nil)
+        expect(Component.new(:test).get(:a)).to eq(nil)
       end
       it 'will have nil for :b' do
-        expect(Component.new(:test).b).to eq(nil)
+        expect(Component.new(:test).get(:b)).to eq(nil)
       end
     end
 
@@ -122,10 +154,10 @@ describe Component do
         expect { Component.new(:test) }.to_not raise_error
       end
       it 'will have nil for :a' do
-        expect(Component.new(:test).a).to eq(nil)
+        expect(Component.new(:test).get(:a)).to eq(nil)
       end
       it 'will have 3 for :b' do
-        expect(Component.new(:test).b).to eq(3)
+        expect(Component.new(:test).get(:b)).to eq(3)
       end
     end
 
