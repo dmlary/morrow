@@ -1,76 +1,22 @@
 module System::CommandQueue
   extend System::Base
+  extend World::Helpers
 
-  World.register_system(:command_queue) do |entity, queue_comp|
+  World.register_system(:command_queue) do |actor, queue_comp|
     queue = queue_comp.get or next
     next if queue.empty?
-    send_data(handle_command(entity, queue.shift), entity: entity)
-    send_data("\n> ", entity: entity)
+
+    # run the command, which returns output
+    buf = Command.run(actor, queue.shift)
+
+    # append the prompt
+    buf << "\n> "
+
+    # send the actor the output
+    send_data(buf, entity: actor)
   end
 
   class << self
-
-    def handle_command(entity, buf)
-      return if buf.nil? or buf.empty?
-  
-      @entity = entity
-      begin
-        name, rest = buf.split(/\s+/, 2)
-        method = 'command_' << name
-        if respond_to?(method)
-          send(method, rest)
-        else
-          "unknown command: #{name}\n"
-        end
-      ensure
-        @entity = nil
-      end
-    end
-
-    def not_implemented(buf="")
-      "not implemented; " << buf
-    end
-
-    def command_look(target=nil)
-      return not_implemented('look <target>') if target
-
-      # get room for the actor
-      return "entity location not found; entity=#{@entity.inspect}\n" unless
-          room = get_room(@entity)
-
-      return room.pretty_inspect if @entity.get(:config_options, :coder)
-
-      exits = room.get_component(:exit, true).map { |e| e.get(:direction) }
-      exits = [ 'none' ] if exits.empty?
-
-      buf = "&W%s&0\n" % room.get(:name)
-      buf << room.get(:description)
-      buf << "\n"
-      buf << "&CExits: %s&0" % exits.join(" ")
-      buf << "\n"
-
-      # XXX need a safe way to pull all the entity ids from an array, map them
-      # to entities, and provide an enumerator.  Also, if any entity id doesn't
-      # resolve, throw a warning and remove the id from the array.
-      room.get(:contents).each do |entity_id|
-        entity = World.by_id(entity_id) or next
-        next if entity == @entity
-        if entity.has_component?(:long)
-          buf << entity.get(:long)
-          buf << "\n"
-        elsif entity.type == :player
-          buf << entity.get(:name)
-          buf << " "
-          buf << entity.get(:title)
-          buf << "\n"
-        else
-          buf << entity.pretty_inspect
-          buf << "\n"
-        end
-      end
-      buf
-    end
-
     def command_set(rest)
       return 'no configuration options found for this entity' unless
           config = @entity.get_component(:config_options)

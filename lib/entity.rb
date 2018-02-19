@@ -138,7 +138,7 @@ class Entity
             'type=%s; included from %s' % [ name, @type ]
       end
     end
-    
+
     # append any supplied components
     @components.push(*components.flatten)
   end
@@ -161,7 +161,7 @@ class Entity
         type.is_a?(Array)
 
     type = type.to_sym
-      
+
     multiple == false ?
       @components.find { |c| c.type == type } :
       @components.select { |c| c.type == type }

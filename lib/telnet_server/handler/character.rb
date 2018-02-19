@@ -1,5 +1,6 @@
 class TelnetServer::Handler::Character < TelnetServer::Handler::Base
-  include System::Base
+  include World::Helpers
+
   def initialize(conn)
     # What is the difference between a tag and a class/module/constant?
 

@@ -1,26 +1,31 @@
 ---
 - type: room
   components:
-  - name: Generic room
-  - description: Four walls, ceiling, and floow
+  - viewable:
+      short: Generic room
+      description: Four walls, ceiling, and a floor
   - contents
+
 - type: char
   components:
-  - name: Generic character
-  - description
-  - location:
-  - keywords
+  - viewable:
+      keywords:
+      - generic
+      - character
+      short: generic character
+      long: a generic character stands here, stiffly
+  - location
+  - contents
+  - command_queue   # mprogs & player input
+
 - type: npc
   include:
   - char
-  components:
-  - short
-  - long
+
 - type: player
   include:
   - char
   components:
-  - connection:
-  - command_queue
+  - connection
   - config_options
   - title

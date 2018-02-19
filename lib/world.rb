@@ -161,3 +161,5 @@ module World
     end
   end
 end
+
+require_relative 'world/helpers'

@@ -2,20 +2,22 @@
 - type: room
   components:
   - vnum: 0
-  - name: The Void
-  - description: You are floating in nothing
+  - viewable:
+      short: The Void
+      description: You are floating in nothing
   - exit:
       direction: up
       to_vnum: 1
 - type: room
   components:
   - vnum: 1
-  - name: Limbo
-  - description: |-
-      You are floating in a formless void, detached from all sensation of physical
-      matter, surrounded by swirling glowing light, which fades into the relative
-      darkness around you without any trace of edges or shadow.
-         There is a "No Tipping" notice pinned to the darkness.
+  - viewable:
+      short: Limbo
+      description: |-
+        You are floating in a formless void, detached from all sensation of physical
+        matter, surrounded by swirling glowing light, which fades into the relative
+        darkness around you without any trace of edges or shadow.
+           There is a "No Tipping" notice pinned to the darkness.
   - exit:
       direction: up
       to_vnum: 0
