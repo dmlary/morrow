@@ -90,7 +90,12 @@ module Component
 
       # pull some things from our class
       @type = self.class.type
-      @values = self.class.defaults.deep_clone
+
+      # manually deep-clone our values from the defaults
+      @values = self.class.defaults.inject({}) do |h,(k,v)|
+        h[k] = v.clone
+        h
+      end
 
       # pop off the parameters
       p = values.last.is_a?(Hash) ? values.pop : {}

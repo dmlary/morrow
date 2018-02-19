@@ -68,11 +68,20 @@ describe Component do
         expect(h.get(:max)).to be_nil
         expect(h.get(:current)).to be_nil
       end
-      it 'will set default values if provided' do
-        Component.define(:health, max: 100, current: 10)
-        h = Component.new(:health)
-        expect(h.get(:max)).to eq(100)
-        expect(h.get(:current)).to eq(10)
+
+      context 'default values provided' do
+        it 'will use the default values' do
+          Component.define(:health, max: 100, current: 10)
+          h = Component.new(:health)
+          expect(h.get(:max)).to eq(100)
+          expect(h.get(:current)).to eq(10)
+        end
+        it 'will assign unique instances of default values' do
+          Component.define(:inventory, value: [])
+          a = Component.new(:inventory)
+          b = Component.new(:inventory)
+          expect(a.get.__id__).to_not eq(b.get.__id__)
+        end
       end
       it 'will accept values as parameters' do
         Component.define(:health, max: 100, current: 10)

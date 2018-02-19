@@ -11,7 +11,7 @@ module Helpers
     YAML.load(buf).map do |config|
       components = config['components'].map do |comp|
         key, value = comp.first
-        Component.new(key, value.deep_clone)
+        Component.new(key, value)
       end
       Entity.new(config['type'], *components)
     end
