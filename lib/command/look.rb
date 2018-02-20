@@ -33,11 +33,12 @@ module Command::Look
       buf << "&CExits: %s&0" % exits.join(" ")
       buf << "\n"
 
-      # XXX need a safe way to pull all the entity ids from an array, map them
-      # to entities, and provide an enumerator.  Also, if any entity id doesn't
-      # resolve, throw a warning and remove the id from the array.
-      room.get(:contents).each do |entity_id|
-        entity = World.by_id(entity_id) or next
+      # Loop through the contents of the room
+      World.by_id(room.get(:contents)) do |id, entity|
+        missing_entity(actor: actor, component: :contents, id: id) and
+            next unless entity
+
+        # Visualize yourself in a room-- wait, no, that's not what we're doing
         next if entity == actor
 
         if view = entity.get_component(:viewable)

@@ -93,11 +93,59 @@ module World
       @entities_by_type[type.to_sym].to_enum
     end
 
-    # get an entity by id
-    def by_id(id)
-      return nil if id.nil?
-      return id if id.is_a?(Entity)
-      @entities_by_id[id]
+    # Look up entities by id
+    #
+    # Arguments:
+    #   ++arg++ entity id, entity or an Array of the two
+    #   ++block++ optional block to call with id & entity if arg is Array
+    #
+    # Usage:
+    #   World.by_id(nil)          # => nil
+    #   World.by_id(2131)         # => entity
+    #   World.by_id(entity)       # => entity
+    #
+    #   World.by_id(2131) { |id,e| ... }     # ArgumentError
+    #   World.by_id(entity) { |id,e| ... }   # ArgumentError
+    #
+    #   World.by_id([nil])        # => [ ]
+    #   World.by_id([2131])       # => [ entity ]
+    #   World.by_id([entity])     # => [ entity ]
+    #   World.by_id(2131) { |id,e| ... }     # yield(id, e)
+    #   World.by_id(entity) { |id,e| ... }   # yield(id, e)
+    def by_id(arg, &block)
+      raise ArgumentError, 'block not supported without Array argument' if
+          block and !arg.is_a?(Array)
+
+      case arg
+      when nil
+        nil
+      when Integer
+        if entity = @entities_by_id[arg]
+          block ? block.call(entity.id, entity) : entity
+        end
+      when Entity
+        if entity = @entities_by_id[arg.id]
+          block ? block.call(entity.id, entity) : entity
+        end
+      when Array
+        if block
+          arg.delete_if do |id|
+            entity = by_id(id) or next true
+            block.call(entity.id, entity)
+            false
+          end
+        else
+          out = []
+          arg.delete_if do |id|
+            entity = by_id(id) or next true
+            out << entity if entity
+            false
+          end
+          out
+        end
+      else
+        raise ArgumentError, "unsupported arg: #{arg.inspect}"
+      end
     end
 
     # register_system - register a system to run during update

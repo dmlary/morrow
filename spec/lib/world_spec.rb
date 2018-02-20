@@ -122,4 +122,203 @@ describe World do
       end
     end
   end
+
+  describe '.by_id(id, &block)' do
+    context 'id is nil' do
+      it 'will return nil' do
+        expect(World.by_id(nil)).to eq(nil)
+      end
+    end
+    context 'id is Entity instance' do
+      context 'when Entity exists in World' do
+        it 'will return Entity instance' do
+          entity = Entity.new
+          World.add_entity(entity)
+          expect(World.by_id(entity)).to eq(entity)
+        end
+      end
+      context 'when Entity does not exist in World' do
+        it 'will return nil' do
+          entity = Entity.new
+          expect(World.by_id(entity)).to be_nil
+        end
+      end
+    end
+    context 'id is Integer' do
+      context 'entity with that id exists' do
+        it 'will return Entity instance' do
+          entity = Entity.new
+          World.add_entity(entity)
+          expect(World.by_id(entity.id)).to eq(entity)
+        end
+      end
+      context 'entity with that id does not exist' do
+        it 'will return nil' do
+          expect(World.by_id(12345)).to be_nil
+        end
+      end
+    end
+    context 'id is Array' do
+      context 'containing nil' do
+        it 'will not return a value for nil' do
+          expect(World.by_id([nil])).to be_empty
+        end
+        it 'will delete nil from the array' do
+          a = [nil]
+          World.by_id(a)
+          expect(a).to be_empty
+        end
+      end
+      context 'containing an Entity instance' do
+        context 'that exists in World' do
+          it 'will include the entity instance in the results' do
+            entity = Entity.new
+            World.add_entity(entity)
+            expect(World.by_id([entity])).to contain_exactly(entity)
+          end
+          it 'will not delete the entity from the array' do
+            entity = Entity.new
+            array = [ entity ]
+            World.add_entity(entity)
+            World.by_id(array)
+            expect(array).to contain_exactly(entity)
+          end
+        end
+        context 'that does not exist in World' do
+          let(:entity) { Entity.new }
+          let(:array) { [ entity ] }
+          it 'will not include the entity instance in the results' do
+            expect(World.by_id(array)).to_not include(entity)
+          end
+          it 'will delete the entity from the array' do
+            World.by_id(array)
+            expect(array).to_not include(entity)
+          end
+        end
+      end
+      context 'containing an Integer' do
+        let(:entity) { Entity.new }
+        let(:array) { [ entity.id ] }
+        context 'entity with that id exists' do
+          it 'will include entity in results' do
+            World.add_entity(entity)
+            expect(World.by_id(array)).to contain_exactly(entity)
+          end
+          it 'will not delete the entity from the array' do
+            World.add_entity(entity)
+            World.by_id(array)
+            expect(array).to include(entity.id)
+          end
+        end
+        context 'entity with that id does not exist' do
+          it 'will not include anything in the results' do
+            expect(World.by_id(array)).to_not include(entity)
+          end
+          it 'will delete the id from the array' do
+            World.by_id(array)
+            expect(array).to_not include(entity)
+          end
+        end
+      end
+    end
+    context 'id is unsupported type' do
+      it 'will raise ArgumentError'
+    end
+
+    context 'block is provided' do
+      let(:block) { proc { } }
+      let(:entity) { Entity.new }
+      context 'when id is nil' do
+        it 'will raise an error' do
+          expect(block).to_not receive(:call)
+          expect { World.by_id(nil, &block) }.to raise_error(ArgumentError)
+        end
+      end
+      context 'when arg is entity instance' do
+        context 'entity exists in the world' do
+          it 'will raise an error' do
+            World.add_entity(entity)
+            expect(block).to_not receive(:call)
+            expect { World.by_id(entity, &block) }
+                .to raise_error(ArgumentError)
+          end
+        end
+        context 'entity does not exist in the world' do
+          it 'will raise an error' do
+            expect(block).to_not receive(:call)
+            expect { World.by_id(entity, &block) }
+                .to raise_error(ArgumentError)
+          end
+        end
+      end
+      context 'when id is Integer' do
+        context 'entity with id exists' do
+          it 'will call the block with id & entity' do
+            World.add_entity(entity)
+            expect(block).to_not receive(:call)
+            expect { World.by_id(entity.id, &block) }
+                .to raise_error(ArgumentError)
+          end
+        end
+        context 'entity with id does not exist' do
+          it 'will not call the block' do
+            expect(block).to_not receive(:call)
+            expect { World.by_id(entity.id, &block) }
+                .to raise_error(ArgumentError)
+          end
+        end
+      end
+      context 'id is Array' do
+        context 'containing nil' do
+          let(:array) { [nil] }
+          it 'will not call block' do
+            expect(block).to_not receive(:call)
+            World.by_id(array, &block)
+          end
+          it 'will delete nil from arg' do
+            World.by_id(array, &block)
+            expect(array).to_not include(nil)
+          end
+        end
+        context 'containing entity instance' do
+          let(:array) { [entity] }
+          it 'will call block with id & entity' do
+            World.add_entity(entity)
+            expect(block).to receive(:call).with(entity.id, entity)
+            World.by_id(array, &block)
+          end
+          it 'will not delete entity from arg' do
+            World.add_entity(entity)
+            World.by_id(array, &block)
+            expect(array).to include(entity)
+          end
+        end
+        context 'containing an Integer' do
+          let(:array) { [ entity.id ] }
+          context 'entity exists' do
+            it 'will call the block with id & entity' do
+              World.add_entity(entity)
+              expect(block).to receive(:call).with(entity.id, entity)
+              World.by_id(array, &block)
+            end
+            it 'will not delete entity id from arg' do
+              World.add_entity(entity)
+              World.by_id(array, &block)
+              expect(array).to include(entity.id)
+            end
+          end
+          context 'entity does not exist' do
+            it 'will call the block with id & nil' do
+              expect(block).to_not receive(:call)
+              World.by_id(array, &block)
+            end
+            it 'will remove the id from arg' do
+              World.by_id(array, &block)
+              expect(array).to_not include(entity.id)
+            end
+          end
+        end
+      end
+    end
+  end
 end

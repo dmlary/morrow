@@ -37,12 +37,12 @@ describe Command do
       END
       @room, @player, @mob = load_yaml_entities(buf)
 
-      move_to_location(@player, @room)
-      move_to_location(@mob, @room)
-
       World.add_entity(@room)
       World.add_entity(@player)
       World.add_entity(@mob)
+
+      move_to_location(@player, @room)
+      move_to_location(@mob, @room)
     end
 
     context 'at the current room' do
@@ -75,6 +75,31 @@ describe Command do
       context 'autoexit disabled' do
         it 'will not display the exits'
       end
+    end
+
+    context 'at a mob' do
+    end
+    context 'at an item' do
+    end
+    context 'at an exit' do
+    end
+    context 'at a room feature' do
+    end
+    context 'at an item in inventory' do
+    end
+    context 'at the nth entity with a given keyword' do
+      # XXX What's the priority here for index?
+      # I feel like it may be context related,
+      #   `kill bear` should not try to kill my bear skin cloak
+      #   `look bear` probably should look at the bear in the room before my
+      #   cloak also
+      #   `remove bear` should not try to escort the bear out of the room
+      #   `scry bear` should not show me my cloak
+      # Context does matter, we'll need a way to generate an array of items..
+      #
+      # find_entities(type: <blah>, scope: blah)?
+    end
+    context 'at an entity by joined keywords' do
     end
   end
 end
