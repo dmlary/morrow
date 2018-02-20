@@ -33,7 +33,7 @@ describe Command do
         - viewable:
             short: a generic mob
             long: a generic mob eyes you warily
-            keywords: [ generic mob ]
+            keywords: [ generic, mob ]
       END
       @room, @player, @mob = load_yaml_entities(buf)
 

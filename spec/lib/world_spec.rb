@@ -309,7 +309,7 @@ describe World do
           end
           context 'entity does not exist' do
             it 'will call the block with id & nil' do
-              expect(block).to_not receive(:call)
+              expect(block).to receive(:call).with(entity.id, nil)
               World.by_id(array, &block)
             end
             it 'will remove the id from arg' do

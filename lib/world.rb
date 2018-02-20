@@ -130,14 +130,27 @@ module World
       when Array
         if block
           arg.delete_if do |id|
-            entity = by_id(id) or next true
-            block.call(entity.id, entity)
-            false
+            next true if id.nil?
+            if entity = by_id(id)
+              block.call(entity.id, entity)
+              false
+            else
+              # XXX report it missing ourselves, but the block has more scope
+              # about where the entity id came from.  I really need to clean
+              # this up, but I don't have a good solution right now.  The
+              # question is do we want to put the burdeon on the block to
+              # call missing_entity with enough context to be of use, or just
+              # call it here with less context for ease of use by the callers.
+              missing_entity(id: id)
+              block.call(id, nil)
+              true
+            end
           end
         else
           out = []
           arg.delete_if do |id|
-            entity = by_id(id) or next true
+            next true if id.nil?
+            entity = by_id(id) or (missing_entity(id: id); next true)
             out << entity if entity
             false
           end
@@ -211,3 +224,4 @@ module World
 end
 
 require_relative 'world/helpers'
+World.extend(World::Helpers)
