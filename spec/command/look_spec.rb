@@ -29,10 +29,10 @@ describe Command do
             long: Leonidas the Cursed
             keywords: [ leonidas ]
             description: |
-              Shoulders hunched forward, his back bent, this man stands as
-              though beaten by the world, and bracing for the next blow.  His
-              downcast eyes, are lined with concern, as they cast about the
-              room.
+              Shoulders hunched, and back bent, this man stands as
+              though the world has beaten him, and he is bracing for the next
+              blow.  His eyes, downcast and lined with concern, dart about the
+              room, never lighting on anything for more than a moment.
       - type: npc
         components:
         - viewable:
