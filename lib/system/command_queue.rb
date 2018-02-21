@@ -7,7 +7,11 @@ module System::CommandQueue
     next if queue.empty?
 
     # run the command, which returns output
-    buf = Command.run(actor, queue.shift)
+    buf = begin
+      Command.run(actor, queue.shift)
+    rescue Command::SyntaxError => ex
+      "syntax error: %s\n" % ex.message
+    end
 
     # append the prompt
     buf << "\n> "
@@ -17,28 +21,6 @@ module System::CommandQueue
   end
 
   class << self
-    def command_set(rest)
-      return 'no configuration options found for this entity' unless
-          config = @entity.get_component(:config_options)
-
-      key, value = rest.split(/\s+/, 2) if rest
-      if key
-        return 'value must be true/false or on/off' unless
-            value =~ /^(true|on|false|off)(\s|$)/
-        value = %w{ true on }.include?($1) 
-        config.set(key, value)
-        return "#{key} = #{value}"
-      end
-
-      fields = config.fields
-      field_width = fields.map(&:size).max
-      buf = "&WConfigration Options:&0\n"
-      fields.each do |name|
-        buf << "  &W%#{field_width}s&0: &c%s&0\n" % [ name, config.get(name) ]
-      end
-      buf
-    end
-
     def command_up(rest)
       room = get_room or return "unable to find what room you are in!"
 

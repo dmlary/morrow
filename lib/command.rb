@@ -1,4 +1,6 @@
 module Command
+  class SyntaxError < ArgumentError; end
+
   @lock = Mutex.new
   @commands = {}
 
@@ -22,3 +24,4 @@ module Command
 end
 
 require_relative 'command/look'
+require_relative 'command/config'

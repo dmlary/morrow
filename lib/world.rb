@@ -5,6 +5,14 @@ require_relative 'component'
 require_relative 'entity'
 
 module World
+  class Fault < ::RuntimeError
+    def initialize(msg, *extra)
+      super(msg)
+      @extra = extra
+    end
+    attr_accessor(:extra)
+  end
+
   extend Helpers::Logging
 
   @entities = []
@@ -99,6 +107,12 @@ module World
     #   ++arg++ entity id, entity or an Array of the two
     #   ++block++ optional block to call with id & entity if arg is Array
     #
+    # Notes:
+    #   If called with a block, { |id, entity| ... }, entity will be nil when
+    #   the id provided does not reference a valid Entity.  The caller must
+    #   handle this case, and call World::Helpers.missing_entity() with the
+    #   appropriate context for the entity id.
+    #
     # Usage:
     #   World.by_id(nil)          # => nil
     #   World.by_id(2131)         # => entity
@@ -135,13 +149,8 @@ module World
               block.call(entity.id, entity)
               false
             else
-              # XXX report it missing ourselves, but the block has more scope
-              # about where the entity id came from.  I really need to clean
-              # this up, but I don't have a good solution right now.  The
-              # question is do we want to put the burdeon on the block to
-              # call missing_entity with enough context to be of use, or just
-              # call it here with less context for ease of use by the callers.
-              missing_entity(id: id)
+              # caller will report the entity as missing because they have more
+              # context
               block.call(id, nil)
               true
             end

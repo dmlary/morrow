@@ -1,10 +1,24 @@
 require 'facets/string/indent'
 
 module World::Helpers
-  def get_room(entity=nil)
-    entity ||= @entity
-    location_id = entity.get(:location) or return nil
-    World.by_id(location_id)
+  # raise an exception with a message, and all manner of extra data
+  #
+  # Arguments:
+  #   ++msg++ Message to include in the RuntimeError exception
+  #   ++data++ Additional context data for the exception; ex.data
+  #
+  # Return: None; exception raised
+  #
+  def fault(msg, *data)
+    ex = World::Fault.new(msg, *data)
+    ex.set_backtrace(caller)
+    raise(ex)
+  end
+
+  def get_room(entity)
+    id = entity.get(:location) or return nil
+    room = World.by_id(id) or missing_entity(location: id, entity: entity)
+    room
   end
 
   # Move ++entity_id++ with ++location++ component into ++dest_id++
@@ -27,20 +41,50 @@ module World::Helpers
     true
   end
 
-  # get all things within some scope that have a given keyword/keywords
-  # Return an Array of Entity instances that match the supplied keywords
+  # get a/all entities from ++pool++ that have keywords that match our
+  # the provided ++keyword++
   #
   # Arguments:
-  #   ++keywords++ Array of keywords, or single keyword
-  #   ++entities++ Array of Entities or Entity ID's
+  #   ++buf++ String; "sword", "sharp-sword", "3.sword", "all.sword"
+  #   ++pool++ Entity instances, or Entity id's
   #
-  # Returns:
-  #   Array of Entity instances from ++entities++ that contain all
-  #   keywords in ++keywords++
-  def match_keywords(keywords, entities)
-    keywords = [ keywords ].flatten
-    World.by_id(entities).select do |entity|
-      entity.get(:viewable, :keywords) & keywords == keywords
+  # Parameters:
+  #   ++multiple++ set to true if more than one match permitted
+  #
+  # Return:
+  #   when multiple: Array of matching entities in ++pool++
+  #   when not multiple: first entity in ++pool++ that matches
+  #
+  def match_keyword(buf, *pool)
+    p = pool.last.is_a?(Hash) ? pool.pop : {}
+
+    fault "unparsable keyword; #{buf}" unless buf =~ /^(?:(all|\d+)\.)?(.*)$/
+    index = $1
+    keywords = $2.split('-').uniq
+
+    # ensure the user isn't using 'all.item' when the caller expects only a
+    # single item
+    raise Command::SyntaxError,
+        "'#{buf}' is not a valid target for this command" if
+            index == 'all' and !p[:multiple]
+
+    # if the user hasn't specified an index, or the caller hasn't specified
+    # that they want multiple matches, do the simple find here to grab and
+    # return the first match
+    if index.nil? and p[:multiple] != true
+      return World.by_id(pool.flatten).find do |entity|
+        (entity.get(:viewable, :keywords) & keywords).size == keywords.size
+      end
     end
+
+    # Anything else requires us to have the full matches list
+    matches = World.by_id(pool.flatten).select do |entity|
+      (entity.get(:viewable, :keywords) & keywords).size == keywords.size
+    end
+
+    return matches if index.nil? or index == 'all'
+
+    index = index.to_i - 1
+    p[:multiple] ? [ matches[index] ].compact : matches[index]
   end
 end

@@ -3,7 +3,7 @@ require 'entity'
 require 'component'
 
 describe World do
-  before(:all) { Helpers::Logging.logger.level = Logger::WARN }
+  before(:all) { Helpers::Logging.logger.level = Logger::ERROR }
 
   let(:entity) { Entity.new }
   describe 'new_entity(*args)' do

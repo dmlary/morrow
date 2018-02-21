@@ -28,11 +28,20 @@ describe Command do
             short: Leonidas
             long: Leonidas the Cursed
             keywords: [ leonidas ]
+            description: |
+              Shoulders hunched forward, his back bent, this man stands as
+              though beaten by the world, and bracing for the next blow.  His
+              downcast eyes, are lined with concern, as they cast about the
+              room.
       - type: npc
         components:
         - viewable:
             short: a generic mob
             long: a generic mob eyes you warily
+            description: |
+              It stands here, non-descript eyes doing things like blinking.
+              This mob hopes for nothing more than to die in service of giving
+              you experience.
             keywords: [ generic, mob ]
       END
       @room, @player, @mob = load_yaml_entities(buf)
@@ -77,9 +86,42 @@ describe Command do
       end
     end
 
-    context 'at a mob' do
+    shared_examples 'common elements' do
+      it 'will include the short name' do
+        expect(output).to include(target.get(:viewable, :short))
+      end
+      it 'will include the description' do
+        expect(output).to include(target.get(:viewable, :description))
+      end
+      it 'will include the keywords' do
+        expect(output).to include(target.get(:viewable, :keywords).join('-'))
+      end
+      it 'will include the status' do
+        skip 'no health component' unless target.get(:health)
+      end
     end
-    context 'at an item' do
+
+    shared_examples 'equipment' do |entity|
+      it 'will include the equipment'
+    end
+
+    context 'at something that does not exist' do
+      let(:output) { Command.run(@player, 'look purple-people-eater') }
+      it 'will output an error message' do
+        expect(output).to eq("You do not see that here.")
+      end
+    end
+    context 'at ourselves' do
+      let(:target) { @player }
+      let(:output) { Command.run(@player, 'look self') }
+      include_examples('common elements')
+      include_examples('equipment')
+    end
+    context 'at a mob' do
+      let(:target) { @mob }
+      let(:output) { Command.run(@player, 'look mob') }
+      include_examples('common elements')
+      include_examples('equipment')
     end
     context 'at an exit' do
     end
@@ -87,19 +129,11 @@ describe Command do
     end
     context 'at an item in inventory' do
     end
-    context 'at the nth entity with a given keyword' do
-      # XXX What's the priority here for index?
-      # I feel like it may be context related,
-      #   `kill bear` should not try to kill my bear skin cloak
-      #   `look bear` probably should look at the bear in the room before my
-      #   cloak also
-      #   `remove bear` should not try to escort the bear out of the room
-      #   `scry bear` should not show me my cloak
-      # Context does matter, we'll need a way to generate an array of items..
-      #
-      # find_entities(type: <blah>, scope: blah)?
+    context 'at an equipped item' do
     end
-    context 'at an entity by joined keywords' do
+    context 'at an item in the room' do
+    end
+    context 'at a container' do
     end
   end
 end

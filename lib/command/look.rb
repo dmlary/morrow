@@ -1,22 +1,32 @@
 module Command::Look
   extend World::Helpers
 
-  Command.register('look') do |actor, target|
-    target ||= get_room(actor)
+  Command.register('look') do |actor, keyword|
+    room = get_room(actor) or fault "actor has invalid location", actor
 
-    # XXX target lookup by keyword
+    target = if keyword.nil? or keyword.empty?
+      room
+    elsif keyword == 'self' or keyword == 'me'
+      target = actor
+    else
+      match_keyword(keyword, room.get(:contents), actor.get(:contents))
+    end
+
+    next "You do not see that here." unless target
 
     case target.type
     when :room
-      look_room(actor, target)
+      show_room(actor, target)
+    when :player, :npc
+      show_char(actor, target)
     else
+      fault "look #{keyword}", target
       "not implemented; look <thing>"
     end
   end
 
-
   class << self
-    def look_room(actor, room)
+    def show_room(actor, room)
       room = World.by_id(room)
 
       return room.pretty_inspect if actor.get(:config_options, :coder)
@@ -47,6 +57,28 @@ module Command::Look
         end
       end
       buf
+    end
+
+    def show_char(actor, target)
+      char = World.by_id(target)
+      return char.pretty_inspect if actor.get(:config_options, :coder)
+
+      view = char.get_component(:viewable)
+      buf  = ""
+
+      if desc = view.get(:description)
+        buf << desc
+        buf << "\n"
+      else
+        buf << "You see nothing special about them.\n"
+      end
+
+      # XXX short is a <RACE>
+      # XXX He/She/It is in <CONDITION>
+      buf << view.get(:short)
+      buf << " may be referred to as '&C%s&0'.\n" % view.get(:keywords).join('-')
+
+      # XXX equipment
     end
   end
 end
