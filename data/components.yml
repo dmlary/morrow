@@ -5,6 +5,60 @@
 - name: name
   fields:
     value:
+
+# Component exists in two states:
+#   - declared in a config file
+#   - loaded into memory
+#
+# When loaded in memory, a location component will have an entity id for it's
+# value.
+#
+# When declared in a config file, the value will be ??? some reference that
+# gets resolved to an entity id at load time.
+#
+# location value reference: type/lookup?  type/vnum?  Object instance via YAML
+# references.  YAML references will not work.  The hash returned by the YAML
+# parser is where the reference points, not the Entity instance we created from
+# that hash.
+#
+# If we fix that, we'd have to make the YAML parser understand the concept of
+# different Entity types, or force every config entry to have a special flag
+# that causes the parser to create a Entity.  I seem to recall we had problems
+# going in the reverse direction.  Also, cross-file references require us to
+# support another reference method.
+#
+# Requirements for config-file reference scheme:
+#   * reference Entities created later in this file
+#   * reference Entities created in other files
+#   * make it easy to have per-file unique references
+#   * easily distinguish between local & cross-file entities
+#
+# Questions:
+#   * Where do the exits that connect two areas reside?
+#     * A single one-way exit in each file?
+#   * What happens when a reference does not resolve?
+#   * Who does the resolving?
+#     * Location system at startup?  Pulls all Location components and adds
+#      them to the inventory component of the target
+#     * The loader after all loads have been completed?
+#       * can't do it sooner, not every reference can resolve
+#
+# Reference formats:
+#   * <component>/<key>/<value>
+#     * wildly generic
+#   * ref/<vnum>
+#   * <area>/<vnum>
+#   * <vnum>
+#     * support file/area/global scopes
+#     * only collide if same vnum exists in the scope
+#     * vnum doesn't have to be an Integer; "midgaard/west_gate"
+#
+#   * [<area>/]<id>
+#     * similar to vnum, but clearer scoping rules
+#     * <id> is String
+#     * Requires World to track which directory specific Entities were defined
+#       within
+
 - name: location
   fields:
     value:
@@ -12,38 +66,55 @@
   fields:
     value:
     blocked_until:
-- name: connection
-  fields:
-    value:
 - name: config_options
   fields:
     color: true
     coder: false
-- name: exit
-  fields:
-    direction:
-    to_vnum:
-    description:
-    room_id:
+
+# vnum scopes
+#   Options:
+#     - globally-unique identifier
+#     - scoped identifier
+#       - file
+#       - directory
+#       - global
 - name: vnum
   fields:
     value:
+
+# An array of entity id's
 - name: contents
   fields:
     value: []
+
+# An array of strings that are the keywords an entity may be referenced by in
+# the game
+- name: keywords
+  fields:
+    value: []
+
+# XXX need to move keywords out of here
+# if an item does not have a long description, it is not visable in a room
+# contents
+# if an item does not have a short description, it is not visible in a
+# container?
+# both have contents managed by contents
+
 - name: viewable
   fields:
     keywords: []
     short:
     long:
     description:
+- name: passage
+  fields:
+    dest: !ref { type: room }
 
-# What is everything we can look at?
-#
-#   look        # => look at the current room; see name, description, exits,
-#               #    contents
-#   look char   # => look at a character; see description, condition,
-#               #    equipment, spell affects?, inventory (peek)
-#   look item   # => look at item; see description (maybe keywords)
-#   look exit   # => look at door/exit; scry / see exit description
-#   look feature# => look at some feature in the room; description
+# No default value for a reference; prevents odd things where invalid rooms
+# lead to the void, or everything loads on Puff.
+
+- name: closable
+  fields:
+    closed: true
+    locked: false
+    key:

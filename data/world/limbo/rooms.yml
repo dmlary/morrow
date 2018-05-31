@@ -1,16 +1,12 @@
 ---
 - type: room
   components:
-  - vnum: 0
   - viewable:
       short: The Void
       description: You are floating in nothing
-  - exit:
-      direction: up
-      to_vnum: 1
+
 - type: room
   components:
-  - vnum: 1
   - viewable:
       short: Limbo
       description: |-
@@ -18,6 +14,16 @@
         matter, surrounded by swirling glowing light, which fades into the relative
         darkness around you without any trace of edges or shadow.
            There is a "No Tipping" notice pinned to the darkness.
-  - exit:
-      direction: up
-      to_vnum: 0
+
+- type: exit
+  components:
+  - location: !ref room/void
+  - keywords: up
+  - passage: !ref room/limbo
+
+- type: exit
+  components:
+  - location: !ref room/limbo
+  - keywords: down
+  - passage: !ref 91283
+  - closable

@@ -130,6 +130,10 @@ module Component
       @values.keys
     end
 
+    def values
+      @values.values
+    end
+
     def component?
       true
     end

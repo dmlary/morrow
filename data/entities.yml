@@ -5,13 +5,23 @@
       short: Generic room
       description: Four walls, ceiling, and a floor
   - contents
+  reference_by:
+  - =vnum           # explicit vnum/value
+  - viewable/short  # short description of the room; first best string match
+
+- type: exit
+  components:
+  - viewable:
+      description: You see nothing special...
+  - location
+  - passage
 
 - type: char
   components:
+  - keywords:
+    - generic
+    - character
   - viewable:
-      keywords:
-      - generic
-      - character
       short: generic character
       long: a generic character stands here, stiffly
   - location

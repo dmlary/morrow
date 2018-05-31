@@ -3,6 +3,7 @@ require 'facets/hash/deep_rekey'
 require_relative 'helpers'
 require_relative 'component'
 require_relative 'entity'
+require_relative 'reference'
 
 module World
   class Fault < ::RuntimeError
@@ -27,6 +28,8 @@ module World
   @update_frequency = 0.25 # seconds
 
   class << self
+    attr_reader :entities
+
     # reset the internal state of the World
     def reset!
       @entities.clear
@@ -76,15 +79,23 @@ module World
       @base_dir = dir
       rooms = try_load('limbo/rooms.yml') or return
       rooms.each do |config|
-        components = config[:components].map(&:first).map do |key, value|
-          Component.new(key, value)
+        components = config[:components].map do |comp_config|
+          case comp_config
+          when Hash
+            Component.new(*comp_config.flatten)
+          when String, Symbol
+            Component.new(comp_config)
+          else
+            raise TypeError,
+                "unsupported component config type: #{comp_config.inspect}"
+          end
         end
-        room = Entity.new(config[:type], *components)
-        add_entity(room)
+        entity = add_entity(Entity.new(config[:type], *components))
       end
 
       # All the rooms have been loaded, let's connect them
       @rooms_by_vnum = {}
+
       exits = []
       @entities_by_type[:room].each do |room|
         @rooms_by_vnum[room.get(:vnum)] = room
