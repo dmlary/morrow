@@ -93,6 +93,8 @@ module World
         entity = add_entity(Entity.new(config[:type], *components))
       end
 
+      resolve_references
+
       # All the rooms have been loaded, let's connect them
       @rooms_by_vnum = {}
 
@@ -238,6 +240,32 @@ module World
         data.deep_rekey { |k| k.to_sym }
       else
         data
+      end
+    end
+
+    # traverse all Components, and resolve all Reference instances
+    def resolve_references
+      @entities.each do |entity|
+        entity.components.each do |component|
+          component.each_pair do |key, ref|
+            next unless ref.is_a?(Reference)
+
+            # Resolution steps
+            # * determine the Entity type this reference is for
+            # * Using Entity type's resolution to look up an entity of this
+            #   type
+
+            # Grab the type & destination component from the class.  Allow the
+            # type to be overridden by the reference itself ([<type>/]value)
+            types, comp = component.class.ref(key)
+            m = ref.value.match(%r{^(?:(?<type>.*)/)?(?<value>.*?)$})
+            types = [m[:type]] if m[:type]
+
+            entity = find_entity(m[:value], type: types)
+
+            binding.pry
+          end
+        end
       end
     end
   end

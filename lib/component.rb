@@ -1,3 +1,4 @@
+require 'forwardable'
 require 'facets/kernel/deep_clone'
 require 'facets/hash/symbolize_keys'
 require 'facets/hash/rekey'
@@ -35,11 +36,21 @@ module Component
       # fields that later had a default specified by parameter.
       defaults = Hash[args.zip([])].merge(p).symbolize_keys
 
+      # Strip out the defaults that are References, these define the type of
+      # entity this field will reference.
+      refs = defaults.inject({}) do |out,(key,value)|
+        next unless value.is_a?(Reference)
+        out[key] = value
+        defaults[key] = nil
+        out
+      end
+
       klass = Class.new
       klass.include(InstanceMethods)
       klass.extend(ClassMethods)
       klass.instance_variable_set('@type', type)
       klass.instance_variable_set('@defaults', defaults)
+      klass.instance_variable_set('@refs', refs)
       @components[type] = klass
       klass
     end
@@ -72,10 +83,19 @@ module Component
   end
 
   module ClassMethods
-    attr_reader :type, :defaults
+    attr_reader :type, :defaults, :refs
 
     def fields
       @defaults.keys
+    end
+
+    # return [Entity type(s), component] for a given reference field
+    def ref(field)
+      types, component = @refs.has_key?(field) ?
+          @refs[field.to_sym].value : nil
+      types = types.is_a?(Array) ? types : [types]
+      types.map!(&:to_sym)
+      [ types, component && component.to_sym ]
     end
 
     def inspect
@@ -84,6 +104,8 @@ module Component
   end
 
   module InstanceMethods
+    extend Forwardable
+
     # new(1,2,3,4)
     # new(1,2, field3: 3, field4: 4)
     def initialize(*values)
@@ -133,6 +155,8 @@ module Component
     def values
       @values.values
     end
+
+    def_delegator :@values, :each_pair
 
     def component?
       true

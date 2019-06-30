@@ -17,13 +17,13 @@
 
 - type: exit
   components:
-  - location: !ref room/void
+  - location: !ref void
   - keywords: up
   - passage: !ref room/limbo
 
 - type: exit
   components:
-  - location: !ref room/limbo
+  - location: !ref limbo
   - keywords: down
   - passage: !ref 91283
   - closable

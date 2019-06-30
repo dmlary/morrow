@@ -61,7 +61,8 @@
 
 - name: location
   fields:
-    value:
+    value: !ref [ [room, char, item], inventory ]
+
 - name: command_queue
   fields:
     value:
@@ -108,7 +109,7 @@
     description:
 - name: passage
   fields:
-    dest: !ref { type: room }
+    dest: !ref room
 
 # No default value for a reference; prevents odd things where invalid rooms
 # lead to the void, or everything loads on Puff.
