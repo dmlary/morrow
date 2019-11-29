@@ -13,13 +13,14 @@ module World
     end
     attr_accessor(:extra)
   end
+  class InvalidVid < Fault; end
 
   extend Helpers::Logging
 
   @entities = []
   @entities_by_tag = Hash.new { |h,k| h[k] = [] }
   @entities_by_type = Hash.new { |h,k| h[k] = [] }
-  @entities_by_id = {}
+  @entities_by_component = Hash.new { |h,k| h[k] = [] }
 
   @systems = []
 
@@ -35,7 +36,6 @@ module World
       @entities.clear
       @entities_by_tag.clear
       @entities_by_type.clear
-      @entities_by_id.clear
       @systems.clear
     end
 
@@ -65,7 +65,6 @@ module World
       @entities << entity
       @entities_by_type[entity.type] << entity if entity.type
       @entities_by_tag[entity.tag] << entity if entity.tag
-      @entities_by_id[entity.id] = entity
       entity.id
     end
 
@@ -78,6 +77,7 @@ module World
     def load(dir)
       @base_dir = dir
       rooms = try_load('limbo/rooms.yml') or return
+      dir = 'limbo'
       rooms.each do |config|
         components = config[:components].map do |comp_config|
           case comp_config
@@ -90,10 +90,25 @@ module World
                 "unsupported component config type: #{comp_config.inspect}"
           end
         end
-        entity = add_entity(Entity.new(config[:type], *components))
+
+        # add the loaded component stating where we came from
+        components << Component.new(:loaded, source: 'limbo/rooms.yml')
+
+        # expand any local idents to include the directory we came from, and
+        # the entity type
+        if ident = components.find { |c| c.type == :ident }
+          if vid = ident.get(:vid)
+            id, type, area = vid.split('/', 3).reverse
+            ident.set(:vid,
+                '%s/%s/%s' % [ area || dir, type || config[:type], id ])
+          end
+        end
+
+        add_entity(Entity.new(config[:type], *components))
       end
 
-      resolve_references
+      # XXX not doing the rest of this stuff
+      return
 
       # All the rooms have been loaded, let's connect them
       @rooms_by_vnum = {}
@@ -114,6 +129,12 @@ module World
       @entities_by_type[type.to_sym].to_enum
     end
 
+    # find an entity by vid
+    def by_vid(vid)
+      @entities.find { |e| e.get(:ident, :vid) == vid } or
+          raise UnknownVid, "unknown vid; #{vid.inspect}"
+    end
+
     # Look up entities by id
     #
     # Arguments:
@@ -131,9 +152,6 @@ module World
     #   World.by_id(2131)         # => entity
     #   World.by_id(entity)       # => entity
     #
-    #   World.by_id(2131) { |id,e| ... }     # ArgumentError
-    #   World.by_id(entity) { |id,e| ... }   # ArgumentError
-    #
     #   World.by_id([nil])        # => [ ]
     #   World.by_id([2131])       # => [ entity ]
     #   World.by_id([entity])     # => [ entity ]
@@ -147,7 +165,7 @@ module World
       when nil
         nil
       when Integer
-        if entity = @entities_by_id[arg]
+        if entity = ObjectSpace._id2ref(arg)
           block ? block.call(entity.id, entity) : entity
         end
       when Entity

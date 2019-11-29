@@ -1,69 +1,25 @@
 ---
-- name: title
+# identity; fields used to identify/refer to an entity
+- name: ident
   fields:
-    value:
-- name: name
-  fields:
-    value:
+    vid:
+    keywords: []
 
-# Component exists in two states:
-#   - declared in a config file
-#   - loaded into memory
-#
-# When loaded in memory, a location component will have an entity id for it's
-# value.
-#
-# When declared in a config file, the value will be ??? some reference that
-# gets resolved to an entity id at load time.
-#
-# location value reference: type/lookup?  type/vnum?  Object instance via YAML
-# references.  YAML references will not work.  The hash returned by the YAML
-# parser is where the reference points, not the Entity instance we created from
-# that hash.
-#
-# If we fix that, we'd have to make the YAML parser understand the concept of
-# different Entity types, or force every config entry to have a special flag
-# that causes the parser to create a Entity.  I seem to recall we had problems
-# going in the reverse direction.  Also, cross-file references require us to
-# support another reference method.
-#
-# Requirements for config-file reference scheme:
-#   * reference Entities created later in this file
-#   * reference Entities created in other files
-#   * make it easy to have per-file unique references
-#   * easily distinguish between local & cross-file entities
-#
-# Questions:
-#   * Where do the exits that connect two areas reside?
-#     * A single one-way exit in each file?
-#   * What happens when a reference does not resolve?
-#   * Who does the resolving?
-#     * Location system at startup?  Pulls all Location components and adds
-#      them to the inventory component of the target
-#     * The loader after all loads have been completed?
-#       * can't do it sooner, not every reference can resolve
-#
-# Reference formats:
-#   * <component>/<key>/<value>
-#     * wildly generic
-#   * ref/<vnum>
-#   * <area>/<vnum>
-#   * <vnum>
-#     * support file/area/global scopes
-#     * only collide if same vnum exists in the scope
-#     * vnum doesn't have to be an Integer; "midgaard/west_gate"
-#
-#   * [<area>/]<id>
-#     * similar to vnum, but clearer scoping rules
-#     * <id> is String
-#     * Requires World to track which directory specific Entities were defined
-#       within
+- name: loaded
+  fields:
+    source:
 
 - name: location
   fields:
-    value: !ref [ [room, char, item], inventory ]
-
+    value:
 - name: command_queue
+  meta:
+    save: false
+  # XXX need some way to mark which components should not be saved when to_yaml
+  # is called.
+  #
+  # This could be implemented by prepending
+  #     Psych::Visitors::YAMLTree.emit_coder
   fields:
     value:
     blocked_until:
@@ -72,25 +28,8 @@
     color: true
     coder: false
 
-# vnum scopes
-#   Options:
-#     - globally-unique identifier
-#     - scoped identifier
-#       - file
-#       - directory
-#       - global
-- name: vnum
-  fields:
-    value:
-
-# An array of entity id's
-- name: contents
-  fields:
-    value: []
-
-# An array of strings that are the keywords an entity may be referenced by in
-# the game
-- name: keywords
+# An array of entity ids
+- name: container
   fields:
     value: []
 
@@ -101,21 +40,116 @@
 # container?
 # both have contents managed by contents
 
+# Can we refer to something that is not viewable?
+#
+# Is there any entity in the system that is not viewable?
+# Yes! Respawn Lists!  So it makes sense to split keywords out from viewable.
+# However, keywords/vid are an optional mechanism to make referring to Entities
+# simplier.  We're probably not going to define individual keywords & vids for
+# every entity, so how much does this benefit the system?
+
+# Guidance:
+#   * builder should not have to enter data more than once
+#
+# Are VID's only used for instanciated Entities?
+#
+# So we have an NPC Entity, there's a SpawnList Entity.
+#
+# How do we define a spawn list?
+#   * How do we specify that mob M spawns in room R
+#     - Room R has a SpawnList Component that contains mob M
+#     - at spawn time M is cloned, then placed in R
+#   * how do we specify the items that load in M's inventory
+#   * how do we specify the items that load on M's equipment slots
+#   * how to we specify a generic bag B, loading on M's inventory?
+#   * how to we specific that bag B is closed? locked?
+#   * how do we specify the contents of bag B when it's loaded on M in room R?
+#   * how do we specify that M spawns in room R, and M' (with slightly
+#     different inventory) spawns in R+1?
+#
+# If a Room can have a SpawnList, then an NPC, and an Item may also have
+# SpawnLists.
+#   * Bag that daily spawns a loaf of bread, until the bag is full
+#   * Waterskin that spawns water?  (this is different?  Maybe?)
+#     * Maybe this leads to a generalization of SpawnList
+#     * A SpawnList is some generic modification to the parent Entity on some
+#       time-scale
+#  * Don't have a good usecase for NPC that spawns things regularly
+#
+# Let's start specifically; I need a NpcTemplate that can have stat ranges, and
+# a SpawnList.  From this Template a new NPC is spawned, and placed somewhere.
+#
+# Which takes less data?  NpcTemplate contains a SpawnList that is it's
+# inventory (with probabilities).  Then Room SpawnLists contain only
+# NpcTemplates and Item(Templates)s.  If you need a specific version of that
+# Npc with a different loot table, you have to duplicate the NpcTemplate, and
+# specify the loot table.  Or, each SpawnList entry contains a specific loot
+# table.
+#
+# Nope, SpawnList Entry should allow overriding of templates
+#
+# room:
+#   spawn_list:
+#   - template: wombat
+#   - template: wombat
+#     loot_table: !ref rich_wombat
+#
+#
+#
+# item:
+#   viewable:
+#     short: a small cloth bag
+#     long: a small cloth bag rests on the ground, collecting dust
+#   referrable:
+#     keywords: [small, bag, cloth]
+#     # XXX can keywords be autopopulated from short & long
+#     vid: item-small-bag
+#
+# room:
+#   load_list:
+#   - item: item-small-bag
+#     contents:
+#     - item: healing-potion-i
+#     - item: [gold, 10]
+# npc:
+#   loot_table:
+#   - item: [gold, 100..300]
+#   - item: item-potion-healing-1
+#     prob: 0.2
+#   - item: item-bag-small-1
+#     prob: 0.1
+#     contents:
+#     - item: 
+#
+# load_list:
+# - entity: <ref/vid>
+#   frequency: <time>; default inherit
+#   prob: <probability>
+#   limit: <max>; default 1
+#   load_list: <default to entity, but may be overridden>
+#   location: <default to contents, should be component?>
+#
+# npc:
+#   viewable:
+#     short: a guardsman
+#     long: A guardsman stands here, watching the area.
+#   load_list:
+#   - entity: item-armor-chest
+#     location: chest
+#   - entity:
+#
+# XXX How do we denote equipment positions as a Component?
+#
+
+# This thing can be looked at
 - name: viewable
   fields:
-    keywords: []
     short:
     long:
     description:
 - name: passage
   fields:
-    dest: !ref room
+    dest:
 
 # No default value for a reference; prevents odd things where invalid rooms
 # lead to the void, or everything loads on Puff.
-
-- name: closable
-  fields:
-    closed: true
-    locked: false
-    key:

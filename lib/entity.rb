@@ -151,6 +151,15 @@ class Entity
   alias << add
   alias id __id__
 
+  def inspect
+    buf = "#<%s:%s:0x%010x tag=%s, components=[" %
+        [ self.class, type, id, tag.inspect ]
+    @components.each do |component|
+      buf << "\n    #{component.inspect}"
+    end
+    buf << "]>"
+  end
+
   def remove(*components)
     @components.reject! { |c| components.include?(c) }
     self

@@ -61,7 +61,7 @@ describe Component do
       end
     end
 
-    context 'component composed of key/value store' do
+    context 'component with fields' do
       it 'will set value to nil if no default provided' do
         Component.define(:health, :max, :current)
         h = Component.new(:health)

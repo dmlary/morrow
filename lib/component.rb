@@ -106,6 +106,10 @@ module Component
   module InstanceMethods
     extend Forwardable
 
+    def savable?
+      false
+    end
+
     # new(1,2,3,4)
     # new(1,2, field3: 3, field4: 4)
     def initialize(*values)
@@ -145,7 +149,9 @@ module Component
     def get(field=:value)
       field = field.to_sym
       raise InvalidField, field unless @values.has_key?(field)
-      @values[field]
+      value_or_ref = @values[field]
+
+      value_or_ref.is_a?(Reference) ? value_or_ref.resolve(self) : value_or_ref
     end
 
     def fields

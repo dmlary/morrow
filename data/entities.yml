@@ -4,10 +4,6 @@
   - viewable:
       short: Generic room
       description: Four walls, ceiling, and a floor
-  - contents
-  reference_by:
-  - =vnum           # explicit vnum/value
-  - viewable/short  # short description of the room; first best string match
 
 - type: exit
   components:
@@ -38,4 +34,3 @@
   components:
   - connection
   - config_options
-  - title

@@ -1,12 +1,14 @@
 ---
 - type: room
   components:
+  - ident: void
   - viewable:
       short: The Void
       description: You are floating in nothing
 
 - type: room
   components:
+  - ident: limbo
   - viewable:
       short: Limbo
       description: |-
@@ -15,15 +17,26 @@
         darkness around you without any trace of edges or shadow.
            There is a "No Tipping" notice pinned to the darkness.
 
-- type: exit
-  components:
-  - location: !ref void
-  - keywords: up
-  - passage: !ref room/limbo
+# Reference usage in YAML:
+#   !ref void
+#   !ref room/void
+#   !ref limbo/room/void
+#   !ref core/item/small_bag
+#   !ref <area>/<entity>/<ident>
+#
+# Ident usage in YAML:
+#   type: entity
 
 - type: exit
   components:
-  - location: !ref limbo
-  - keywords: down
-  - passage: !ref 91283
-  - closable
+  - location: !ref room/void
+  - passage: !ref room/limbo
+  - ident:
+      keywords: up
+
+- type: exit
+  components:
+  - location: !ref room/limbo
+  - passage: !ref room/void
+  - ident:
+      keywords: up
