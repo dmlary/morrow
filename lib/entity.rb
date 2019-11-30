@@ -141,6 +141,8 @@ class Entity
 
     # append any supplied components
     @components.push(*components.flatten)
+
+    @components.each { |c| c.entity_id = id; pp entity: id, c: c }
   end
   attr_reader :type, :components, :tag
 
@@ -218,5 +220,10 @@ class Entity
     coder.tag = nil
     coder['type'] = @type.to_s
     coder['components'] = @components
+  end
+
+  # Get a Reference to this entity
+  def ref
+    @ref ||= Reference.new(self)
   end
 end

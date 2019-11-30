@@ -13,47 +13,86 @@ class Psych::Visitors::YAMLTree
 end
 
 class Reference
-  def initialize(vid)
-    @vid = vid.to_s
+  class InvalidReference < ArgumentError; end
+
+  Pattern = %r{
+    \A
+    (?:
+      (?<area>[^/]+)/
+    )?
+    (?<type>[^/]+)/
+    (?<virtual>[^\.]+)
+    (?:\.
+      (?<component>[^\.]+)
+      (?:\.
+        (?<field>.*?)
+      )?
+    )?
+    \Z
+  }x
+
+  # Reference.new("area/type/name")
+  # Reference.new(Entity)
+  def initialize(arg)
+    case arg
+    when String
+      parse_ref(buf)
+    when Entity
+      @entity_id = arg.id
+      virtual = arg.get(:ident, :virtual) and parse_ref(virtual)
+    else
+      raise ArgumentError, "unsupported argument type: #{arg}"
+    end
   end
-  attr_reader :vid
+  attr_accessor :area, :type, :virtual, :component, :field
 
   # YAML-base initialization
   YAML.add_tag '!ref', self
   def init_with(coder)
-    raise RuntimeError, "invalid vid, #{coder.send(coder.type).inspect}" unless
-        coder.type == :scalar
-    @vid = coder.scalar.to_s
+    raise RuntimeError, "invalid reference: %s " %
+        [ coder.send(coder.type).inspect ] unless coder.type == :scalar
+    parse_ref(coder.scalar.to_s)
   end
 
   def encode_with(coder)
-    coder.scalar = @vid
+    coder.scalar = full
   end
 
-  def resolve(component)
-    @id ||= case @vid
-      when Integer
-        @vid
-      else
-        # XXX this may be slow, but not optimizing yet
+  def resolve(source)
+    return World.by_id(@entity_id) if @entity_id
 
-        # expand the referenced vid if necessary
-        vid, type, area = @vid.split('/', 3).reverse
+    area = @area || source.get(:loaded, :path).split('/').first
+    entity = World.by_virtual("#{area}/#{@type}/#{@virtual}")
+    @entity_id = entity.id
+    entity
+  end
 
-        # XXX type should be enforced somehow
+  def full
+    return nil unless @virtual
+    out = ''
+    out << "#{@area}/" if @area
+    out << "#{@type}/#{@virtual}"
+    out << ".#{@component}" if @component
+    out << ".#{@field}" if @field
+    out
+  end
+  alias to_s full
 
-        unless area
-          entity = World.entities.find { |e| e.components.include?(component) }
-          if source = entity.get(:loaded, :source)
-            area = File.dirname(source)
-          else
-            area = '<none>'
-          end
-        end
+  def component_field
+    [ @component, @field || :value ] if @component
+  end
 
-        World.by_vid("#{area}/#{type}/#{vid}").id
-      end
+  def inspect
+    "#<Reference:#{to_s || 'absolute'} id=#{@entity_id || :unresolved}>"
+  end
 
-    World.by_id(@id)
+  private
+  def parse_ref(buf)
+    match = buf.match(Pattern) or raise InvalidReference, buf
+    @area = match['area']
+    @type = match['type']
+    @virtual = match['virtual']
+    @component = match['component']
+    @field = match['field']
   end
 end

@@ -1,42 +1,34 @@
 ---
 - type: room
   components:
-  - ident: void
+  - virtual: void
   - viewable:
       short: The Void
-      description: You are floating in nothing
+      long: You are floating in nothing
 
 - type: room
   components:
-  - ident: limbo
+  - virtual: limbo
   - viewable:
       short: Limbo
-      description: |-
+      long: |-
         You are floating in a formless void, detached from all sensation of physical
         matter, surrounded by swirling glowing light, which fades into the relative
         darkness around you without any trace of edges or shadow.
            There is a "No Tipping" notice pinned to the darkness.
 
-# Reference usage in YAML:
-#   !ref void
-#   !ref room/void
-#   !ref limbo/room/void
-#   !ref core/item/small_bag
-#   !ref <area>/<entity>/<ident>
-#
-# Ident usage in YAML:
-#   type: entity
-
-- type: exit
+- type: passage
+  meta:
+    link:
+    - !ref room/void.exits
   components:
-  - location: !ref room/void
-  - passage: !ref room/limbo
-  - ident:
-      keywords: up
+  - keywords: up
+  - destination: !ref room/limbo
 
-- type: exit
+- type: passage
+  meta:
+    link:
+    - !ref room/limbo.exits
   components:
-  - location: !ref room/limbo
-  - passage: !ref room/void
-  - ident:
-      keywords: up
+  - keywords: up
+  - destination: !ref room/void

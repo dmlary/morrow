@@ -1,36 +1,30 @@
 ---
 - type: room
   components:
-  - viewable:
-      short: Generic room
-      description: Four walls, ceiling, and a floor
+  - viewable
+  - exits: []
+  - container
 
-- type: exit
+- type: passage
   components:
-  - viewable:
-      description: You see nothing special...
-  - location
-  - passage
+  - viewable
+  - destination
 
 - type: char
+  meta:
   components:
-  - keywords:
-    - generic
-    - character
-  - viewable:
-      short: generic character
-      long: a generic character stands here, stiffly
+  - viewable
+  - container
   - location
-  - contents
-  - command_queue   # mprogs & player input
 
-- type: npc
-  include:
-  - char
+- type: object
+  components:
+  - viewable
 
-- type: player
+- type: player_char
+  meta:
+    save: true
   include:
   - char
   components:
-  - connection
-  - config_options
+  - player_config

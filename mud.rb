@@ -3,6 +3,8 @@
 require 'yaml'
 require 'pp'
 require 'eventmachine'
+require 'pry'
+require 'pry-rescue'
 require_relative 'lib/exception_binding'
 require_relative 'lib/helpers'
 require_relative 'lib/component'
@@ -13,14 +15,14 @@ require_relative 'lib/system'
 require_relative 'lib/telnet_server'
 require_relative 'lib/helpers/logging'
 
-ExceptionBinding.enable
+Pry.enable_rescuing!
 
 begin
   EventMachine::run do
-    EventMachine.error_handler do |e|
-      TelnetServer.exceptions.push(e)
-      Helpers::Logging.log_exception(e)
-      e.stack.pry if e.stack
+    EventMachine.error_handler do |ex|
+      TelnetServer.exceptions.push(ex)
+      Helpers::Logging.log_exception(ex)
+      Pry.rescued(ex)
     end
 
     begin
@@ -49,7 +51,7 @@ begin
       # Start the server
       TelnetServer.start('0.0.0.0', 1234)
     rescue Exception => ex
-      ex.stack.pry
+      Pry.rescued(ex)
       raise ex
     end
   end

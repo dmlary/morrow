@@ -76,7 +76,7 @@ module Component
     # allocate an instance of a specific type of component
     def new(type, *args)
       type = type.to_sym
-      raise NotDefined unless @components.has_key?(type)
+      raise NotDefined, type unless @components.has_key?(type)
 
       @components[type].new(*args)
     end
@@ -113,7 +113,6 @@ module Component
     # new(1,2,3,4)
     # new(1,2, field3: 3, field4: 4)
     def initialize(*values)
-
       # pull some things from our class
       @type = self.class.type
 
@@ -136,13 +135,18 @@ module Component
       p.each { |field, value| set(field, value) }
     end
     attr_reader :type
+    attr_accessor :entity_id
+
+    def entity
+      World.by_id(@entity_id)
+    end
 
     # set(field=:value, value)
     def set(*args)
       field = (args.size == 1 ? :value : args.shift).to_sym
       value = args.first
       raise InvalidField, field unless @values.has_key?(field)
-      @values[field] = value
+      @values[field] = value.is_a?(Entity) ? value.to_ref : value
       self
     end
 
@@ -151,7 +155,9 @@ module Component
       raise InvalidField, field unless @values.has_key?(field)
       value_or_ref = @values[field]
 
-      value_or_ref.is_a?(Reference) ? value_or_ref.resolve(self) : value_or_ref
+      value_or_ref.is_a?(Reference) ?
+          value_or_ref.resolve(self.entity) :
+          value_or_ref
     end
 
     def fields

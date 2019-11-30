@@ -75,51 +75,49 @@ module World
     #
     # Returns: self
     def load(dir)
+      @links = []
       @base_dir = dir
-      rooms = try_load('limbo/rooms.yml') or return
+
+      entities = try_load('limbo/rooms.yml') or return
       dir = 'limbo'
-      rooms.each do |config|
+
+      entities.each do |config|
         components = config[:components].map do |comp_config|
-          case comp_config
-          when Hash
-            Component.new(*comp_config.flatten)
-          when String, Symbol
-            Component.new(comp_config)
-          else
-            raise TypeError,
-                "unsupported component config type: #{comp_config.inspect}"
+          component = case comp_config
+            when Hash
+              Component.new(*comp_config.flatten)
+            when String, Symbol
+              Component.new(comp_config)
+            else
+              raise TypeError,
+                  "unsupported component config type: #{comp_config.inspect}"
+            end
+
+          # patch up ident.virtual for the area name & type (if necessary)
+          if component.type == :ident && virtual = component.get(:virtual)
+            virtual = virtual.split('/').last
+            full = "#{dir}/#{config[:type]}/#{virtual}"
+            component.set(:virtual, full)
           end
+
+          component
         end
 
         # add the loaded component stating where we came from
-        components << Component.new(:loaded, source: 'limbo/rooms.yml')
+        components << Component.new(:loaded, path: 'limbo/rooms.yml')
 
-        # expand any local idents to include the directory we came from, and
-        # the entity type
-        if ident = components.find { |c| c.type == :ident }
-          if vid = ident.get(:vid)
-            id, type, area = vid.split('/', 3).reverse
-            ident.set(:vid,
-                '%s/%s/%s' % [ area || dir, type || config[:type], id ])
-          end
+        entity = Entity.new(config[:type], *components)
+        add_entity(entity)
+
+        [(config[:meta] || {})[:link]].flatten.compact.each do |ref|
+          @links << [ ref, entity ]
         end
-
-        add_entity(Entity.new(config[:type], *components))
       end
 
-      # XXX not doing the rest of this stuff
-      return
-
-      # All the rooms have been loaded, let's connect them
-      @rooms_by_vnum = {}
-
-      exits = []
-      @entities_by_type[:room].each do |room|
-        @rooms_by_vnum[room.get(:vnum)] = room
-        exits.push(*room.get_component(:exit, true))
-      end
-      exits.each do |ex|
-        ex.set(:room_id, @rooms_by_vnum[ex.get(:to_vnum)].id)
+      # resolve all of the links
+      @links.each do |ref,dest|
+        src = ref.resolve(dest)
+        src.set(*ref.component_field, dest.ref)
       end
     end
     attr_accessor :base_dir
@@ -129,10 +127,10 @@ module World
       @entities_by_type[type.to_sym].to_enum
     end
 
-    # find an entity by vid
-    def by_vid(vid)
-      @entities.find { |e| e.get(:ident, :vid) == vid } or
-          raise UnknownVid, "unknown vid; #{vid.inspect}"
+    # find an entity by virtual id
+    def by_virtual(virtual)
+      @entities.find { |e| e.get(:ident, :virtual) == virtual} or
+          raise UnknownVirtual, "unknown virtual; #{virtual.inspect}"
     end
 
     # Look up entities by id

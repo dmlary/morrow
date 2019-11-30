@@ -1,155 +1,53 @@
 ---
-# identity; fields used to identify/refer to an entity
-- name: ident
+- name: virtual
   fields:
-    vid:
-    keywords: []
+    value:    # human-readable value to identify this object; used internally
 
-- name: loaded
-  fields:
-    source:
-
-- name: location
-  fields:
-    value:
-- name: command_queue
+- name: keywords
   meta:
-    save: false
-  # XXX need some way to mark which components should not be saved when to_yaml
-  # is called.
-  #
-  # This could be implemented by prepending
-  #     Psych::Visitors::YAMLTree.emit_coder
+    type: Array   # XXX not supported
   fields:
-    value:
-    blocked_until:
-- name: config_options
-  fields:
-    color: true
-    coder: false
+    value: []   # Array of words a player may use to identify this Entity
 
-# An array of entity ids
+# This holds other entities
 - name: container
   fields:
-    value: []
+    contents: []
 
-# XXX need to move keywords out of here
-# if an item does not have a long description, it is not visable in a room
-# contents
-# if an item does not have a short description, it is not visible in a
-# container?
-# both have contents managed by contents
-
-# Can we refer to something that is not viewable?
-#
-# Is there any entity in the system that is not viewable?
-# Yes! Respawn Lists!  So it makes sense to split keywords out from viewable.
-# However, keywords/vid are an optional mechanism to make referring to Entities
-# simplier.  We're probably not going to define individual keywords & vids for
-# every entity, so how much does this benefit the system?
-
-# Guidance:
-#   * builder should not have to enter data more than once
-#
-# Are VID's only used for instanciated Entities?
-#
-# So we have an NPC Entity, there's a SpawnList Entity.
-#
-# How do we define a spawn list?
-#   * How do we specify that mob M spawns in room R
-#     - Room R has a SpawnList Component that contains mob M
-#     - at spawn time M is cloned, then placed in R
-#   * how do we specify the items that load in M's inventory
-#   * how do we specify the items that load on M's equipment slots
-#   * how to we specify a generic bag B, loading on M's inventory?
-#   * how to we specific that bag B is closed? locked?
-#   * how do we specify the contents of bag B when it's loaded on M in room R?
-#   * how do we specify that M spawns in room R, and M' (with slightly
-#     different inventory) spawns in R+1?
-#
-# If a Room can have a SpawnList, then an NPC, and an Item may also have
-# SpawnLists.
-#   * Bag that daily spawns a loaf of bread, until the bag is full
-#   * Waterskin that spawns water?  (this is different?  Maybe?)
-#     * Maybe this leads to a generalization of SpawnList
-#     * A SpawnList is some generic modification to the parent Entity on some
-#       time-scale
-#  * Don't have a good usecase for NPC that spawns things regularly
-#
-# Let's start specifically; I need a NpcTemplate that can have stat ranges, and
-# a SpawnList.  From this Template a new NPC is spawned, and placed somewhere.
-#
-# Which takes less data?  NpcTemplate contains a SpawnList that is it's
-# inventory (with probabilities).  Then Room SpawnLists contain only
-# NpcTemplates and Item(Templates)s.  If you need a specific version of that
-# Npc with a different loot table, you have to duplicate the NpcTemplate, and
-# specify the loot table.  Or, each SpawnList entry contains a specific loot
-# table.
-#
-# Nope, SpawnList Entry should allow overriding of templates
-#
-# room:
-#   spawn_list:
-#   - template: wombat
-#   - template: wombat
-#     loot_table: !ref rich_wombat
-#
-#
-#
-# item:
-#   viewable:
-#     short: a small cloth bag
-#     long: a small cloth bag rests on the ground, collecting dust
-#   referrable:
-#     keywords: [small, bag, cloth]
-#     # XXX can keywords be autopopulated from short & long
-#     vid: item-small-bag
-#
-# room:
-#   load_list:
-#   - item: item-small-bag
-#     contents:
-#     - item: healing-potion-i
-#     - item: [gold, 10]
-# npc:
-#   loot_table:
-#   - item: [gold, 100..300]
-#   - item: item-potion-healing-1
-#     prob: 0.2
-#   - item: item-bag-small-1
-#     prob: 0.1
-#     contents:
-#     - item: 
-#
-# load_list:
-# - entity: <ref/vid>
-#   frequency: <time>; default inherit
-#   prob: <probability>
-#   limit: <max>; default 1
-#   load_list: <default to entity, but may be overridden>
-#   location: <default to contents, should be component?>
-#
-# npc:
-#   viewable:
-#     short: a guardsman
-#     long: A guardsman stands here, watching the area.
-#   load_list:
-#   - entity: item-armor-chest
-#     location: chest
-#   - entity:
-#
-# XXX How do we denote equipment positions as a Component?
-#
-
-# This thing can be looked at
+# This is viewable in world
 - name: viewable
   fields:
     short:
     long:
-    description:
-- name: passage
-  fields:
-    dest:
 
-# No default value for a reference; prevents odd things where invalid rooms
-# lead to the void, or everything loads on Puff.
+# A list of exits from the current entity (room)
+- name: exits
+  fields:
+    value: []
+
+# where this entity goes; be it an exit, a portal
+- name: destination
+  fields:
+    value:      # reference
+
+# per-player configuration
+- name: player_config
+  fields:
+    color: false
+    coder: false
+
+# Used internally to help resolve references; the loaded component tracks as
+# much detail as possible about where an Entity was loaded from.
+- name: loaded
+  fields:
+    path:
+
+# Questionable
+
+- name: location
+  meta:
+    save: false
+  fields:
+    value:
+
+
