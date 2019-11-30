@@ -2,7 +2,7 @@ module Command::Look
   extend World::Helpers
 
   Command.register('look') do |actor, keyword|
-    room = get_room(actor) or fault "actor has invalid location", actor
+    room = actor.get(:location) or fault "actor has no location", actor
 
     target = if keyword.nil? or keyword.empty?
       room
@@ -17,7 +17,7 @@ module Command::Look
     case target.type
     when :room
       show_room(actor, target)
-    when :player, :npc
+    when :player_char, :char
       show_char(actor, target)
     else
       fault "look #{keyword}", target
@@ -27,56 +27,37 @@ module Command::Look
 
   class << self
     def show_room(actor, room)
-      room = World.by_id(room)
+      return room.pretty_inspect if actor.get(:player_config, :coder)
 
-      return room.pretty_inspect if actor.get(:config_options, :coder)
-
-      # exits = room.get_component(:exit, true).map { |e| e.get(:direction) }
-      # exits = [ 'none' ] if exits.empty?
-      exits = [ 'none' ]
+      exits = room.get(:exits).map do |p_ref|
+        passage = p_ref.resolve
+        name = exit_name(passage)
+        closed = passage.get(:closable, :closed)
+        desc = (closed ? '[ &K%s&0 ]' : '%s') % name
+        [ name, desc ]
+      end.sort_by { |n,d| d }.map(&:last)
 
       view = room.get_component(:viewable)
 
-      buf = "&W%s&0\n" % view.get(:short)
-      buf << view.get(:description)
+      buf = "&W%s&0\n" % room.get(:viewable, :short)
+      buf << room.get(:viewable, :long)
       buf << "\n"
-      buf << "&CExits: %s&0" % exits.join(" ")
+      buf << "&WExits: &0%s&0" % exits.join(" ")
       buf << "\n"
 
-      # Loop through the contents of the room
-      World.by_id(room.get(:contents)) do |id, entity|
-        missing_entity(actor: actor, component: :contents, id: id) and
-            next unless entity
-
-        # Visualize yourself in a room-- wait, no, that's not what we're doing
-        next if entity == actor
-
-        if view = entity.get_component(:viewable)
-          buf << view.get(:long) or entity.pretty_inspect
-          buf << "\n"
-        end
-      end
       buf
     end
 
     def show_char(actor, target)
-      char = World.by_id(target)
-      return char.pretty_inspect if actor.get(:config_options, :coder)
+      return target.pretty_inspect if actor.get(:player_config, :coder)
 
-      view = char.get_component(:viewable)
-      buf  = ""
-
-      if desc = view.get(:description)
-        buf << desc
-        buf << "\n"
-      else
-        buf << "You see nothing special about them.\n"
-      end
+      buf = target.get(:viewable, :full)
+      buf << "\n"
 
       # XXX short is a <RACE>
       # XXX He/She/It is in <CONDITION>
-      buf << view.get(:short)
-      buf << " may be referred to as '&C%s&0'.\n" % view.get(:keywords).join('-')
+      buf << target.get(:viewable, :short)
+      buf << " may be referred to as '&C%s&0'.\n" % target.get(:keywords).join('-')
 
       # XXX equipment
     end

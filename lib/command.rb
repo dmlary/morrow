@@ -17,11 +17,13 @@ module Command
       @commands[name]
     end
 
-    def register(cmd, &handler)
-      @commands[cmd] = handler
+    def register(cmd, method=nil, &handler)
+      @commands[cmd] = block_given? ? handler : method
     end
   end
 end
 
 require_relative 'command/look'
 require_relative 'command/config'
+require_relative 'command/movement'
+require_relative 'command/act_obj'

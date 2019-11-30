@@ -11,7 +11,6 @@ class TelnetServer::Connection < EventMachine::Connection
     @handler = []
     @port, @host = Socket.unpack_sockaddr_in(get_peername)
     @last_recv = Time.now
-    @color = true
   end
 
   def inspect
@@ -72,7 +71,7 @@ class TelnetServer::Connection < EventMachine::Connection
   end
 
   def send_data(buf)
-    super(@color ? colorize(buf) : buf) if buf
+    super apply_colors(buf.to_s) if buf
   end
 
   COLOR_CODE_REGEX = Regexp.new(/&([0rgbcwypk&\.])/i)
@@ -86,11 +85,10 @@ class TelnetServer::Connection < EventMachine::Connection
     '&c' => '0;36', '&C' => '1;36',
     '&w' => '0;37', '&W' => '1;37',
     '&0' => '0' }
-  def colorize(buf)
+  def apply_colors(buf)
     buf.gsub(COLOR_CODE_REGEX) do |code|
       code = COLOR_MAP.keys.sample if code == '&.'
-      "\e[%sm" % [ COLOR_MAP[code] ]
+      active_handler.color? ? "\e[%sm" % [ COLOR_MAP[code] ] : ''
     end
   end
-
 end

@@ -7,18 +7,25 @@
 
 - type: passage
   components:
-  - viewable
+  - viewable:
+      short: a door
+      long: A door bars your way.
   - destination
 
 - type: char
   meta:
   components:
-  - viewable
+  - viewable:
+      short: a character
+      long: |-
+        You see nothing special about them.
   - container
   - location
+  - command_queue
 
 - type: object
   components:
+  - keywords
   - viewable
 
 - type: player_char
@@ -28,3 +35,4 @@
   - char
   components:
   - player_config
+  - connection

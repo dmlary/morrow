@@ -22,7 +22,7 @@ begin
     EventMachine.error_handler do |ex|
       TelnetServer.exceptions.push(ex)
       Helpers::Logging.log_exception(ex)
-      Pry.rescued(ex)
+      # Pry.rescued(ex)
     end
 
     begin
@@ -46,7 +46,7 @@ begin
       EventMachine::PeriodicTimer.new(0.25) { World.update }
 
       # Kick off a debugging thread
-      Thread.new { TelnetServer.pry }
+      Thread.new { World.pry }
 
       # Start the server
       TelnetServer.start('0.0.0.0', 1234)

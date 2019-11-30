@@ -142,12 +142,13 @@ class Entity
     # append any supplied components
     @components.push(*components.flatten)
 
-    @components.each { |c| c.entity_id = id; pp entity: id, c: c }
+    @components.each { |c| c.entity_id = id }
   end
   attr_reader :type, :components, :tag
 
   def add(*components)
     @components.push(*components)
+    components.each { |c| c.entity_id = id }
     self
   end
   alias << add

@@ -58,8 +58,12 @@ class Reference
     coder.scalar = full
   end
 
-  def resolve(source)
+  def resolve(source=nil)
     return World.by_id(@entity_id) if @entity_id
+
+    raise RuntimeError,
+        "cannot resolve relative reference, #{full}, without source" \
+        unless @area || source
 
     area = @area || source.get(:loaded, :path).split('/').first
     entity = World.by_virtual("#{area}/#{@type}/#{@virtual}")

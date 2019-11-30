@@ -116,8 +116,11 @@ module Component
       # pull some things from our class
       @type = self.class.type
 
+      @array_fields = []
+
       # manually deep-clone our values from the defaults
       @values = self.class.defaults.inject({}) do |h,(k,v)|
+        @array_fields << k if v.is_a?(Array)
         h[k] = v.clone
         h
       end
@@ -128,7 +131,7 @@ module Component
       # Set our values based on argument index
       values.zip(@values.keys).each do |value,key|
         raise TooManyValues, "failed on #{value.inspect}" if key.nil?
-        @values[key] = value
+        set(key, value)
       end
 
       # Parameters have higher precident than arguments
@@ -144,9 +147,16 @@ module Component
     # set(field=:value, value)
     def set(*args)
       field = (args.size == 1 ? :value : args.shift).to_sym
-      value = args.first
       raise InvalidField, field unless @values.has_key?(field)
-      @values[field] = value.is_a?(Entity) ? value.to_ref : value
+
+      value = args.first
+      value = value.ref if value.is_a?(Entity)
+
+      if @array_fields.include?(field)
+        @values[field] << value
+      else
+        @values[field] = value
+      end
       self
     end
 

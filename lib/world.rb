@@ -13,7 +13,9 @@ module World
     end
     attr_accessor(:extra)
   end
-  class InvalidVid < Fault; end
+  class InvalidVirtual < Fault; end
+
+  CARDINAL_DIRECTIONS = %w{ north south east west up down }
 
   extend Helpers::Logging
 
@@ -22,7 +24,9 @@ module World
   @entities_by_type = Hash.new { |h,k| h[k] = [] }
   @entities_by_component = Hash.new { |h,k| h[k] = [] }
 
-  @systems = []
+  @systems = {}
+
+  @exceptions = []
 
   @update_time = Array.new(3600, 0)
   @update_index = 0
@@ -30,6 +34,7 @@ module World
 
   class << self
     attr_reader :entities
+    attr_reader :exceptions
 
     # reset the internal state of the World
     def reset!
@@ -94,10 +99,10 @@ module World
             end
 
           # patch up ident.virtual for the area name & type (if necessary)
-          if component.type == :ident && virtual = component.get(:virtual)
+          if component.type == :virtual && virtual = component.get(:value)
             virtual = virtual.split('/').last
             full = "#{dir}/#{config[:type]}/#{virtual}"
-            component.set(:virtual, full)
+            component.set(:value, full)
           end
 
           component
@@ -117,7 +122,11 @@ module World
       # resolve all of the links
       @links.each do |ref,dest|
         src = ref.resolve(dest)
-        src.set(*ref.component_field, dest.ref)
+        if value = src.get(*ref.component_field) and value.is_a?(Array)
+          value << dest.ref
+        else
+          src.set(*ref.component_field, dest.ref)
+        end
       end
     end
     attr_accessor :base_dir
@@ -129,7 +138,7 @@ module World
 
     # find an entity by virtual id
     def by_virtual(virtual)
-      @entities.find { |e| e.get(:ident, :virtual) == virtual} or
+      @entities.find { |e| e.get(:virtual) == virtual} or
           raise UnknownVirtual, "unknown virtual; #{virtual.inspect}"
     end
 
@@ -202,6 +211,7 @@ module World
     # register_system - register a system to run during update
     #
     # Arguments:
+    #   ++name++  identifier for the system
     #   ++types++ List of Component types
     #   ++block++ block to run on entities with component types
     #
@@ -209,16 +219,16 @@ module World
     #   ++:all++ entities must have all ++types++
     #   ++:any++ entities must have at least one of ++types++
     #   ++:none++ entities must not have any of ++types++
-    def register_system(*types, &block)
+    def register_system(name, *types, &block)
       p = types.last.is_a?(Hash) ? types.pop : {}
-      @systems << [ types, block ]
+      @systems[name] = [ types, block ]
       info 'Registered system for %s' % [ types.inspect ]
     end
 
     # update
     def update
       start = Time.now
-      @systems.each do |types, block|
+      @systems.values.each do |types, block|
         @entities.each do |entity|
           comps = types.inject([]) do |o, type|
             found = entity.get_component(type, true)

@@ -3,7 +3,7 @@ module Command::Config
 
   Command.register('config') do |actor, rest|
     fault 'no :config_options found for actor', actor unless
-        config = actor.get_component(:config_options)
+        config = actor.get_component(:player_config)
 
     key, value = rest.split(/\s+/, 2) if rest
     if key
@@ -12,7 +12,7 @@ module Command::Config
               value =~ /^(true|on|false|off)(\s|$)/
       value = %w{ true on }.include?($1)
       config.set(key, value)
-      next "#{key} = #{value}"
+      next "&W#{key}&0 = &c#{value}&0\n"
     end
 
     fields = config.fields

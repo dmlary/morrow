@@ -32,3 +32,26 @@
   components:
   - keywords: up
   - destination: !ref room/void
+
+- type: passage
+  meta:
+    link:
+    - !ref room/limbo.exits
+  components:
+  - keywords: down
+  - closable:
+      closed: true
+  - destination: !ref room/void
+
+- type: object
+  components:
+  - virtual: bag
+  - viewable:
+      short: a small bag
+      long: a small bag is here collecting dust
+  - container:
+      max_volume: 10
+  - closable
+  - spawned:
+      in: !ref room/limbo
+      limit: 1

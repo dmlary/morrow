@@ -4,8 +4,6 @@
     value:    # human-readable value to identify this object; used internally
 
 - name: keywords
-  meta:
-    type: Array   # XXX not supported
   fields:
     value: []   # Array of words a player may use to identify this Entity
 
@@ -13,6 +11,16 @@
 - name: container
   fields:
     contents: []
+    max_volume:
+
+# location of the Entity; used in conjunction with the container component.  If
+# location is going to change, this Entity must first be removed from the old
+# entity's container contents list.
+- name: location
+  meta:
+    save: false
+  fields:
+    value:
 
 # This is viewable in world
 - name: viewable
@@ -35,6 +43,8 @@
   fields:
     color: false
     coder: false
+    compact: false
+    send_go_ahead: false
 
 # Used internally to help resolve references; the loaded component tracks as
 # much detail as possible about where an Entity was loaded from.
@@ -42,12 +52,29 @@
   fields:
     path:
 
-# Questionable
+# To denote something is closable/lockable and their current states
+- name: closable
+  fields:
+    closable: true
+    closed: true
+    lockable: false
+    locked: false
+    key:
 
-- name: location
-  meta:
-    save: false
+# Details for how an object is spawned
+- name: spawned
+  fields:
+    in: # reference to what entity in-which it should be spawned
+    limit: # maximum number of the item what can be spawned within entity
+
+# command queue for characters
+- name: command_queue
   fields:
     value:
 
+# connection for players
+- name: connection
+  fields:
+    value:
 
+# Questionable
