@@ -36,21 +36,11 @@ module Component
       # fields that later had a default specified by parameter.
       defaults = Hash[args.zip([])].merge(p).symbolize_keys
 
-      # Strip out the defaults that are References, these define the type of
-      # entity this field will reference.
-      refs = defaults.inject({}) do |out,(key,value)|
-        next unless value.is_a?(Reference)
-        out[key] = value
-        defaults[key] = nil
-        out
-      end
-
       klass = Class.new
       klass.include(InstanceMethods)
       klass.extend(ClassMethods)
       klass.instance_variable_set('@type', type)
       klass.instance_variable_set('@defaults', defaults)
-      klass.instance_variable_set('@refs', refs)
       @components[type] = klass
       klass
     end
@@ -59,7 +49,10 @@ module Component
     def import(config)
       [ config ].flatten.each do |type|
         type = type.deep_rekey { |k| k.to_sym }
-        define(type[:name], type[:fields] || {})
+        component = define(type[:name], type[:fields] || {})
+
+        type[:unique] = true unless type.has_key?(:unique)
+        component.instance_variable_set(:@unique, !!type[:unique])
       end
       self
     end
@@ -83,19 +76,14 @@ module Component
   end
 
   module ClassMethods
-    attr_reader :type, :defaults, :refs
+    attr_reader :type, :defaults
 
     def fields
       @defaults.keys
     end
 
-    # return [Entity type(s), component] for a given reference field
-    def ref(field)
-      types, component = @refs.has_key?(field) ?
-          @refs[field.to_sym].value : nil
-      types = types.is_a?(Array) ? types : [types]
-      types.map!(&:to_sym)
-      [ types, component && component.to_sym ]
+    def unique?
+      !!@unique
     end
 
     def inspect
@@ -111,8 +99,8 @@ module Component
     end
 
     # new(1,2,3,4)
-    # new(1,2, field3: 3, field4: 4)
-    def initialize(*values)
+    # new(field: 1, field2: 2, ...)
+    def initialize(arg=nil)
       # pull some things from our class
       @type = self.class.type
 
@@ -125,20 +113,30 @@ module Component
         h
       end
 
-      # pop off the parameters
-      p = values.last.is_a?(Hash) ? values.pop : {}
-
-      # Set our values based on argument index
-      values.zip(@values.keys).each do |value,key|
-        raise TooManyValues, "failed on #{value.inspect}" if key.nil?
-        set(key, value)
+      case arg 
+      when Hash
+        arg.each { |field, value| set(field, value.clone) }
+      when Array
+        # Set our values based on argument index
+        arg.zip(@values.keys).each do |value,key|
+          raise TooManyValues, "failed on #{value.inspect}" if key.nil?
+          set(key, value.clone)
+        end
+      when nil
+        # noop; no arguments.  If the caller wants to set a single field
+        # component to nil, they can use Hash, Array args, or call set
+        # directly.
+      else
+        set(arg.clone)
       end
-
-      # Parameters have higher precident than arguments
-      p.each { |field, value| set(field, value) }
     end
     attr_reader :type
     attr_accessor :entity_id
+
+    def clone
+      # deep cloning will happen in Component#initialize
+      Component.new(@type, @values)
+    end
 
     def entity
       World.by_id(@entity_id)
@@ -146,14 +144,14 @@ module Component
 
     # set(field=:value, value)
     def set(*args)
-      field = (args.size == 1 ? :value : args.shift).to_sym
+      field = (args.size == 1 ? @values.keys.first : args.shift).to_sym
       raise InvalidField, field unless @values.has_key?(field)
 
       value = args.first
       value = value.ref if value.is_a?(Entity)
 
       if @array_fields.include?(field)
-        @values[field] << value
+        @values[field].push(*value)
       else
         @values[field] = value
       end
@@ -176,6 +174,17 @@ module Component
 
     def values
       @values.values
+    end
+
+    def unique?
+      self.class.unique?
+    end
+
+    # return a hash of which fields have been modified from the defaults for
+    # this component
+    def changed_fields
+      defaults = self.class.defaults
+      @values.reject { |k,v| v == defaults[k] }
     end
 
     def_delegator :@values, :each_pair
@@ -203,89 +212,3 @@ module Component
     end
   end
 end
-
-__END__
-
-Datafile approach
-
-Component.define('name', ...)     # => #<Component::Type>
-Component.new('type', *values)    # => #<Component::Type:0x0000 ... >
-Component.save(components.yml)    # => true
-Component.load(components.yml)    # => true
-
-components.yml:
----
-- name: location
-  value: !ruby/class 'EntityId'
-- name: description
-  value: !ruby/class 'String'
-  default: 'empty description'
-- name: health
-  value:
-    max: 1
-    current: 1
-- name: name
-  value: !ruby/class 'String'
-- name: keywords
-  value: !ruby/class 'Array'
-- name: contents
-  value: !ruby/class 'Array'
-- name: exit
-  fields:
-  - direction
-  - location
-
-templates.yml:
----
-- name: character
-  components:
-  - health
-  - description
-  - keywords
-  - contents
-  - location
-- name: player
-  include:
-  - character
-  components:
-  - name
-  - title
-  - password
-- name: room
-  components:
-  - id
-  - title
-  - description
-  - contents
-
-player.yml
----
-entity_type: player
-components:
-- health:
-    max: 1000
-    value: 20
-- description: |
-    Cross-eyed, and smelling faintly of rotten fish, Arbus appears to be lost in
-    thought
-- keywords: arbus
-- name: arbus
-- contents: []
-- title: the damned
-- password: seaworthy
-- location: !entity/lookup 'room/1'
-
-area/rooms.yml
----
-- entity_type: room
-  components:
-  - id: 1
-  - title: The Void
-  - description: You are floating in nothing
-  - exit:
-      direction: north
-      location: !entity/lookup 'room/1'
-      ??? DOOR?!
-
-
-

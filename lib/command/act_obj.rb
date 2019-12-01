@@ -16,6 +16,9 @@ module Command::ActObj
       return "It is already open." if !target.get(:closable, :closed)
 
       target.set(:closable, :closed, false)
+
+      # XXX need to do the same to the door on the other side; both should be
+      # closable
       return "You open #{target.get(:viewable, :short)}"
     end
 

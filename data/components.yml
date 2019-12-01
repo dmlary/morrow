@@ -27,6 +27,7 @@
   fields:
     short:
     long:
+    format:   # :room, :object, :character
 
 # A list of exits from the current entity (room)
 - name: exits
@@ -71,6 +72,7 @@
 - name: command_queue
   fields:
     value:
+    block_until:
 
 # connection for players
 - name: connection
@@ -78,3 +80,12 @@
     value:
 
 # Questionable
+
+# affects on an entity
+- name: affect
+  unique: false
+  fields:
+    component:
+    field:
+    type:   # :set, :modify, :add
+    value:

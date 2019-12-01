@@ -22,13 +22,13 @@ begin
     EventMachine.error_handler do |ex|
       TelnetServer.exceptions.push(ex)
       Helpers::Logging.log_exception(ex)
+      World.exceptions.push(ex)
       # Pry.rescued(ex)
     end
 
     begin
       # Load all the things we need
       Component.import(YAML.load_file('./data/components.yml'))
-      Entity.import(YAML.load_file('./data/entities.yml'))
       World.load('./data/world')
 
       # Kick off the update thread

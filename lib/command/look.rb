@@ -12,15 +12,17 @@ module Command::Look
       match_keyword(keyword, room.get(:contents), actor.get(:contents))
     end
 
-    next "You do not see that here." unless target
+    next "You do not see that here." unless target &&
+        target.has_component?(:viewable)
 
-    case target.type
-    when :room
+    format = target.get(:viewable, :format)
+    case format
+    when "room"
       show_room(actor, target)
-    when :player_char, :char
+    when "character"
       show_char(actor, target)
     else
-      fault "look #{keyword}", target
+      fault "look #{keyword}", format, target
       "not implemented; look <thing>"
     end
   end

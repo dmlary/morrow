@@ -86,7 +86,9 @@ class TelnetServer::Connection < EventMachine::Connection
     '&w' => '0;37', '&W' => '1;37',
     '&0' => '0' }
   def apply_colors(buf)
-    buf.gsub(COLOR_CODE_REGEX) do |code|
+    # encoding is forced here because gsub complains about telnet IAC (\xff)
+    # when the encoding is UTF-8
+    buf.force_encoding("ASCII-8BIT").gsub(COLOR_CODE_REGEX) do |code|
       code = COLOR_MAP.keys.sample if code == '&.'
       active_handler.color? ? "\e[%sm" % [ COLOR_MAP[code] ] : ''
     end

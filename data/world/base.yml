@@ -1,0 +1,66 @@
+---
+# Entity templates used throughout the system.  Any entity can be used as a
+# template; these are just the most generic of them.
+- components:
+  - virtual: room
+  - viewable:
+      format: room
+      short: An indescribable room
+      long: |-
+        There is space here.
+  - exits
+  - container
+
+- template: room
+  components:
+  - virtual: room/void
+  - viewable:
+      short: The Void
+      long: You are floating in nothing
+
+- components:
+  - virtual: character
+  - viewable:
+      format: character
+      short: a non-descript character
+      long: |-
+        You see nothing special about them.
+  - container
+  - command_queue
+
+- template: character
+  components:
+  - virtual: player
+  - player_config
+  - connection
+
+- template: character
+  components:
+  - virtual: race/human
+  - viewable:
+      short: a human
+
+- template: character
+  components:
+  - virtual: race/elf
+  - viewable:
+      short: an elf
+  - affect: [ attributes, strength, modify, -2 ]
+  - affect: [ attributes, dexterity, modify, 1 ]
+  - affect: [ attributes, wisdon, modify, 1 ]
+
+- components:
+  - virtual: object 
+  - viewable:
+      format: object
+      short: an object
+      long: an object is sitting here.
+
+- components:
+  - virtual: door/closed
+  - keywords: door
+  - viewable:
+      format: object
+      short: a door
+      long: a door bars your way.
+  - destination:

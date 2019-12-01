@@ -1,11 +1,14 @@
 require 'yaml'
-require 'facets/hash/deep_rekey'
+require 'find'
+require 'forwardable'
 require_relative 'helpers'
 require_relative 'component'
 require_relative 'entity'
 require_relative 'reference'
+require_relative 'entity_manager'
 
 module World
+
   class Fault < ::RuntimeError
     def initialize(msg, *extra)
       super(msg)
@@ -13,17 +16,13 @@ module World
     end
     attr_accessor(:extra)
   end
-  class InvalidVirtual < Fault; end
+  class UnknownVirtual < Fault; end
 
   CARDINAL_DIRECTIONS = %w{ north south east west up down }
 
   extend Helpers::Logging
 
-  @entities = []
-  @entities_by_tag = Hash.new { |h,k| h[k] = [] }
-  @entities_by_type = Hash.new { |h,k| h[k] = [] }
-  @entities_by_component = Hash.new { |h,k| h[k] = [] }
-
+  @entity_manager = {}
   @systems = {}
 
   @exceptions = []
@@ -33,30 +32,14 @@ module World
   @update_frequency = 0.25 # seconds
 
   class << self
-    attr_reader :entities
-    attr_reader :exceptions
+    extend Forwardable
+    attr_reader :exceptions, :entity_manager
+    def_delegators :@entity_manager, :entity_from_template, :entities
 
     # reset the internal state of the World
     def reset!
-      @entities.clear
-      @entities_by_tag.clear
-      @entities_by_type.clear
+      @entity_manager.clear
       @systems.clear
-    end
-
-    # new_entity - allocate a new entity, add it to the world, return it's ID
-    #
-    # Arguments:
-    #   ++type++ Entity type
-    #
-    # Parameters:
-    #   ++:tag++ Tag for this entity
-    #
-    # Returns:
-    #   Entity::Id
-    def new_entity(*args)
-      entity = Entity.new(*args)
-      add_entity(entity)
     end
 
     # add_entity - add an entity to the world
@@ -67,10 +50,7 @@ module World
     # Returns:
     #   Entity::Id
     def add_entity(entity)
-      @entities << entity
-      @entities_by_type[entity.type] << entity if entity.type
-      @entities_by_tag[entity.tag] << entity if entity.tag
-      entity.id
+      @entity_manager.add(entity)
     end
 
     # load the world
@@ -79,133 +59,23 @@ module World
     #   ++dir++ directory containing world
     #
     # Returns: self
-    def load(dir)
-      @links = []
-      @base_dir = dir
-
-      entities = try_load('limbo/rooms.yml') or return
-      dir = 'limbo'
-
-      entities.each do |config|
-        components = config[:components].map do |comp_config|
-          component = case comp_config
-            when Hash
-              Component.new(*comp_config.flatten)
-            when String, Symbol
-              Component.new(comp_config)
-            else
-              raise TypeError,
-                  "unsupported component config type: #{comp_config.inspect}"
-            end
-
-          # patch up ident.virtual for the area name & type (if necessary)
-          if component.type == :virtual && virtual = component.get(:value)
-            virtual = virtual.split('/').last
-            full = "#{dir}/#{config[:type]}/#{virtual}"
-            component.set(:value, full)
-          end
-
-          component
-        end
-
-        # add the loaded component stating where we came from
-        components << Component.new(:loaded, path: 'limbo/rooms.yml')
-
-        entity = Entity.new(config[:type], *components)
-        add_entity(entity)
-
-        [(config[:meta] || {})[:link]].flatten.compact.each do |ref|
-          @links << [ ref, entity ]
-        end
+    def load(base)
+      @entity_manager = EntityManager.new
+      Find.find(base) do |path|
+        next if File.basename(path)[0] == '.'
+        @entity_manager.load(path) if FileTest.file?(path)
       end
-
-      # resolve all of the links
-      @links.each do |ref,dest|
-        src = ref.resolve(dest)
-        if value = src.get(*ref.component_field) and value.is_a?(Array)
-          value << dest.ref
-        else
-          src.set(*ref.component_field, dest.ref)
-        end
-      end
-    end
-    attr_accessor :base_dir
-
-    # get an enum for entities with a specific type
-    def by_type(type)
-      @entities_by_type[type.to_sym].to_enum
+      @entity_manager.resolve_deferred!
     end
 
     # find an entity by virtual id
     def by_virtual(virtual)
-      @entities.find { |e| e.get(:virtual) == virtual} or
-          raise UnknownVirtual, "unknown virtual; #{virtual.inspect}"
+      @entity_manager.entity_by_virtual(virtual)
     end
 
-    # Look up entities by id
-    #
-    # Arguments:
-    #   ++arg++ entity id, entity or an Array of the two
-    #   ++block++ optional block to call with id & entity if arg is Array
-    #
-    # Notes:
-    #   If called with a block, { |id, entity| ... }, entity will be nil when
-    #   the id provided does not reference a valid Entity.  The caller must
-    #   handle this case, and call World::Helpers.missing_entity() with the
-    #   appropriate context for the entity id.
-    #
-    # Usage:
-    #   World.by_id(nil)          # => nil
-    #   World.by_id(2131)         # => entity
-    #   World.by_id(entity)       # => entity
-    #
-    #   World.by_id([nil])        # => [ ]
-    #   World.by_id([2131])       # => [ entity ]
-    #   World.by_id([entity])     # => [ entity ]
-    #   World.by_id(2131) { |id,e| ... }     # yield(id, e)
-    #   World.by_id(entity) { |id,e| ... }   # yield(id, e)
-    def by_id(arg, &block)
-      raise ArgumentError, 'block not supported without Array argument' if
-          block and !arg.is_a?(Array)
-
-      case arg
-      when nil
-        nil
-      when Integer
-        if entity = ObjectSpace._id2ref(arg)
-          block ? block.call(entity.id, entity) : entity
-        end
-      when Entity
-        if entity = @entities_by_id[arg.id]
-          block ? block.call(entity.id, entity) : entity
-        end
-      when Array
-        if block
-          arg.delete_if do |id|
-            next true if id.nil?
-            if entity = by_id(id)
-              block.call(entity.id, entity)
-              false
-            else
-              # caller will report the entity as missing because they have more
-              # context
-              block.call(id, nil)
-              true
-            end
-          end
-        else
-          out = []
-          arg.delete_if do |id|
-            next true if id.nil?
-            entity = by_id(id) or (missing_entity(id: id); next true)
-            out << entity if entity
-            false
-          end
-          out
-        end
-      else
-        raise ArgumentError, "unsupported arg: #{arg.inspect}"
-      end
+    # find an entity by Entity id
+    def by_id(id)
+      @entity_manager.entity_by_id(id)
     end
 
     # register_system - register a system to run during update
@@ -229,7 +99,7 @@ module World
     def update
       start = Time.now
       @systems.values.each do |types, block|
-        @entities.each do |entity|
+        entities.each do |entity|
           comps = types.inject([]) do |o, type|
             found = entity.get_component(type, true)
             break false if found.empty?
@@ -251,48 +121,6 @@ module World
       @update_index += 1
       @update_index = 0 if @update_index == @update_time.size
       true
-    end
-
-    private
-
-    def try_load(*path)
-      filename = File.expand_path(File.join(*path), @base_dir)
-      return nil unless File.exists?(filename) 
-      data = YAML.load_file(filename)
-
-      if data.is_a?(Array)
-        data.map { |v| v.is_a?(Hash) ? v.deep_rekey { |k| k.to_sym } : v }
-      elsif data.is_a?(Hash)
-        data.deep_rekey { |k| k.to_sym }
-      else
-        data
-      end
-    end
-
-    # traverse all Components, and resolve all Reference instances
-    def resolve_references
-      @entities.each do |entity|
-        entity.components.each do |component|
-          component.each_pair do |key, ref|
-            next unless ref.is_a?(Reference)
-
-            # Resolution steps
-            # * determine the Entity type this reference is for
-            # * Using Entity type's resolution to look up an entity of this
-            #   type
-
-            # Grab the type & destination component from the class.  Allow the
-            # type to be overridden by the reference itself ([<type>/]value)
-            types, comp = component.class.ref(key)
-            m = ref.value.match(%r{^(?:(?<type>.*)/)?(?<value>.*?)$})
-            types = [m[:type]] if m[:type]
-
-            entity = find_entity(m[:value], type: types)
-
-            binding.pry
-          end
-        end
-      end
     end
   end
 end

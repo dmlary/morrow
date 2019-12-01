@@ -1,4 +1,5 @@
 require 'yaml'
+require_relative 'helpers/psych'
 
 module PsychYamlPruner
   def emit_coder(c,o)
@@ -18,9 +19,8 @@ class Reference
   Pattern = %r{
     \A
     (?:
-      (?<area>[^/]+)/
+      (?<area>[^/]+):
     )?
-    (?<type>[^/]+)/
     (?<virtual>[^\.]+)
     (?:\.
       (?<component>[^\.]+)
@@ -31,12 +31,13 @@ class Reference
     \Z
   }x
 
-  # Reference.new("area/type/name")
+  # Reference.new("area:type/name")
+  # Reference.new("type/name", source: path)
   # Reference.new(Entity)
-  def initialize(arg)
+  def initialize(arg, p={})
     case arg
     when String
-      parse_ref(buf)
+      parse_ref(arg)
     when Entity
       @entity_id = arg.id
       virtual = arg.get(:ident, :virtual) and parse_ref(virtual)
@@ -44,14 +45,14 @@ class Reference
       raise ArgumentError, "unsupported argument type: #{arg}"
     end
   end
-  attr_accessor :area, :type, :virtual, :component, :field
+  attr_accessor :area, :virtual, :component, :field
 
   # YAML-base initialization
   YAML.add_tag '!ref', self
   def init_with(coder)
     raise RuntimeError, "invalid reference: %s " %
         [ coder.send(coder.type).inspect ] unless coder.type == :scalar
-    parse_ref(coder.scalar.to_s)
+    parse_ref(coder.scalar.to_s, path: YAML.current_filename)
   end
 
   def encode_with(coder)
@@ -66,7 +67,7 @@ class Reference
         unless @area || source
 
     area = @area || source.get(:loaded, :path).split('/').first
-    entity = World.by_virtual("#{area}/#{@type}/#{@virtual}")
+    entity = World.by_virtual("#{area}:#{@virtual}")
     @entity_id = entity.id
     entity
   end
@@ -74,8 +75,8 @@ class Reference
   def full
     return nil unless @virtual
     out = ''
-    out << "#{@area}/" if @area
-    out << "#{@type}/#{@virtual}"
+    out << "#{@area}:" if @area
+    out << "#{@virtual}"
     out << ".#{@component}" if @component
     out << ".#{@field}" if @field
     out
@@ -83,7 +84,7 @@ class Reference
   alias to_s full
 
   def component_field
-    [ @component, @field || :value ] if @component
+    [ @component, @field ].compact if @component
   end
 
   def inspect
@@ -91,12 +92,17 @@ class Reference
   end
 
   private
-  def parse_ref(buf)
-    match = buf.match(Pattern) or raise InvalidReference, buf
-    @area = match['area']
-    @type = match['type']
+  def parse_ref(buf, path: nil)
+    match = buf.match(Pattern) or raise InvalidReference, buf, path
     @virtual = match['virtual']
     @component = match['component']
     @field = match['field']
+    unless @area = match['area']
+      # determine area from the path; going to just use the first word after
+      # world/ for right now
+      raise "ref '#{buf}', couldn't determine area from path, '#{path}'" unless
+          path =~ %r{world/([^/.]+)}
+      @area = $1
+    end
   end
 end

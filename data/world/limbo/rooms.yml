@@ -1,14 +1,7 @@
 ---
-- type: room
+- template: base:room
   components:
-  - virtual: void
-  - viewable:
-      short: The Void
-      long: You are floating in nothing
-
-- type: room
-  components:
-  - virtual: limbo
+  - virtual: room/limbo
   - viewable:
       short: Limbo
       long: |-
@@ -17,35 +10,26 @@
         darkness around you without any trace of edges or shadow.
            There is a "No Tipping" notice pinned to the darkness.
 
-- type: passage
-  meta:
-    link:
-    - !ref room/void.exits
+- link: !ref base:room/void.exits
   components:
   - keywords: up
   - destination: !ref room/limbo
 
-- type: passage
-  meta:
-    link:
-    - !ref room/limbo.exits
-  components:
-  - keywords: up
-  - destination: !ref room/void
-
-- type: passage
-  meta:
-    link:
-    - !ref room/limbo.exits
+- link: !ref room/limbo.exits
   components:
   - keywords: down
+  - destination: !ref base:room/void
+
+- template: base:door/closed
+  link: !ref room/limbo.exits
+  components:
+  - keywords: east
   - closable:
       closed: true
-  - destination: !ref room/void
+  - destination: !ref base:room/void
 
-- type: object
-  components:
-  - virtual: bag
+- components:
+  - virtual: object/bag
   - viewable:
       short: a small bag
       long: a small bag is here collecting dust

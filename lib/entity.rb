@@ -93,58 +93,14 @@ class Entity
     end
   end
 
-  def initialize(*args)
-    @components = []
+  def components
+    @components.clone.freeze
+  end
 
-    type, *components = args
-    p = components.last.is_a?(Hash) ? components.pop : {}
-    return if type.nil?
-
-    raise NotDefined, type unless template = Entity.get(type)
-    @type = type.to_sym
-    @tag = p[:tag]
-
-    # recursively include components from included types
-    seen = []
-    types = []
-    visit = template.includes.clone
-    while included_type = visit.pop
-      next if seen.include?(included_type)
-      seen << included_type
-
-      included_template = Entity.get(included_type) or
-          raise NotDefined,
-              'type=%s; included from %s' % [ included_type, @type ]
-
-      visit.unshift(*included_template.includes)
-      types.push(*included_template.components)
-    end
-
-    # add the components added by this template
-    types.push(*template.components)
-
-    # trim the types for any component types that were provided
-    provided = components.map(&:type)
-    types.delete_if { |type,_| provided.include?(type) }
-
-    # create all the components
-    @components = types
-        .uniq
-        .map do |type_and_defaults|
-      begin
-        Component.new(*type_and_defaults)
-      rescue Component::NotDefined
-        raise Component::NotDefined,
-            'type=%s; included from %s' % [ name, @type ]
-      end
-    end
-
-    # append any supplied components
-    @components.push(*components.flatten)
-
+  def initialize(*components)
+    @components = components.flatten
     @components.each { |c| c.entity_id = id }
   end
-  attr_reader :type, :components, :tag
 
   def add(*components)
     @components.push(*components)
@@ -155,8 +111,8 @@ class Entity
   alias id __id__
 
   def inspect
-    buf = "#<%s:%s:0x%010x tag=%s, components=[" %
-        [ self.class, type, id, tag.inspect ]
+    buf = "#<%s:0x%010x components=[" %
+        [ self.class, id, ]
     @components.each do |component|
       buf << "\n    #{component.inspect}"
     end
@@ -192,13 +148,11 @@ class Entity
     raise ArgumentError, "insufficient arguments" if args.size < 2
     raise ArgumentError, "too many arguments" if args.size > 3
 
-    type = args.first
-    field = args.size == 2 ? :value : args[1]
-    value = args.last
+    type = args.shift
 
     comp = get_component(type) or raise ComponentNotFound,
         "type=#{type} entity=#{self.inspect}"
-    comp.set(field, value)
+    comp.set(*args)
     self
   end
 
