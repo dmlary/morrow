@@ -5,7 +5,7 @@ class EntityManager::Loader::Yaml < EntityManager::Loader::Base
     end
   end
 
-  SUPPORTED_KEYS = %w{ template components link }
+  SUPPORTED_KEYS = %w{ base components link }
 
   def load(path)
     raw = YAML.load_file(path)
@@ -16,7 +16,7 @@ class EntityManager::Loader::Yaml < EntityManager::Loader::Base
         raise "unknown keys #{unknown_keys.join(',')} in #{definition.inspect}"
       end
 
-      templates = [definition["template"]].flatten.compact
+      base = [definition["base"]].flatten.compact
       components = definition["components"].map do |conf|
         case conf
         when String, Symbol
@@ -32,7 +32,7 @@ class EntityManager::Loader::Yaml < EntityManager::Loader::Base
 
       area = path =~ %r{/world/([^/.]+)} ? $1 : nil
 
-      @manager.create(template: templates, components: components,
+      @manager.define_entity(base: base, components: components,
           area: area, links: links)
     end
   end

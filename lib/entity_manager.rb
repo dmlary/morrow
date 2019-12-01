@@ -50,65 +50,121 @@ class EntityManager
     ObjectSpace._id2ref(id)
   end
 
-  def entity_from_template(*templates)
-    base = Entity.new
-    templates.flatten.compact.each do |virtual|
-      apply_template(base, entity_by_virtual(virtual))
+  # new_entity
+  #
+  # Create a new Entity instance based off other Entity instances.  An +other+
+  # may be an Entity instance, a Reference instance, or a String containing a
+  # virtual.  A new Entity instance is created, then each +others+ in order is
+  # merged to the Entity using `Entity#merge!`.
+  #
+  # Examples:
+  #   bare_entity = new_entity    # equivalent to Entity.new
+  #   player = new_entity('base:player', 'base:race/elf')
+  #   chest = new_entity('base:obj/chest/locked')
+  #
+  def new_entity(*others)
+    others.flatten.inject(Entity.new) do |base,other|
+      other = case other
+        when Entity
+          other
+        when Reference
+          other.resolve
+        when String, Symbol
+          entity_by_virtual(other)
+        else
+          raise ArgumentError, "unsupported other type: #{other.inspect}"
+        end
+
+      base.merge!(other)
     end
-    base
   end
 
-  def create(components: [], template: [], area: nil, links: [], defer: true)
-    # create our template entity
-    base = Entity.new
-
-    # Apply any templates we can find; if we fail to find one, throw the entity
-    # definition in the incomplete list for later resolution
-    base = begin
-      entity_from_template(template)
-    rescue UnknownVirtual => ex
+  # define_entity
+  #
+  # Used by EntityManager::Loader::* to create and add an Entity to the
+  # EntityManager.  This method supports deferred loading, so if a Reference
+  # does not resolve at the time this is called, it will be added to the
+  # deferred queue to be processed when #resolve! is called.
+  #
+  # If you're not a Loader, you probably want to use EntityManager#new_entity()
+  #
+  # Parameters:
+  #   components: Array of Hashes; Hash is { component_type: component_fields }
+  #   base: Array of virtuals to use as a base for this Entity
+  #   area: Name of the area to-which this Entity belongs
+  #   links: Array of References that should be updated to contain a Reference
+  #          to the new Entity when #resolve! is called
+  #   defer: set to false to disable deferring
+  #
+  # Returns:
+  #   Entity on success
+  #   nil on error
+  def define_entity(components: [], base: [], area: nil, links: [],
+      defer: true)
+    entity = begin
+      new_entity(base)
+    rescue UnknownVirtual
       if defer
-        # Patch up the template virtuals for the area name if it's absent
-        template.map! { |t| t =~ %r{^[^\/]+:} ? t : ("#{area}:" << t) }
-        deferred_entity_create(template: template, components: components,
-            area: area, links: links)
+        @deferred << [ :define_entity, template: template,
+            components: components, area: area, links: links ]
       end
+
       return nil
     end
 
-    # This entity will be the modifications we'll make to the template
-    modifications = Entity.new
-
-    # Now throw on all the other components
+    # Throw together an entity of just the components specified
+    mods = Entity.new
     components.each do |type, config|
       component = Component.new(type, config)
       if area and component.type == :virtual and virtual = component.get
         component.set(virtual.gsub(/^([^:]+:)?/, '%s:' % area))
       end
-      modifications.add(component)
+      mods << component
     end
 
-    # apply our modifications to the base
-    apply_template(base, modifications)
- 
-    add(base)
-    links.each { |ref| deferred_link(ref, base) }
-    base
+    # merge the modifications into our templated entity, and add it
+    entity.merge!(mods)
+    add(entity)
+
+    # add any linking to the deferred list
+    links.each do |ref|
+      raise ArgumentError, "Not a Reference: #{ref}" unless
+          ref.is_a?(Reference)
+      @deferred << [ :link, ref: ref, entity: entity ]
+    end
+
+    # return the entity
+    entity
   end
 
+  # add
+  #
+  # Add an Entity to the EntityManager.  If the EntityManager is being serviced
+  # by any System, this will make the Entity subject to that System.
+  #
+  # Arguments:
+  #   entity: an Entity
+  #
   def add(entity)
+    raise ArgumentError, "not an Entity: #{entity.inspect}" unless
+        entity.is_a?(Entity)
     @entities << entity
     entity
   end
 
-  def resolve_deferred!
-    info "resolving deferred entity creation & linking"
+  # resolve!
+  #
+  # Called after all #load() calls have been made; performs all deferred
+  # entity creation & linking.
+  #
+  def resolve!
+    info "resolving all entity references"
     loop do
       before = @deferred.size 
 
       @deferred.delete_if do |type, arg|
         case type
-        when :create
+        when :define_entity
           create(arg.merge(defer: false))
         when :link
           begin
@@ -125,48 +181,7 @@ class EntityManager
     end
 
     raise 'Failed to resolve all deferred items' unless @deferred.empty?
-    info "all entities created & linked"
-  end
-
-  private
-
-  def deferred_entity_create(cfg)
-    @deferred << [ :create, cfg ]
-  end
-
-  def deferred_link(ref, entity)
-    raise ArgumentError, "not a Reference: #{ref}" unless ref.is_a?(Reference)
-    @deferred << [ :link, { ref: ref, entity: entity } ]
-  end
-
-  def apply_template(out, template)
-    # out union template effectively, but a little nicer about defaults
-    template.components.each do |component|
-
-      if component.unique? && out.has_component?(component.type)
-        # This component is limited to 1 per-Entity, and the component already
-        # exists on the entity, so we'll take all the changes that have been
-        # made to the component on the template, and apply them to the output
-        # entity.
-        component.changed_fields.each do |field, value|
-
-          # XXX temporary special handing for arrays; we merge fields that are
-          # arrays, but this may go away when we encounter more Array fields in
-          # entities
-          if value.is_a?(Array)
-            out.get(component.type, field).push(*value).uniq!
-          else
-            out.set(component.type, field, value)
-          end
-        end
-      else
-        out.add(component.clone)
-      end
-    end
-  end
-
-  def virtual_in_area(virtual, area)
-    area ? virtual.gsub(/^([^:]+:)?/, '%s:' % area) : virtual
+    info "all entity references resolved successfully"
   end
 end
 

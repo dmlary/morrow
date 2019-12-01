@@ -44,6 +44,8 @@ module Command::ActObj
           .select { |e| e.has_component?(:closable) }
     end
   end
-  Command.register('open', method(:open_entity))
-  Command.register('close', method(:close_entity))
+
+  # Register the commands
+  Command.register('open', method: method(:open_entity))
+  Command.register('close', method: method(:close_entity))
 end

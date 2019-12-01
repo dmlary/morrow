@@ -23,24 +23,17 @@ module Component
     end
 
     # define a component type
-    def define(type, *args)
+    def define(type, fields: {}, unique: true)
+      raise ArgumentError, "fields must be a Hash" unless fields.is_a?(Hash)
       type = type.to_sym
       raise AlreadyDefined if @components.has_key?(type)
-
-      # pop off any parameters
-      p = args.last.is_a?(Hash) ? args.pop : {}
-
-      # our defaults/fields are a hash of field & default value pairs.  For
-      # arguments, we create a hash of field name (argument), and nil.  The
-      # parameters are then merged into that hash, overriding any argument
-      # fields that later had a default specified by parameter.
-      defaults = Hash[args.zip([])].merge(p).symbolize_keys
 
       klass = Class.new
       klass.include(InstanceMethods)
       klass.extend(ClassMethods)
       klass.instance_variable_set('@type', type)
-      klass.instance_variable_set('@defaults', defaults)
+      klass.instance_variable_set('@defaults', fields)
+      klass.instance_variable_set('@unique', unique)
       @components[type] = klass
       klass
     end
@@ -49,10 +42,9 @@ module Component
     def import(config)
       [ config ].flatten.each do |type|
         type = type.deep_rekey { |k| k.to_sym }
-        component = define(type[:name], type[:fields] || {})
-
         type[:unique] = true unless type.has_key?(:unique)
-        component.instance_variable_set(:@unique, !!type[:unique])
+        type[:fields] ||= {}
+        define(type[:name], fields: type[:fields], unique: type[:unique])
       end
       self
     end
@@ -105,6 +97,7 @@ module Component
       @type = self.class.type
 
       @array_fields = []
+      @modified = Set.new     # keep track of which fields have been modified
 
       # manually deep-clone our values from the defaults
       @values = self.class.defaults.inject({}) do |h,(k,v)|
@@ -146,6 +139,7 @@ module Component
     def set(*args)
       field = (args.size == 1 ? @values.keys.first : args.shift).to_sym
       raise InvalidField, field unless @values.has_key?(field)
+      @modified << field
 
       value = args.first
       value = value.ref if value.is_a?(Entity)
@@ -209,6 +203,10 @@ module Component
           @values.deep_rekey { |k| k.to_s }.reject { |k| k =~ /_id$/ }
         end
       end
+    end
+
+    def modified_fields
+      @modified.inject({}) { |o,k| o[k] = @values[k]; o }
     end
   end
 end

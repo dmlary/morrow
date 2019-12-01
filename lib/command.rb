@@ -1,6 +1,16 @@
 module Command
   class SyntaxError < ArgumentError; end
 
+  class Definition
+    def initialize(name, priority, wait, handler)
+      @name = name
+      @priority = priority.to_i
+      @wait = wait
+      @handler = handler
+    end
+    attr_reader :name, :priority, :handler, :wait
+  end
+
   @lock = Mutex.new
   @commands = {}
 
@@ -10,15 +20,39 @@ module Command
       return if buf.nil? or buf.empty?
       name, rest = buf.split(/\s+/, 2)
       handler = lookup_handler(name) or return "unknown command: #{name}\n"
-      handler.call(actor, rest)
+      handler.handler.call(actor, rest)
+
+      # XXX handle waitstate adjustments
     end
 
     def lookup_handler(name)
-      @commands[name]
+      @commands[name] || begin
+        pattern = /^#{name}/
+        @commands.values.select { |h| h.name =~ pattern }
+            .sort_by { |h| h.priority }
+            .last
+      end
     end
 
-    def register(cmd, method=nil, &handler)
-      @commands[cmd] = block_given? ? handler : method
+    # register
+    #
+    # Register a command to be used by players.  Command handler may be
+    # specified by the +block+ or the +method+ parameter.  The +wait+ parameter
+    # defaults to 0, but System::CommandQueue limits command execution speed to
+    # +World::PULSE+.
+    #
+    # Arguments:
+    #   cmd: name of the command
+    #   block: [optional] block-based command hander; see +method:+ parameter
+    #
+    # Parameters:
+    #   method: Proc; command handler; alternative to &block
+    #   priority: Integer; higher priority wins among commands with common
+    #             prefixes
+    #   wait: Float; wait-state implosed by running command
+    #   
+    def register(cmd, priority: 0, method: nil, wait: 0, &block)
+      @commands[cmd] = Definition.new(cmd, priority, wait, block || method)
     end
   end
 end

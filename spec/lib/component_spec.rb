@@ -16,38 +16,26 @@ describe Component do
       expect { Component.define('test') }
           .to raise_error(Component::AlreadyDefined)
     end
-    context 'a component composed of no values' do
+    context 'a component with no fields' do
       let(:comp) { Component.define(:test) }
       it 'will not have any fields' do
         expect(comp.fields).to be_empty
       end
     end
-    context 'a component composed of values' do
-      shared_examples 'has both fields' do
-        it 'will have fields for field_1 and field_2' do
-          expect(comp.fields).to contain_exactly(*%i{field_1 field_2})
-        end
+    context 'a component with fields' do
+      let(:comp) do
+        Component.define('test',
+            fields: {field_1: :pass, field_2: :also_pass})
       end
 
-      context 'without defaults' do
-        let(:comp) do
-          Component.define('test', 'field_1', 'field_2')
-        end
-        include_examples 'has both fields'
+      it 'will have fields for field_1 and field_2' do
+        expect(comp.fields).to contain_exactly(*%i{field_1 field_2})
       end
-
-      context 'with defaults' do
-        let(:comp) do
-          Component.define('test', field_1: :pass, field_2: :also_pass)
-        end
-        include_examples 'has both fields'
-
-        it 'will have :pass as the default for :field_1' do
-          expect(comp.defaults[:field_1]).to eq(:pass)
-        end
-        it 'will have :also_pass as the default for :field_2' do
-          expect(comp.defaults[:field_2]).to eq(:also_pass)
-        end
+      it 'will have :pass as the default for :field_1' do
+        expect(comp.defaults[:field_1]).to eq(:pass)
+      end
+      it 'will have :also_pass as the default for :field_2' do
+        expect(comp.defaults[:field_2]).to eq(:also_pass)
       end
     end
   end
@@ -62,35 +50,28 @@ describe Component do
     end
 
     context 'component with fields' do
-      it 'will set value to nil if no default provided' do
-        Component.define(:health, :max, :current)
-        h = Component.new(:health)
-        expect(h.get(:max)).to be_nil
-        expect(h.get(:current)).to be_nil
-      end
-
       context 'default values provided' do
         it 'will use the default values' do
-          Component.define(:health, max: 100, current: 10)
+          Component.define(:health, fields: {max: 100, current: 10})
           h = Component.new(:health)
           expect(h.get(:max)).to eq(100)
           expect(h.get(:current)).to eq(10)
         end
         it 'will assign unique instances of default values' do
-          Component.define(:inventory, value: [])
+          Component.define(:inventory, fields: { value: [] })
           a = Component.new(:inventory)
           b = Component.new(:inventory)
           expect(a.get.__id__).to_not eq(b.get.__id__)
         end
       end
       it 'will accept values as parameters' do
-        Component.define(:health, max: 100, current: 10)
+        Component.define(:health, fields: { max: 100, current: 10 })
         h = Component.new(:health, current: 0)
         expect(h.get(:max)).to eq(100)
         expect(h.get(:current)).to eq(0)
       end
       it 'will accept values as arguments' do
-        Component.define(:health, max: 100, current: 10)
+        Component.define(:health, fields: { max: 100, current: 10 })
         h = Component.new(:health, 50)
         expect(h.get(:max)).to eq(50)
         expect(h.get(:current)).to eq(10)
@@ -99,7 +80,7 @@ describe Component do
   end
 
   describe '#get(field=:value)' do
-    let (:comp) { Component.define(:test, value: :pass).new }
+    let (:comp) { Component.define(:test, fields: { value: :pass }).new }
 
     context 'when the field exists' do
       it 'will return the value' do
@@ -114,7 +95,9 @@ describe Component do
   end
 
   describe '#set(field=:value, value)' do
-    let (:comp) { Component.define(:test, value: :fail, other: :fail).new }
+    let (:comp) do
+      Component.define(:test, fields: { value: :fail, other: :fail }).new
+    end
     context 'when no field is supplied' do
       it 'will set the value' do
         comp.set(:pass)
@@ -196,6 +179,37 @@ describe Component do
       data = YAML.load(buf)
       Component.import(data)
       expect(Component.export).to eq(data)
+    end
+  end
+
+  describe '#clone' do
+    it 'will clone field values'
+  end
+
+  describe '#modified_fields' do
+    let(:component) do
+      Component.reset!
+      Component.define(:test, fields: { value: :default }).new
+    end
+
+    context 'when nothing has been modified' do
+      it 'will return an empty Hash' do
+        expect(component.modified_fields).to eq({})
+      end
+    end
+
+    context 'when a field is modified' do
+      it 'along with its value will be included in the results' do
+        component.set(:pass)
+        expect(component.modified_fields).to eq({value: :pass})
+      end
+    end
+
+    context 'when a field is set to the default value' do
+      it 'along with its value will be included in the results' do
+        component.set(:default)
+        expect(component.modified_fields).to eq({value: :default})
+      end
     end
   end
 end

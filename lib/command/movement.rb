@@ -2,7 +2,7 @@ module Command::Movement
   extend World::Helpers
 
   World::CARDINAL_DIRECTIONS.each do |dir|
-    Command.register(dir) do |actor|
+    Command.register(dir, priority: 1000) do |actor|
       traverse_passage(actor, dir)
     end
   end

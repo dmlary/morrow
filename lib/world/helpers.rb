@@ -36,7 +36,7 @@ module World::Helpers
         old.get(:container, :contents).delete(entity.ref) 
       end
     else
-      entity.add(Component.new(:location))
+      entity.add_component(Component.new(:location))
     end
 
     contents = dest.get(:container, :contents) or

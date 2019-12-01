@@ -1,4 +1,11 @@
 module Helpers
+  class Error < RuntimeError
+    def initialize(msg, *extra)
+      super(msg)
+      @extra = extra
+    end
+    attr_accessor(:extra)
+  end
 end
 
 require_relative 'helpers/logging'

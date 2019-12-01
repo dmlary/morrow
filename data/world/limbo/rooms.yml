@@ -1,5 +1,5 @@
 ---
-- template: base:room
+- base: !ref base:room
   components:
   - virtual: room/limbo
   - viewable:
@@ -20,7 +20,7 @@
   - keywords: down
   - destination: !ref base:room/void
 
-- template: base:door/closed
+- base: !ref base:door/closed
   link: !ref room/limbo.exits
   components:
   - keywords: east

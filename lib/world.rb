@@ -8,17 +8,8 @@ require_relative 'reference'
 require_relative 'entity_manager'
 
 module World
-
-  class Fault < ::RuntimeError
-    def initialize(msg, *extra)
-      super(msg)
-      @extra = extra
-    end
-    attr_accessor(:extra)
-  end
+  class Fault < Helpers::Error; end
   class UnknownVirtual < Fault; end
-
-  CARDINAL_DIRECTIONS = %w{ north south east west up down }
 
   extend Helpers::Logging
 
@@ -40,6 +31,10 @@ module World
     def reset!
       @entity_manager.clear
       @systems.clear
+    end
+
+    def new_entity(*others)
+      @entity_manager.new_entity(*others)
     end
 
     # add_entity - add an entity to the world
@@ -65,7 +60,7 @@ module World
         next if File.basename(path)[0] == '.'
         @entity_manager.load(path) if FileTest.file?(path)
       end
-      @entity_manager.resolve_deferred!
+      @entity_manager.resolve!
     end
 
     # find an entity by virtual id
@@ -101,7 +96,7 @@ module World
       @systems.values.each do |types, block|
         entities.each do |entity|
           comps = types.inject([]) do |o, type|
-            found = entity.get_component(type, true)
+            found = entity.get_components(type)
             break false if found.empty?
             o.push(*found)
           end or next
@@ -125,5 +120,6 @@ module World
   end
 end
 
+require_relative 'world/constants'
 require_relative 'world/helpers'
 World.extend(World::Helpers)

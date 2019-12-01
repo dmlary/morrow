@@ -1,6 +1,6 @@
 ---
-# Entity templates used throughout the system.  Any entity can be used as a
-# template; these are just the most generic of them.
+# Base Entities used throughout the system.  Any Entity may be used as the base
+# for another Entity, these are just the most generic among them.
 - components:
   - virtual: room
   - viewable:
@@ -11,7 +11,7 @@
   - exits
   - container
 
-- template: room
+- base: !ref room
   components:
   - virtual: room/void
   - viewable:
@@ -28,19 +28,19 @@
   - container
   - command_queue
 
-- template: character
+- base: !ref character
   components:
   - virtual: player
   - player_config
   - connection
 
-- template: character
+- base: !ref character
   components:
   - virtual: race/human
   - viewable:
       short: a human
 
-- template: character
+- base: !ref character
   components:
   - virtual: race/elf
   - viewable:

@@ -2,8 +2,10 @@
 module Helpers::Psych
   module ClassPrependMethods
     def load(*args)
+      @loading[Thread.current] ||= []
       begin
-        (@loading[Thread.current] ||= []) << args.last[:filename]
+        @loading[Thread.current].push(args.last.is_a?(Hash) ?
+            args.last[:filename] : nil)
         super(*args)
       ensure
         @loading[Thread.current].pop

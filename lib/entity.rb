@@ -1,114 +1,44 @@
-require 'ostruct'
+require_relative 'helpers'
 
 class Entity
-  class NotDefined < ArgumentError; end
-  class AlreadyDefined < ArgumentError; end
-  class ComponentNotFound < ArgumentError; end
-  class FieldNotFound < ArgumentError; end
+  class Error < Helpers::Error; end
+  class DuplicateUniqueComponent < Error; end
+  class ComponentNotFound < Error; end
   Id = Integer
 
-  @types ||= {}
-
-  class << self
-    def reset!
-      @types.clear
-    end
-
-    # define a type
-    #
-    # Arguments:
-    #   Array - an array of component types
-    #
-    # Parameters:
-    #   ++:components++ Array of component types, or hash of component/default
-    #   ++:includes++ Array of entity types to include
-    #
-    def define(type, *args)
-      type = type.to_sym
-      raise AlreadyDefined, type if @types.has_key?(type)
-
-      p = args.last.is_a?(Hash) ? args.pop : {}
-      out = OpenStruct.new(components: [], includes: [])
-
-      # handle the includes first, they are easy
-      out.includes.push(*[p[:include]].flatten.compact.map(&:to_sym))
-
-      # components = [
-      #   [ type, default ]
-      # ]
-
-      # for all the arguments, we're just adding components without default
-      # values, so add them to the components list as arrays of a single
-      # element (the type as a symbol).
-      out.components.push(*args.map { |a| [ a.to_sym ] })
-
-      # process the components parameter by type
-      if p[:components].is_a?(Hash)
-        # key/value pairs are type & defaults.  Add them as pairs to the
-        # components
-        p[:components].each_pair do |type, defaults|
-          out.components.push([type.to_sym, defaults])
-        end
-      elsif p[:components].is_a?(Array)
-        # if we got an array, the contents may be an array of types, or a hash
-        # of type/defaults
-        p[:components].each do |component|
-          case component
-          when String, Symbol
-            out.components.push([component.to_sym])
-          when Hash
-            name, default = component.first
-            component = [ name.to_sym ]
-            if default.is_a?(Array)
-              component.push(*default)
-            else
-              component.push(default)
-            end
-            out.components.push(component)
-          else
-            raise ArgumentError, "unsupported type #{component.inspect}"
-          end
-        end
-      elsif p.has_key?(:components)
-        # same if we only got a single argument
-        out.components.push([p[:components].to_sym])
-      end
-      @types[type] = out
-      out
-    end
-
-    def get(type)
-      @types[type.to_sym]
-    end
-
-    def import(data)
-      [data].flatten.each do |entity|
-        entity = entity.symbolize_keys
-        define(entity.delete(:type), entity)
-      end
-    end
-
-    def types
-      @types.keys
-    end
+  def initialize(*components, tags: [])
+    @components = []
+    components.flatten.each { |c| add_component(c) }
   end
 
   def components
     @components.clone.freeze
   end
 
-  def initialize(*components)
-    @components = components.flatten
-    @components.each { |c| c.entity_id = id }
-  end
-
-  def add(*components)
-    @components.push(*components)
-    components.each { |c| c.entity_id = id }
+  def add_component(*components)
+    components.flatten.each do |component|
+      raise DuplicateUniqueComponent.new("component already present in entity",
+          self, component) if
+              component.unique? and has_component?(component.type)
+      @components << component
+      component.entity_id = id
+    end
     self
   end
-  alias << add
+  alias << add_component
+
+  def rem_component(*components)
+    components = components.flatten
+    @components.reject! { |c| components.include?(c) }
+    self
+  end
+
   alias id __id__
+
+  # Get a Reference to this entity
+  def ref
+    @ref ||= Reference.new(self)
+  end
 
   def inspect
     buf = "#<%s:0x%010x components=[" %
@@ -119,20 +49,18 @@ class Entity
     buf << "]>"
   end
 
-  def remove(*components)
-    @components.reject! { |c| components.include?(c) }
-    self
+  def get_component(type)
+    found = get_components(type)
+
+    raise MultipleInstancesFound,
+        "multiple instances of component #{type} found in #{entity}; " +
+        "consider using Entity#get_components() instead" if found.size > 1
+
+    found.first
   end
 
-  def get_component(type, multiple=false)
-    return @components.select { |c| type.include?(c.type) } if
-        type.is_a?(Array)
-
-    type = type.to_sym
-
-    multiple == false ?
-      @components.find { |c| c.type == type } :
-      @components.select { |c| c.type == type }
+  def get_components(type)
+    @components.select { |c| c.type == type }
   end
 
   # set a given field of a component to the supplied value
@@ -148,7 +76,7 @@ class Entity
     raise ArgumentError, "insufficient arguments" if args.size < 2
     raise ArgumentError, "too many arguments" if args.size > 3
 
-    type = args.shift
+    type = args.shift.to_sym
 
     comp = get_component(type) or raise ComponentNotFound,
         "type=#{type} entity=#{self.inspect}"
@@ -177,8 +105,22 @@ class Entity
     coder['components'] = @components
   end
 
-  # Get a Reference to this entity
-  def ref
-    @ref ||= Reference.new(self)
+  # Entity
+  def merge!(*others)
+    others.flatten.compact.each do |other|
+      raise ArgumentError, 'other must be an Entity' unless
+          other.is_a?(Entity)
+
+      other.components.each do |theirs|
+        if theirs.unique? && mine = get_component(theirs.type)
+          theirs.modified_fields.each do |field, value|
+            mine.set(field, value)
+          end
+        else
+          add_component(theirs.clone)
+        end
+      end
+    end
+    self
   end
 end
