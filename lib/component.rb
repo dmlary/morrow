@@ -97,7 +97,7 @@ module Component
       @type = self.class.type
 
       @array_fields = []
-      @modified = Set.new     # keep track of which fields have been modified
+      @modified = {}
 
       # manually deep-clone our values from the defaults
       @values = self.class.defaults.inject({}) do |h,(k,v)|
@@ -108,27 +108,27 @@ module Component
 
       case arg 
       when Hash
-        arg.each { |field, value| set(field, value.clone) }
+        arg.each { |field, value| set(field, value) }
       when Array
         # Set our values based on argument index
         arg.zip(@values.keys).each do |value,key|
           raise TooManyValues, "failed on #{value.inspect}" if key.nil?
-          set(key, value.clone)
+          set(key, value)
         end
       when nil
         # noop; no arguments.  If the caller wants to set a single field
         # component to nil, they can use Hash, Array args, or call set
         # directly.
       else
-        set(arg.clone)
+        set(arg)
       end
     end
     attr_reader :type
     attr_accessor :entity_id
 
     def clone
-      # deep cloning will happen in Component#initialize
-      Component.new(@type, @values)
+      # when cloning the Component, we'll clone any value that isn't frozen
+      Component.new(@type, @values.values.map { |v| v.frozen? ? v : v.clone })
     end
 
     def entity
@@ -139,7 +139,8 @@ module Component
     def set(*args)
       field = (args.size == 1 ? @values.keys.first : args.shift).to_sym
       raise InvalidField, field unless @values.has_key?(field)
-      @modified << field
+
+      @modified[field] = true   # profiled; faster than using a Set
 
       value = args.first
       value = value.ref if value.is_a?(Entity)
@@ -147,6 +148,11 @@ module Component
       if @array_fields.include?(field)
         @values[field].push(*value)
       else
+        # small memory reduction move here; string values are frozen
+        # XXX need to re-examine this at some point; is it worth the weirdness
+        # here, and I don't feel like this along with #clone interact
+        # correctly.
+        value = value.clone.freeze if value.is_a?(String) && !value.frozen?
         @values[field] = value
       end
       self
@@ -206,7 +212,7 @@ module Component
     end
 
     def modified_fields
-      @modified.inject({}) { |o,k| o[k] = @values[k]; o }
+      @modified.keys.inject({}) { |o,k| o[k] = @values[k]; o }
     end
   end
 end

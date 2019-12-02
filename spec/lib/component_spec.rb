@@ -76,6 +76,23 @@ describe Component do
         expect(h.get(:max)).to eq(50)
         expect(h.get(:current)).to eq(10)
       end
+
+      context 'with a frozen String value for the field' do
+        it 'will not clone the String' do
+          Component.define(:test, fields: { value: nil })
+          str = "frozen".freeze
+          c = Component.new(:test, str)
+          expect(c.get.__id__).to eq(str.__id__)
+        end
+      end
+      context 'with an unfrozen String value for the field' do
+        it 'will clone the String' do
+          Component.define(:test, fields: { value: nil })
+          str = "frozen"
+          c = Component.new(:test, str)
+          expect(c.get.__id__).to_not eq(str.__id__)
+        end
+      end
     end
   end
 
@@ -166,6 +183,7 @@ describe Component do
       end
     end
   end
+
   describe 'export' do
     it 'will export a structure that matches imported components' do
       buf =<<~END

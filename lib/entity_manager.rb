@@ -105,7 +105,7 @@ class EntityManager
       new_entity(base)
     rescue UnknownVirtual
       if defer
-        @deferred << [ :define_entity, template: template,
+        @deferred << [ :define_entity, base: base,
             components: components, area: area, links: links ]
       end
 
@@ -165,7 +165,7 @@ class EntityManager
       @deferred.delete_if do |type, arg|
         case type
         when :define_entity
-          create(arg.merge(defer: false))
+          define_entity(arg.merge(defer: false))
         when :link
           begin
             ref = arg[:ref]
