@@ -17,7 +17,7 @@ class EntityManager::Loader::Yaml < EntityManager::Loader::Base
       end
 
       base = [definition["base"]].flatten.compact
-      components = definition["components"].map do |conf|
+      components = (definition["components"] || {}).map do |conf|
         case conf
         when String, Symbol
           [ conf ]

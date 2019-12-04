@@ -63,7 +63,7 @@ class EntityManager
   #   chest = new_entity('base:obj/chest/locked')
   #
   def new_entity(*others)
-    others.flatten.inject(Entity.new) do |base,other|
+    out = others.flatten.inject(Entity.new) do |base,other|
       other = case other
         when Entity
           other
@@ -77,6 +77,7 @@ class EntityManager
 
       base.merge!(other)
     end
+    out.rem_component(:virtual)
   end
 
   # define_entity

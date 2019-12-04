@@ -27,9 +27,11 @@ class Entity
   end
   alias << add_component
 
-  def rem_component(*components)
-    components = components.flatten
-    @components.reject! { |c| components.include?(c) }
+  def rem_component(*args)
+    args.flatten!
+    @components.reject! do |comp|
+      args.include?(comp) or args.include?(comp.type)
+    end
     self
   end
 

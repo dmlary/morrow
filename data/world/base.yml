@@ -11,15 +11,10 @@
   - exits
   - container
 
-- base: !ref room
-  components:
-  - virtual: room/void
-  - viewable:
-      short: The Void
-      long: You are floating in nothing
-
 - components:
   - virtual: character
+  - keywords:
+    - [ char ]
   - viewable:
       format: character
       short: a non-descript character
@@ -27,6 +22,22 @@
         You see nothing special about them.
   - container
   - command_queue
+
+- components:
+  - virtual: object
+  - keywords:
+    - [ obj ]
+  - viewable:
+      format: object
+      short: an object
+      long: You see nothing special...
+
+- base: !ref room
+  components:
+  - virtual: room/void
+  - viewable:
+      short: The Void
+      desc: You are floating in nothing
 
 - base: !ref character
   components:
@@ -50,17 +61,50 @@
   - affect: [ attributes, wisdon, modify, 1 ]
 
 - components:
-  - virtual: object 
+  - virtual: exit
   - viewable:
-      format: object
-      short: an object
-      long: an object is sitting here.
+      format: exit
+      long: You see nothing special...
+  - destination:
 
-- components:
+- base: !ref exit
+  components:
   - virtual: door/closed
   - keywords: door
   - viewable:
       format: object
       short: a door
-      long: a door bars your way.
-  - destination:
+      desc: A wooden door bars your way.
+
+- base: !ref object
+  components:
+  - virtual: obj/bag/small
+  - keywords:
+    - [ small, bag ]
+  - viewable:
+      short: a small bag
+      long: a small bag is here, collecting dust
+  - container:
+      max_volume: 10
+  - closable
+
+- base: !ref object
+  components:
+  - virtual: obj/chest/wooden
+  - keywords:
+    - [ wooden, chest ]
+  - viewable:
+      short: a wooden chest
+      long: a wooden chest rests on the floor
+  - container:
+      max_volume: 100
+  - closable
+
+- base: !ref object
+  components:
+  - virtual: obj/junk/ball
+  - keywords: 
+    - [red, rubber, ball]
+  - viewable:
+      short: a red rubber ball
+      long: a red rubber ball is on the floor

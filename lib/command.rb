@@ -2,8 +2,9 @@ module Command
   class SyntaxError < ArgumentError; end
 
   class Definition
-    def initialize(name, priority, wait, handler)
+    def initialize(name, help, priority, wait, handler)
       @name = name
+      @help = help
       @priority = priority.to_i
       @wait = wait
       @handler = handler
@@ -50,9 +51,10 @@ module Command
     #   priority: Integer; higher priority wins among commands with common
     #             prefixes
     #   wait: Float; wait-state implosed by running command
+    #   help: String; help text
     #   
-    def register(cmd, priority: 0, method: nil, wait: 0, &block)
-      @commands[cmd] = Definition.new(cmd, priority, wait, block || method)
+    def register(cmd, priority: 0, method: nil, wait: 0, help: nil, &block)
+      @commands[cmd] = Definition.new(cmd, help, priority, wait, block || method)
     end
   end
 end
@@ -61,3 +63,4 @@ require_relative 'command/look'
 require_relative 'command/config'
 require_relative 'command/movement'
 require_relative 'command/act_obj'
+require_relative 'command/act_wiz'

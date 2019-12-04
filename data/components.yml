@@ -25,9 +25,10 @@
 # This is viewable in world
 - name: viewable
   fields:
-    short:
-    long:
     format:   # :room, :object, :character
+    short:    # name, room title
+    long:
+    desc:     # character, item description viewable with look <entity>
 
 # A list of exits from the current entity (room)
 - name: exits
@@ -62,11 +63,31 @@
     locked: false
     key:
 
-# Details for how an object is spawned
-- name: spawned
+# To schedule the spawning of an entity in a room
+- name: spawn_point
   fields:
-    in: # reference to what entity in-which it should be spawned
-    limit: # maximum number of the item what can be spawned within entity
+    entity:   # reference to an entity by virtual
+    active: 0 # number of active entities spawned from this point
+    min: 1    # Minimum number to be present after spawning
+    max: 1    # maximum number of entity that can be spawned by this point, and
+              # still present in the world
+    frequency: 300    # seconds between spawn events
+    next_spawn: 0     # next time this spawn point will spawn
+
+# is the spawn component attached to the entity being spawned, or the container
+# in which it will be spawned?
+#
+# base:obj/bag
+# base:obj/gold
+# limbo:mob/puff
+# midgaard:mob/guard
+#
+# What allows us to spawn:
+# - base:obj/gold{currency: 1000} inside base:obj/bag on limbo:mob/puff
+# - base:obj/gold{currency: 100} inside base:obj/bag on 1 of a dozen
+#   midgaard:mob/guard
+
+
 
 # command queue for characters
 - name: command_queue

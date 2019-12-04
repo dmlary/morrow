@@ -40,11 +40,12 @@ module World
     # add_entity - add an entity to the world
     #
     # Arguments:
-    #   ++entity++ entity
+    #   arg: Entity or Reference
     #
     # Returns:
     #   Entity::Id
     def add_entity(entity)
+      entity = entity.resolve if entity.is_a?(Reference)
       @entity_manager.add(entity)
     end
 
@@ -84,16 +85,34 @@ module World
     #   ++:all++ entities must have all ++types++
     #   ++:any++ entities must have at least one of ++types++
     #   ++:none++ entities must not have any of ++types++
-    def register_system(name, *types, &block)
+    #   method: system handler method (instead of block)
+    def register_system(name, *types, method: nil, &block)
       p = types.last.is_a?(Hash) ? types.pop : {}
-      @systems[name] = [ types, block ]
+      @systems[name] = [ types, block || method ]
       info 'Registered system for %s' % [ types.inspect ]
     end
+
+    # Need to create arrays to track entities with a subscribe set of
+    # components.
+    #
+    # We notify the individual Component types of which arrays to manage as the
+    # entity type is set/cleared; hooked into Entity#remove.
+    #
+    # register_system(:command_exec, :command_queue, &block)
+    #   group = @entity_groups[[:command_queue]] ||= []
+    #   @systems[:command_exec] = [ group, block ]
+    #   Component.subscribe(:command_queue, group)
+    #
+    #
+    # Component subscriptions: systems subscribe to component types
+    #
+    # XXX in #new_entity don't copy virtual?  End up with duplicate virtuals,
+    # which should be unique.  Do we need to enforce unique?
 
     # update
     def update
       start = Time.now
-      @systems.values.each do |types, block|
+      @systems.each do |system,(types, block)|
         entities.each do |entity|
           comps = types.inject([]) do |o, type|
             found = entity.get_components(type)
@@ -103,9 +122,12 @@ module World
 
           begin
             block.call(entity, *comps)
+          rescue Fault => ex
+            error "Fault in system #{system}: #{ex}"
+            @exceptions << ex
           rescue Exception => ex
-            ex.stack.pry if ex.stack
-            raise ex
+            error "Exception in system #{system}: #{ex}" 
+            @exceptions << ex
           end
         end
       end

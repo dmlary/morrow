@@ -4,18 +4,22 @@
   - virtual: room/limbo
   - viewable:
       short: Limbo
-      long: |-
+      desc: |-
         You are floating in a formless void, detached from all sensation of physical
         matter, surrounded by swirling glowing light, which fades into the relative
         darkness around you without any trace of edges or shadow.
            There is a "No Tipping" notice pinned to the darkness.
+  - spawn_point:
+      entity: !ref mob/puff
 
-- link: !ref base:room/void.exits
+- base: !ref base:exit
+  link: !ref base:room/void.exits
   components:
   - keywords: up
   - destination: !ref room/limbo
 
-- link: !ref room/limbo.exits
+- base: !ref base:exit
+  link: !ref room/limbo.exits
   components:
   - keywords: down
   - destination: !ref base:room/void
@@ -28,14 +32,24 @@
       closed: true
   - destination: !ref base:room/void
 
-- components:
-  - virtual: object/bag
+- base: !ref base:obj/chest/wooden
+  link: !ref room/limbo.container.contents
+  components:
+  - virtual: obj/limbo-chest
+  - spawn_point:
+      entity: !ref base:obj/junk/ball
+      max: 100
+
+- base: !ref base:obj/junk/ball
+  link: !ref obj/limbo-chest.container.contents
+
+- base: !ref base:character
+  components:
+  - virtual: mob/puff
+  - keywords: [[ puff, dragon, fractal ]]
   - viewable:
-      short: a small bag
-      long: a small bag is here collecting dust
-  - container:
-      max_volume: 10
-  - closable
-  - spawned:
-      in: !ref room/limbo
-      limit: 1
+      short: Puff
+      long: Puff the Fractal Dragon is here, contemplating a higher reality.
+      desc: |-
+        Is that some type of differential curve involving some strange, and
+        unknown calculus that she seems to be made out of?  

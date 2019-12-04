@@ -94,6 +94,41 @@ describe Component do
         end
       end
     end
+
+    context 'component with a single array field' do
+      context 'initialized with no arguments' do
+        it 'will have an empty array for the field' do
+          Component.define(:test, fields: { array: [] })
+          c = Component.new(:test)
+          expect(c.get(:array)).to eq([])
+        end
+      end
+
+      context 'initialized with an empty array' do
+        it 'will have an empty array for the field' do
+          Component.define(:test, fields: { array: [] })
+          c = Component.new(:test, [])
+          expect(c.get(:array)).to eq([])
+        end
+      end
+
+      context 'initialized with an array of a single value' do
+        it 'will have an empty array for the field' do
+          Component.define(:test, fields: { array: [] })
+          c = Component.new(:test, [1])
+          expect(c.get(:array)).to eq([1])
+        end
+      end
+
+      context 'initialized with an array of multiple values' do
+        it 'will have an empty array for the field' do
+          Component.define(:test, fields: { array: [] })
+          c = Component.new(:test, [[1, 2]])
+          expect(c.get(:array)).to eq([1, 2])
+        end
+      end
+
+    end
   end
 
   describe '#get(field=:value)' do

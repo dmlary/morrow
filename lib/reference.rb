@@ -71,6 +71,7 @@ class Reference
     @entity_id = entity.id
     entity
   end
+  alias entity resolve
 
   def full
     return nil unless @virtual

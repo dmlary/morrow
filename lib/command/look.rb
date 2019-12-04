@@ -1,19 +1,32 @@
 module Command::Look
   extend World::Helpers
 
-  Command.register('look') do |actor, keyword|
+  Command.register('look') do |actor, arg|
     room = actor.get(:location) or fault "actor has no location", actor
+    show_contents = false
 
-    target = if keyword.nil? or keyword.empty?
-      room
-    elsif keyword == 'self' or keyword == 'me'
-      target = actor
-    else
-      match_keyword(keyword, room.get(:contents), actor.get(:contents))
-    end
+    target = case arg
+      when nil, ""
+        room
+      when "self", "me"
+        actor
+      when /^in\s(.*?)$/
+        show_contents = true
+        match_keyword($1, 
+          room.get(:exits),
+          room.get(:container, :contents),
+          actor.get(:container, :contents))
+      else
+        match_keyword(arg,
+            room.get(:exits),
+            room.get(:container, :contents),
+            actor.get(:container, :contents))
+      end
 
     next "You do not see that here." unless target &&
         target.has_component?(:viewable)
+
+    return target.pretty_inspect if actor.get(:player_config, :coder)
 
     format = target.get(:viewable, :format)
     case format
@@ -21,16 +34,20 @@ module Command::Look
       show_room(actor, target)
     when "character"
       show_char(actor, target)
+    when 'object'
+      if show_contents
+        show_contents(actor, target)
+      else
+        show_obj(actor, target)
+      end
     else
-      fault "look #{keyword}", format, target
+      fault "look #{arg}", format, target
       "not implemented; look <thing>"
     end
   end
 
   class << self
     def show_room(actor, room)
-      return room.pretty_inspect if actor.get(:player_config, :coder)
-
       exits = room.get(:exits).map do |p_ref|
         passage = p_ref.resolve
         name = exit_name(passage)
@@ -42,26 +59,69 @@ module Command::Look
       view = room.get_component(:viewable)
 
       buf = "&W%s&0\n" % room.get(:viewable, :short)
-      buf << room.get(:viewable, :long)
+      buf << room.get(:viewable, :desc)
       buf << "\n"
       buf << "&WExits: &0%s&0" % exits.join(" ")
       buf << "\n"
+
+      room.get(:container, :contents).each do |ref|
+        entity = ref.entity
+        next if entity == actor   # you can't see yourself in the room
+        if long = entity.get(:viewable, :long)
+          buf << long
+          buf << "\n"
+        end
+      end
 
       buf
     end
 
     def show_char(actor, target)
-      return target.pretty_inspect if actor.get(:player_config, :coder)
-
-      buf = target.get(:viewable, :full)
+      buf = ""
+      buf << target.get(:viewable, :long)
       buf << "\n"
 
       # XXX short is a <RACE>
-      # XXX He/She/It is in <CONDITION>
+      # XXX He/She/They/It is in <CONDITION>
       buf << target.get(:viewable, :short)
       buf << " may be referred to as '&C%s&0'.\n" % target.get(:keywords).join('-')
 
       # XXX equipment
+    end
+
+    def show_obj(actor, target)
+      buf = ""
+      if long = target.get(:viewable, :desc)
+        buf << long
+        buf << "\n" unless buf[-1] == "\n"
+      end
+
+      buf << target.get(:viewable, :short)
+      buf << " may be referred to as '&C%s&0'.\n" % target.get(:keywords).join('-')
+    end
+
+    def show_contents(actor, target)
+      buf = ""
+      buf << target.get(:viewable, :short)
+
+      contents = target.get(:container, :contents) or
+          return "#{buf} is not a container."
+      
+      return "#{buf} is closed." if target.get(:closable, :closed)
+  
+      if contents.empty?
+        return buf << " is empty"
+      end
+
+      buf << ":\n"
+      contents.each do |ref|
+        if short = ref.entity.get(:viewable, :short)
+          buf << "  "
+          buf << short
+          buf << "\n"
+        end
+      end
+      buf
     end
   end
 end

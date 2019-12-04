@@ -68,8 +68,7 @@ module World::Helpers
   #   when multiple: Array of matching entities in ++pool++
   #   when not multiple: first entity in ++pool++ that matches
   #
-  def match_keyword(buf, pool)
-    p = pool.last.is_a?(Hash) ? pool.pop : {}
+  def match_keyword(buf, *pool, multiple: false)
 
     fault "unparsable keyword; #{buf}" unless buf =~ /^(?:(all|\d+)\.)?(.*)$/
     index = $1
@@ -79,15 +78,15 @@ module World::Helpers
     # single item
     raise Command::SyntaxError,
         "'#{buf}' is not a valid target for this command" if
-            index == 'all' and !p[:multiple]
+            index == 'all' and !multiple
 
     # resolve any references in our pool first
-    pool.map! { |e| e.is_a?(Reference) ? e.resolve : e }
+    pool.flatten!.map! { |e| e.is_a?(Reference) ? e.resolve : e }
 
     # if the user hasn't specified an index, or the caller hasn't specified
     # that they want multiple matches, do the simple find here to grab and
     # return the first match
-    if index.nil? and p[:multiple] != true
+    if index.nil? and multiple != true
       return pool.find do |entity|
         ((entity.get(:keywords) || []) & keywords).size == keywords.size
       end
@@ -101,6 +100,33 @@ module World::Helpers
     return matches if index.nil? or index == 'all'
 
     index = index.to_i - 1
-    p[:multiple] ? [ matches[index] ].compact : matches[index]
+    multiple ? [ matches[index] ].compact : matches[index]
+  end
+
+  # spawn
+  #
+  # Create a new instance of an Entity base off a +base+ Entity and move it
+  # into a +dest+ Entity (container).  This method **will** add the new Entity
+  # to World.
+  #
+  # Arguments:
+  #   dest: container Entity to move entity to
+  #   base: base Entity to spawn
+  def spawn(dest, base)
+    add_list = []
+
+    entity = World.new_entity(base)
+    add_list << entity
+
+    if contents = entity.get(:contents)
+      contents.map! do |ref|
+        item = spawn(entity, ref)
+        add_list << item
+        item.ref
+      end
+    end
+
+    add_list.each { |e| World.add_entity(e) }
+    move_entity(entity, dest)
   end
 end
