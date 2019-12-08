@@ -14,19 +14,16 @@ class Psych::Visitors::YAMLTree
 end
 
 class Reference
-  class InvalidReference < ArgumentError; end
+  class NoField < RuntimeError; end
 
-  Pattern = %r{
+  REFERENCE_PATTERN = %r{
     \A
-    (?:
-      (?<area>[^/]+):
-    )?
-    (?<virtual>[^\.]+)
+    (?<area>[^:.]+):
+    (?<virtual>[^:.]+)
     (?:\.
       (?<component>[^\.]+)
-      (?:\.
-        (?<field>.*?)
-      )?
+      \.
+      (?<field>.*?)
     )?
     \Z
   }x
@@ -34,76 +31,70 @@ class Reference
   # Reference.new("area:type/name")
   # Reference.new("type/name", source: path)
   # Reference.new(Entity)
-  def initialize(arg, p={})
-    case arg
-    when String
-      parse_ref(arg)
-    when Entity
+  def initialize(arg)
+    if arg.is_a?(Entity)
       @entity_id = arg.id
-      virtual = arg.get(:ident, :virtual) and parse_ref(virtual)
     else
-      raise ArgumentError, "unsupported argument type: #{arg}"
+      raise ArgumentError, "unsupported argument, #{arg.inspect}" unless
+          @match = arg.match(REFERENCE_PATTERN)
     end
   end
-  attr_accessor :area, :virtual, :component, :field
+  attr_reader :match, :entity_id
+
+  # entity
+  #
+  # Return the Entity instance in World that this Reference refers to.  If no
+  # such Entity exists, a EntityManager::UnknownVirtual exception will be
+  # raised.
+  def entity
+    return World.by_id(@entity_id) if @entity_id
+
+    entity = World.by_virtual("#{@match[:area]}:#{@match[:virtual]}")
+    @entity_id = entity.id
+    entity
+  end
+
+  # has_field?
+  #
+  # Returns true if the Reference is a Component field Reference
+  def has_field?
+    !!@match[:field]
+  end
+
+  # value
+  #
+  # For Component Field References, return the value of the Component Field.
+  # If this Reference is not for a Component Field, raise an error
+  def value
+    raise NoField, "no component field found in #{@match[0].inspect}" unless
+        has_field?
+
+    entity.get(Component.find(@match[:component]), @match[:field])
+  end
+
+  # absolute?
+  #
+  # Returns true if this is an absolute Reference to a specific Entity ID, not
+  # a relative one from a reference string.
+  def absolute?
+    @match.nil?
+  end
 
   # YAML-base initialization
   YAML.add_tag '!ref', self
   def init_with(coder)
     raise RuntimeError, "invalid reference: %s " %
         [ coder.send(coder.type).inspect ] unless coder.type == :scalar
-    parse_ref(coder.scalar.to_s, path: YAML.current_filename)
-  end
-
-  def encode_with(coder)
-    coder.scalar = full
-  end
-
-  def resolve(source=nil)
-    return World.by_id(@entity_id) if @entity_id
-
-    raise RuntimeError,
-        "cannot resolve relative reference, #{full}, without source" \
-        unless @area || source
-
-    area = @area || source.get(:loaded, :path).split('/').first
-    entity = World.by_virtual("#{area}:#{@virtual}")
-    @entity_id = entity.id
-    entity
-  end
-  alias entity resolve
-
-  def full
-    return nil unless @virtual
-    out = ''
-    out << "#{@area}:" if @area
-    out << "#{@virtual}"
-    out << ".#{@component}" if @component
-    out << ".#{@field}" if @field
-    out
-  end
-  alias to_s full
-
-  def component_field
-    [ @component, @field ].compact if @component
-  end
-
-  def inspect
-    "#<Reference:#{to_s || 'absolute'} id=#{@entity_id || :unresolved}>"
-  end
-
-  private
-  def parse_ref(buf, path: nil)
-    match = buf.match(Pattern) or raise InvalidReference, buf, path
-    @virtual = match['virtual']
-    @component = match['component']
-    @field = match['field']
-    unless @area = match['area']
-      # determine area from the path; going to just use the first word after
-      # world/ for right now
-      raise "ref '#{buf}', couldn't determine area from path, '#{path}'" unless
-          path =~ %r{world/([^/.]+)}
-      @area = $1
+    buf = coder.scalar.to_s
+    unless buf.include?(':')
+      area = World.area_from_filename(YAML.current_filename)
+      buf = "#{area}:#{buf}"
     end
+    @match = buf.match(REFERENCE_PATTERN) or
+        raise ArgumentError, "invalid reference, #{buf.inspect}"
+  end
+
+  def encode_with_old(coder)
+    coder.scalar = full
   end
 end

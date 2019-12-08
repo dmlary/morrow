@@ -28,7 +28,6 @@ begin
 
     begin
       # Load all the things we need
-      Component.import(YAML.load_file('./data/components.yml'))
       World.load('./data/world')
 
       EventMachine::PeriodicTimer.new(World::PULSE) { World.update }

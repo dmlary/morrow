@@ -19,7 +19,7 @@ class Entity
     components.flatten.each do |component|
       raise DuplicateUniqueComponent.new("component already present in entity",
           self, component) if
-              component.unique? and has_component?(component.type)
+              component.unique? and has_component?(component.class)
       @components << component
       component.entity_id = id
     end
@@ -30,7 +30,7 @@ class Entity
   def rem_component(*args)
     args.flatten!
     @components.reject! do |comp|
-      args.include?(comp) or args.include?(comp.type)
+      args.include?(comp) or args.include?(comp.class)
     end
     self
   end
@@ -38,9 +38,10 @@ class Entity
   alias id __id__
 
   # Get a Reference to this entity
-  def ref
+  def to_ref
     @ref ||= Reference.new(self)
   end
+  alias ref to_ref
 
   def inspect
     buf = "#<%s:0x%010x components=[" %
@@ -62,10 +63,17 @@ class Entity
   end
 
   def get_components(type)
-    @components.select { |c| c.type == type }
+    @components.select { |c| c.class == type }
   end
 
   # set a given field of a component to the supplied value
+  #
+  # Examples:
+  #   e = Entity.new(HealthComponent.new(current: 10, max: 20))
+  #   e.set(HealthComponent, current: 12)
+  #
+  #   e = Entity.new(VirtualComponent.new(id: "base:obj/ball"))
+  #   e.set(VirtualComponent, id: "limbo:obj/red-ball")
   #
   # Arguments:
   #   ++type++ Component type (Symbol/String)
@@ -74,15 +82,19 @@ class Entity
   #
   # Returns:
   #   self
-  def set(*args)
-    raise ArgumentError, "insufficient arguments" if args.size < 2
-    raise ArgumentError, "too many arguments" if args.size > 3
-
-    type = args.shift.to_sym
-
+  def set(type, pairs)
     comp = get_component(type) or raise ComponentNotFound,
         "type=#{type} entity=#{self.inspect}"
-    comp.set(*args)
+
+    pairs.each do |key, value|
+      begin
+        key = '%s=' % key.to_s
+        comp.send(key, value)
+      rescue NoMethodError
+        raise ArgumentError, "field #{key} not found in #{comp}"
+      end
+    end
+
     self
   end
 
@@ -94,30 +106,27 @@ class Entity
   #
   def get(type, field=:value)
     comp = get_component(type) or return nil
-    comp.get(field)
+    begin
+      comp.send(field.to_sym)
+    rescue NoMethodError
+      raise ArgumentError, "field #{field} not found in #{comp}"
+    end
   end
 
   def has_component?(type)
-    !!@components.find { |c| c.type == type }
-  end
-
-  def encode_with(coder)
-    coder.tag = nil
-    coder['type'] = @type.to_s
-    coder['components'] = @components
+    !!@components.find { |c| c.class == type }
   end
 
   # Entity
-  def merge!(*others)
+  def merge!(*others, all: false)
     others.flatten.compact.each do |other|
       raise ArgumentError, 'other must be an Entity' unless
           other.is_a?(Entity)
 
       other.components.each do |theirs|
-        if theirs.unique? && mine = get_component(theirs.type)
-          theirs.modified_fields.each do |field, value|
-            mine.set(field, value)
-          end
+        next unless all || theirs.merge?
+        if theirs.unique? && mine = get_component(theirs.class)
+          theirs.diff(mine).each { |k,v| mine.send("#{k}=", v) }
         else
           add_component(theirs.clone)
         end

@@ -2,267 +2,263 @@ require 'component'
 require 'yaml'
 
 describe Component do
-  before(:each) { Component.reset! }
+  describe '.field(name, default: nil, freeze: false)' do
+    let(:component) do
+      Class.new(Component) do
+        field :value, default: 4
+      end.new
+    end
+    it 'will define a reader method' do
+      expect(component).to respond_to(:value)
+    end
+    it 'will define a writer method' do
+      expect(component).to respond_to(:value=)
+    end
+    it 'will set the default value for the field' do
+      expect(component.value).to eq(4)
+    end
+  end
 
-  describe 'define' do
-    it 'will define a new component type' do
-      expect { Component.new('test') }
-          .to raise_error(Component::NotDefined)
-      Component.define('test')
-      expect { Component.new('test') }.to_not raise_error
-    end
-    it 'will raise an exception if the type already exists' do
-      Component.define('test')
-      expect { Component.define('test') }
-          .to raise_error(Component::AlreadyDefined)
-    end
-    context 'a component with no fields' do
-      let(:comp) { Component.define(:test) }
-      it 'will not have any fields' do
-        expect(comp.fields).to be_empty
+  describe '#merge?' do
+    context 'on a Component that may be merged by Entity#merge' do
+      let(:component) { Class.new(Component).new }
+      it 'will return true' do
+        expect(component.merge?).to eq(true)
       end
     end
-    context 'a component with fields' do
-      let(:comp) do
-        Component.define('test',
-            fields: {field_1: :pass, field_2: :also_pass})
+    context 'on a Component that may not be merged by Entity#merge' do
+      let(:component) do
+        Class.new(Component) { not_merged }.new
       end
-
-      it 'will have fields for field_1 and field_2' do
-        expect(comp.fields).to contain_exactly(*%i{field_1 field_2})
-      end
-      it 'will have :pass as the default for :field_1' do
-        expect(comp.defaults[:field_1]).to eq(:pass)
-      end
-      it 'will have :also_pass as the default for :field_2' do
-        expect(comp.defaults[:field_2]).to eq(:also_pass)
+      it 'will return true' do
+        expect(component.merge?).to eq(false)
       end
     end
   end
 
-  describe 'new' do
-    context 'component with no data' do
-      it 'will return an instance of the component' do
-        Component.define(:test)
-        test = Component.new(:test)
-        expect(test.type).to eq(:test)
+  describe '#unique?' do
+    context 'on a unique Component' do
+      let(:component) { Class.new(Component).new }
+      it 'will return true' do
+        expect(component.unique?).to eq(true)
       end
     end
-
-    context 'component with fields' do
-      context 'default values provided' do
-        it 'will use the default values' do
-          Component.define(:health, fields: {max: 100, current: 10})
-          h = Component.new(:health)
-          expect(h.get(:max)).to eq(100)
-          expect(h.get(:current)).to eq(10)
-        end
-        it 'will assign unique instances of default values' do
-          Component.define(:inventory, fields: { value: [] })
-          a = Component.new(:inventory)
-          b = Component.new(:inventory)
-          expect(a.get.__id__).to_not eq(b.get.__id__)
-        end
-      end
-      it 'will accept values as parameters' do
-        Component.define(:health, fields: { max: 100, current: 10 })
-        h = Component.new(:health, current: 0)
-        expect(h.get(:max)).to eq(100)
-        expect(h.get(:current)).to eq(0)
-      end
-      it 'will accept values as arguments' do
-        Component.define(:health, fields: { max: 100, current: 10 })
-        h = Component.new(:health, 50)
-        expect(h.get(:max)).to eq(50)
-        expect(h.get(:current)).to eq(10)
-      end
-
-      context 'with a frozen String value for the field' do
-        it 'will not clone the String' do
-          Component.define(:test, fields: { value: nil })
-          str = "frozen".freeze
-          c = Component.new(:test, str)
-          expect(c.get.__id__).to eq(str.__id__)
-        end
-      end
-      context 'with an unfrozen String value for the field' do
-        it 'will clone the String' do
-          Component.define(:test, fields: { value: nil })
-          str = "frozen"
-          c = Component.new(:test, str)
-          expect(c.get.__id__).to_not eq(str.__id__)
-        end
-      end
-    end
-
-    context 'component with a single array field' do
-      context 'initialized with no arguments' do
-        it 'will have an empty array for the field' do
-          Component.define(:test, fields: { array: [] })
-          c = Component.new(:test)
-          expect(c.get(:array)).to eq([])
-        end
-      end
-
-      context 'initialized with an empty array' do
-        it 'will have an empty array for the field' do
-          Component.define(:test, fields: { array: [] })
-          c = Component.new(:test, [])
-          expect(c.get(:array)).to eq([])
-        end
-      end
-
-      context 'initialized with an array of a single value' do
-        it 'will have an empty array for the field' do
-          Component.define(:test, fields: { array: [] })
-          c = Component.new(:test, [1])
-          expect(c.get(:array)).to eq([1])
-        end
-      end
-
-      context 'initialized with an array of multiple values' do
-        it 'will have an empty array for the field' do
-          Component.define(:test, fields: { array: [] })
-          c = Component.new(:test, [[1, 2]])
-          expect(c.get(:array)).to eq([1, 2])
-        end
-      end
-
-    end
-  end
-
-  describe '#get(field=:value)' do
-    let (:comp) { Component.define(:test, fields: { value: :pass }).new }
-
-    context 'when the field exists' do
-      it 'will return the value' do
-        expect(comp.get(:value)).to eq(:pass)
-      end
-    end
-    context 'when the field does not exist' do
-      it 'will raise an InvalidField error' do
-        expect { comp.get(:bad_field) }.to raise_error(Component::InvalidField)
+    context 'on a non-unique Component' do
+      let(:component) { Class.new(Component) { not_unique }.new }
+      it 'will return false' do
+        expect(component.unique?).to eq(false)
       end
     end
   end
 
-  describe '#set(field=:value, value)' do
-    let (:comp) do
-      Component.define(:test, fields: { value: :fail, other: :fail }).new
-    end
-    context 'when no field is supplied' do
-      it 'will set the value' do
-        comp.set(:pass)
-        expect(comp.get(:value)).to eq(:pass)
+  describe 'field setters' do
+    context 'when the field is declared with freeze: false' do
+      let(:component) do
+        Class.new(Component) do
+          field :value, freeze: false
+        end.new
+      end
+      let(:str) { 'wolf' }
+      context 'when called with a non-frozen value' do
+        it 'will clone the value' do
+          component.value = str
+          expect(component.value.__id__).to_not eq(str.__id__)
+        end
+        it 'will not freeze the value' do
+          component.value = str
+          expect(component.value).to_not be_frozen
+        end
+      end
+
+      context 'when called with a frozen value' do
+        it 'will not clone the value' do
+          str = 'wolf'.freeze
+          component.value = str
+          expect(component.value.__id__).to eq(str.__id__)
+        end
+      end
+
+      context 'when called with an Entity' do
+        it 'will store a Reference to the Entity' do
+          e = Entity.new
+          component.value = e
+          expect(component.value).to be_a_kind_of(Reference)
+        end
       end
     end
-    context 'when field is supplied' do
-      it 'will set the requested field' do
-        comp.set(:other, :pass)
-        expect(comp.get(:other)).to eq(:pass)
+    context 'when the field is declared with freeze: true' do
+      let(:component) do
+        Class.new(Component) do
+          field :value, freeze: true
+        end.new
+      end
+      let(:str) { 'bear' }
+
+      context 'when called with a non-frozen value' do
+        it 'will clone the value' do
+          component.value = str
+          expect(component.value.__id__).to_not eq(str.__id__)
+        end
+        it 'will freeze the value' do
+          component.value = str
+          expect(component.value).to be_frozen
+        end
+      end
+      context 'when called with a frozen value' do
+        it 'will not clone the value' do
+          str.freeze
+          component.value = str
+          expect(component.value.__id__).to eq(str.__id__)
+        end
       end
     end
   end
 
-  describe 'import' do
-    context 'with no value' do
-      before(:each) { Component.import({name: :test}) }
-      it 'will define the component' do
-        expect { Component.new(:test) }.to_not raise_error
-      end
-      it 'will not have any value' do
-        expect(Component.new(:test).class.fields).to be_empty
+  describe 'field getters' do
+    it 'will return the value' do
+      c = Class.new(Component) { field :value, default: :pass }.new
+      expect(c.value).to eq(:pass)
+    end
+  end
+
+  describe '#initialize' do
+    let(:klass) do
+      Class.new(Component) do
+        field :a, default: :a
+        field :b, default: :b
+        field :c, default: :c
       end
     end
 
-    context 'with multiple keys' do
-      before(:each) do
-        Component.import({name: :test, fields: {a: nil, b: nil}})
+    context 'when the argument is an Array' do
+      context 'that has too few elements' do
+        it 'will raise an ArgumentError' do
+          expect { klass.new([1,2]) }.to raise_error(ArgumentError)
+        end
       end
-      it 'will define the component' do
-        expect { Component.new(:test) }.to_not raise_error
+      context 'that has too many elements' do
+        it 'will raise an ArgumentError' do
+          expect { klass.new([1,2,3,4]) }.to raise_error(ArgumentError)
+        end
       end
-      it 'will have nil for :a' do
-        expect(Component.new(:test).get(:a)).to eq(nil)
-      end
-      it 'will have nil for :b' do
-        expect(Component.new(:test).get(:b)).to eq(nil)
-      end
-    end
-
-    context 'with multiple keys and defaults' do
-      before(:each) do
-        Component.import({name: :test, fields: {a: nil, b: 3}})
-      end
-      it 'will define the component' do
-        expect { Component.new(:test) }.to_not raise_error
-      end
-      it 'will have nil for :a' do
-        expect(Component.new(:test).get(:a)).to eq(nil)
-      end
-      it 'will have 3 for :b' do
-        expect(Component.new(:test).get(:b)).to eq(3)
+      context 'that has the right number of elements' do
+        it 'will call the field setters' do
+          expect_any_instance_of(klass).to receive(:a=).with(1)
+          expect_any_instance_of(klass).to receive(:b=).with(2)
+          expect_any_instance_of(klass).to receive(:c=).with(3)
+          klass.new([1,2,3])
+        end
       end
     end
 
-    context 'with multiple definitions' do
-      it 'will define both components' do
-        buf =<<~END
-        ---
-        - name: description
-        - name: contents
-        END
-        Component.import(YAML.load(buf))
-        expect { Component.new(:description) }.to_not raise_error
-        expect { Component.new(:contents) }.to_not raise_error
+    context 'when the argument is a Hash' do
+      context 'with an unknown field as a key' do
+        it 'will raise an ArgumentError' do
+          expect { klass.new(wolf: 3) }.to raise_error(ArgumentError)
+        end
+      end
+      context 'with known fields as keys' do
+        it 'will call the first field setter with the supplied value' do
+          expect_any_instance_of(klass).to receive(:a=).with(1)
+          klass.new(a: 1)
+        end
+        it 'will call the remaining field setters with default values' do
+          expect_any_instance_of(klass).to receive(:b=).with(:b)
+          expect_any_instance_of(klass).to receive(:c=).with(:c)
+          klass.new(a: 1)
+        end
+      end
+    end
+
+    context 'when no argument is provided' do
+      it 'will call the field setters with the default values' do
+        expect_any_instance_of(klass).to receive(:a=).with(:a)
+        expect_any_instance_of(klass).to receive(:b=).with(:b)
+        expect_any_instance_of(klass).to receive(:c=).with(:c)
+        klass.new
       end
     end
   end
 
-  describe 'export' do
-    it 'will export a structure that matches imported components' do
-      buf =<<~END
-      ---
-      - name: description
-        fields:
-          value: default description
-      - name: contents
-        fields: {}
-      END
-      data = YAML.load(buf)
-      Component.import(data)
-      expect(Component.export).to eq(data)
+  describe '#entity_id=' do
+    it 'will set the entity id'
+  end
+
+  describe 'entity_id' do
+    it 'will get the entity id'
+  end
+
+  describe '#to_h' do
+    it 'will return a hash of all field values' do
+      comp = Class.new(Component) do
+        field :a, default: :a
+        field :b, default: :b
+      end.new
+      expect(comp.to_h).to include(a: :a, b: :b)
+    end
+  end
+
+  describe '#diff(other)' do
+    let(:klass) do
+      Class.new(Component) do
+        field :a, default: :a
+        field :b, default: :b
+      end
+    end
+    let(:klass_b) do
+      Class.new(Component) do
+        field :x, default: :x
+        field :y, default: :y
+      end
+    end
+    let(:base)  { klass.new }
+    let(:other) { klass.new }
+    let(:other_b) { klass_b.new }
+
+    context 'when other is a Component' do
+      context 'of a different type' do
+        it 'will raise an ArgumentError' do
+          expect { base.diff(other_b) }.to raise_error(ArgumentError)
+        end
+      end
+      context 'of the same type' do
+        it 'will call other.to_h()' do
+          expect(other).to receive(:to_h).and_return({})
+          base.diff(other)
+        end
+      end
+    end
+    context 'when other is a Hash' do
+      let(:diff) do
+        base.a = :base
+        other.a = :other
+        base.diff(other)
+      end
+
+      context 'when a value differs' do
+        it 'will include the field & value from base in output' do
+          expect(diff).to include(a: :base)
+        end
+      end
+      context 'when a value is the same' do
+        it 'will not include the common field' do
+          expect(diff).to_not include(b: :b)
+        end
+      end
     end
   end
 
   describe '#clone' do
-    it 'will clone field values'
-  end
-
-  describe '#modified_fields' do
-    let(:component) do
-      Component.reset!
-      Component.define(:test, fields: { value: :default }).new
+    let(:component) { Class.new(Component) { field :value }.new }
+    it 'will clone unfrozen field values' do
+      str = 'wolf'
+      component.value = str
+      expect(component.clone.value.__id__).to_not eq(str.__id__)
     end
-
-    context 'when nothing has been modified' do
-      it 'will return an empty Hash' do
-        expect(component.modified_fields).to eq({})
-      end
-    end
-
-    context 'when a field is modified' do
-      it 'along with its value will be included in the results' do
-        component.set(:pass)
-        expect(component.modified_fields).to eq({value: :pass})
-      end
-    end
-
-    context 'when a field is set to the default value' do
-      it 'along with its value will be included in the results' do
-        component.set(:default)
-        expect(component.modified_fields).to eq({value: :default})
-      end
+    it 'will not clone frozen field values' do
+      str = 'wolf'.freeze
+      component.value = str
+      expect(component.clone.value.__id__).to eq(str.__id__)
     end
   end
 end

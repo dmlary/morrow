@@ -3,216 +3,139 @@ require 'facets/kernel/deep_clone'
 require 'facets/hash/symbolize_keys'
 require 'facets/hash/rekey'
 require 'facets/hash/deep_rekey'
+require 'facets/string/modulize'
+require 'facets/kernel/constant'
 
-module Component
-  class NotDefined < ArgumentError; end
-  class AlreadyDefined < ArgumentError; end
-  class TooManyValues < ArgumentError; end
-  class InvalidField < ArgumentError; end
+class Component
+  # setter function template for non-frozen fields; used in Component.field
+  SETTER_METHOD = <<~METHOD
+    define_method('%<name>s=') do |value|
+      value = value.to_ref if value.is_a?(Entity)
+      @%<name>s = (value.frozen? ? value : value.clone)
+    end
+  METHOD
 
-  @components ||= {}
+  # setter function template for frozen fields; used in Component.field
+  FREEZE_SETTER_METHOD = <<~METHOD
+    define_method('%<name>s=') do |value|
+      value = value.to_ref if value.is_a?(Entity)
+      @%<name>s = (value.frozen? ? value : value.clone.freeze)
+    end
+  METHOD
 
   class << self
-    def types
-      @components.keys
+    def inherited(other)
+      other.instance_variable_set(:@defaults, {})
     end
 
-    # wipe all known component types
-    def reset!
-      @components.clear
+    # find
+    #
+    # Given a human-readable component name as a String or Symbol, return the
+    # Class for that Component type.
+    def find(name)
+      Kernel.constant("#{name}_component".modulize)
     end
 
-    # define a component type
-    def define(type, fields: {}, unique: true)
-      raise ArgumentError, "fields must be a Hash" unless fields.is_a?(Hash)
-      type = type.to_sym
-      raise AlreadyDefined if @components.has_key?(type)
+    attr_accessor :defaults
 
-      klass = Class.new
-      klass.include(InstanceMethods)
-      klass.extend(ClassMethods)
-      klass.instance_variable_set('@type', type)
-      klass.instance_variable_set('@defaults', fields)
-      klass.instance_variable_set('@unique', unique)
-      @components[type] = klass
-      klass
+    # Note that this Component will not be unique on the Entity
+    def not_unique
+      define_method(:unique?) { false }
     end
 
-    # load a number of component definitions
-    def import(config)
-      [ config ].flatten.each do |type|
-        type = type.deep_rekey { |k| k.to_sym }
-        type[:unique] = true unless type.has_key?(:unique)
-        type[:fields] ||= {}
-        define(type[:name], fields: type[:fields], unique: type[:unique])
-      end
-      self
+    # To notify Entity#merge that this component should not be merged
+    def not_merged
+      define_method(:merge?) { false }
     end
 
-    # export all known components
-    def export
-      @components.map do |name,klass|
-        h = { 'name' => name.to_s }
-        h['fields'] = klass.defaults.rekey { |k| k.to_s }
-        h
-      end
-    end
+    # Define a field in the Component
+    #
+    # Arguments:
+    #   name: Name of the field
+    #
+    # Parameters:
+    #   default: default value; defaults to nil
+    #   freeze: if the setter should clone & freeze the value; default false
+    def field(name, default: nil, freeze: false)
+      name = name.to_sym
+      @defaults[name] = default
 
-    # allocate an instance of a specific type of component
-    def new(type, *args)
-      type = type.to_sym
-      raise NotDefined, type unless @components.has_key?(type)
+      attr_reader name
 
-      @components[type].new(*args)
+      buf = (freeze ? FREEZE_SETTER_METHOD : SETTER_METHOD) % { name: name }
+      instance_eval(buf, __FILE__, __LINE__)
     end
   end
 
-  module ClassMethods
-    attr_reader :type, :defaults
+  # Component.new(1,2,3)    # Same number of fields
+  # Component.new(a: 1, b: 2)
+  def initialize(arg={})
+    fields = self.class.defaults
 
-    def fields
-      @defaults.keys
+    if arg.is_a?(Array)
+      raise ArgumentError, "got #{arg}; need #{fields.size} values" unless
+          arg.size == fields.size
+      fields.each_with_index { |(k,_),i| fields[k] = arg[i] }
+    elsif arg.is_a?(Hash)
+      unknown = arg.keys - fields.keys
+      raise ArgumentError,
+          "Unknown component fields, #{unknown}, for #{self}" unless
+              unknown.empty?
+      fields.merge!(arg)
+    else
+      raise ArgumentError, "Unsupported argument type: #{arg.inspect}"
     end
 
-    def unique?
-      !!@unique
-    end
+    fields.each { |k,v| send("#{k}=", v) }
+  end
 
-    def inspect
-      '#<Component:%s %s>' % [ @type, @defaults.inspect ]
+  # unique?
+  #
+  # Return if this Component is unique per-Entity.
+  #
+  # Note, this method is replaced when the subclass calls #not_unique in it's
+  # definition.
+  def unique?
+    true
+  end
+
+  # merge?
+  #
+  # Return if this Component should be merged by Entity#merge
+  #
+  # Note: this method is replaced when the subclass calls Component.not_merged
+  def merge?
+    true
+  end
+  attr_accessor :entity_id
+
+  # to_h
+  #
+  # Return a Hash of field/value pairs
+  #
+  def to_h
+    self.class.defaults.keys.inject({}) do |o,field|
+      o[field] = send(field)
+      o
     end
   end
 
-  module InstanceMethods
-    extend Forwardable
+  # diff
+  #
+  # Return a Hash of the difference between this Component and another
+  # Component of the same type, or a Hash with the same field keys
+  def diff(other)
+    other = other.to_h if other.is_a?(self.class)
+    raise ArgumentError, "Unsupported type for diff; #{other.inspect}" unless
+        other.is_a?(Hash)
+    to_h.reject { |k,v| other[k] == v }
+  end
 
-    def savable?
-      false
-    end
-
-    # new(1,2,3,4)
-    # new(field: 1, field2: 2, ...)
-    def initialize(arg=nil)
-      # pull some things from our class
-      @type = self.class.type
-
-      @array_fields = []
-      @modified = {}
-
-      # manually deep-clone our values from the defaults
-      @values = self.class.defaults.inject({}) do |h,(k,v)|
-        @array_fields << k if v.is_a?(Array)
-        h[k] = v.clone
-        h
-      end
-
-      case arg 
-      when Hash
-        arg.each { |field, value| set(field, value) }
-      when Array
-        # Set our values based on argument index
-        arg.zip(@values.keys).each do |value,key|
-          raise TooManyValues, "failed on #{value.inspect}" if key.nil?
-          set(key, value)
-        end
-      when nil
-        # noop; no arguments.  If the caller wants to set a single field
-        # component to nil, they can use Hash, Array args, or call set
-        # directly.
-      else
-        set(arg)
-      end
-    end
-    attr_reader :type
-    attr_accessor :entity_id
-
-    def clone
-      # when cloning the Component, we'll clone any value that isn't frozen
-      Component.new(@type, @values.values.map { |v| v.frozen? ? v : v.clone })
-    end
-
-    def entity
-      World.by_id(@entity_id)
-    end
-
-    # set(field=:value, value)
-    def set(*args)
-      field = (args.size == 1 ? @values.keys.first : args.shift).to_sym
-      raise InvalidField, field unless @values.has_key?(field)
-
-      @modified[field] = true   # profiled; faster than using a Set
-
-      value = args.first
-      value = value.ref if value.is_a?(Entity)
-
-      if @array_fields.include?(field)
-        @values[field].push(*value)
-      else
-        # small memory reduction move here; string values are frozen
-        # XXX need to re-examine this at some point; is it worth the weirdness
-        # here, and I don't feel like this along with #clone interact
-        # correctly.
-        value = value.clone.freeze if value.is_a?(String) && !value.frozen?
-        @values[field] = value
-      end
-      self
-    end
-
-    def get(field=:value)
-      field = field.to_sym
-      raise InvalidField, field unless @values.has_key?(field)
-      value_or_ref = @values[field]
-
-      value_or_ref.is_a?(Reference) ?
-          value_or_ref.resolve(self.entity) :
-          value_or_ref
-    end
-
-    def fields
-      @values.keys
-    end
-
-    def values
-      @values.values
-    end
-
-    def unique?
-      self.class.unique?
-    end
-
-    # return a hash of which fields have been modified from the defaults for
-    # this component
-    def changed_fields
-      defaults = self.class.defaults
-      @values.reject { |k,v| v == defaults[k] }
-    end
-
-    def_delegator :@values, :each_pair
-
-    def component?
-      true
-    end
-
-    def inspect
-      state = @values.map { |k,v| "#{k}=#{v.inspect}" }.join(' ')
-      "#<Component:%s:0x%08x %s>" % [ type, __id__, state ]
-    end
-
-    def encode_with(coder)
-      coder.tag = nil
-      coder[type.to_s] = begin
-        if @values.empty?
-          nil
-        elsif @values.size == 1
-          @values.first.last
-        else
-          @values.deep_rekey { |k| k.to_s }.reject { |k| k =~ /_id$/ }
-        end
-      end
-    end
-
-    def modified_fields
-      @modified.keys.inject({}) { |o,k| o[k] = @values[k]; o }
-    end
+  # clone
+  #
+  # Clone a component
+  def clone
+    values = self.class.defaults.keys.map { |k| send(k) }
+    self.class.new(values)
   end
 end

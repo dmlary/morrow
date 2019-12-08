@@ -41,7 +41,7 @@ class EntityManager
 
   # lookup an entity by a virtual id
   def entity_by_virtual(virtual)
-    @entities.find { |e| e.get(:virtual) == virtual } or
+    @entities.find { |e| e.get(VirtualComponent, :id) == virtual } or
         raise UnknownVirtual, virtual
   end
 
@@ -68,7 +68,7 @@ class EntityManager
         when Entity
           other
         when Reference
-          other.resolve
+          other.entity
         when String, Symbol
           entity_by_virtual(other)
         else
@@ -115,16 +115,16 @@ class EntityManager
 
     # Throw together an entity of just the components specified
     mods = Entity.new
-    components.each do |type, config|
-      component = Component.new(type, config)
-      if area and component.type == :virtual and virtual = component.get
-        component.set(virtual.gsub(/^([^:]+:)?/, '%s:' % area))
+    components.each do |klass, config|
+      component = config ? klass.new(config) : klass.new
+      if area and klass == VirtualComponent and virtual = component.id
+        component.id = virtual.gsub(/^([^:]+:)?/, '%s:' % area)
       end
       mods << component
     end
 
     # merge the modifications into our templated entity, and add it
-    entity.merge!(mods)
+    entity.merge!(mods, all: true)
     add(entity)
 
     # add any linking to the deferred list
@@ -169,8 +169,12 @@ class EntityManager
           define_entity(arg.merge(defer: false))
         when :link
           begin
-            ref = arg[:ref]
-            ref.resolve.set(*ref.component_field, arg[:entity])
+            value = arg[:ref].value
+            if value.is_a?(Array)
+              value << arg[:entity].to_ref
+            else
+              arg[:ref].value = arg[:entity]
+            end
             true
           rescue UnknownVirtual
             false

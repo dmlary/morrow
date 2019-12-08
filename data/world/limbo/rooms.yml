@@ -13,19 +13,19 @@
       entity: !ref mob/puff
 
 - base: !ref base:exit
-  link: !ref base:room/void.exits
+  link: !ref base:room/void.exits.list
   components:
   - keywords: up
   - destination: !ref room/limbo
 
 - base: !ref base:exit
-  link: !ref room/limbo.exits
+  link: !ref room/limbo.exits.list
   components:
   - keywords: down
   - destination: !ref base:room/void
 
 - base: !ref base:door/closed
-  link: !ref room/limbo.exits
+  link: !ref room/limbo.exits.list
   components:
   - keywords: east
   - closable:

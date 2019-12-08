@@ -3,6 +3,7 @@ require 'find'
 require 'forwardable'
 require_relative 'helpers'
 require_relative 'component'
+require_relative 'components'
 require_relative 'entity'
 require_relative 'reference'
 require_relative 'entity_manager'
@@ -13,7 +14,7 @@ module World
 
   extend Helpers::Logging
 
-  @entity_manager = {}
+  @entity_manager = EntityManager.new
   @systems = {}
 
   @exceptions = []
@@ -33,8 +34,10 @@ module World
       @systems.clear
     end
 
-    def new_entity(*others)
-      @entity_manager.new_entity(*others)
+    def new_entity(base: [], components: [])
+      # XXX this components parameter may be problematic; what happens if we
+      # want to merge?
+      @entity_manager.new_entity(*base).add_component(*components)
     end
 
     # add_entity - add an entity to the world
@@ -56,12 +59,29 @@ module World
     #
     # Returns: self
     def load(base)
-      @entity_manager = EntityManager.new
+      @loading_dir = base
       Find.find(base) do |path|
         next if File.basename(path)[0] == '.'
         @entity_manager.load(path) if FileTest.file?(path)
       end
+      @loading_dir = nil
       @entity_manager.resolve!
+    end
+
+    # area_from_filename
+    #
+    # Given a filename, return the name of the area the Entities within that
+    # file belong to.
+    def area_from_filename(path)
+
+      # If we're loading from a specific directory, then the area is the first
+      # word after the loading_dir
+      if @loading_dir && path =~ %r{#{@loading_dir}/([^/.]+)}
+        $1
+      else
+        # otherwise it's just the filename without any extension
+        File.basename(path).sub(/\..*$/, '')
+      end
     end
 
     # find an entity by virtual id
