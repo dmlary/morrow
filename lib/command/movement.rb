@@ -9,18 +9,22 @@ module Command::Movement
 
   class << self
     def traverse_passage(actor, name)
-      current = actor.get(:location) or fault "no current location", actor
+      current = actor.get(:location, :ref) or
+          fault "no current location", actor
 
-      passage = current.get(:exits).map(&:resolve).find do |pass|
-        pass.get(:keywords).include?(name)
-      end
+      passage = current.entity
+          .get(:exits, :list)
+          .map(&:entity)
+          .find do |pass|
+            pass.get(:keywords, :words).include?(name)
+          end
 
       if passage.nil?
         "Alas, you cannot go that way...\n"
       elsif passage.get(:closable, :closed)
         "The path #{name} seems to be closed.\n"
       else
-        dest = passage.get(:destination)
+        dest = passage.get(:destination, :ref).entity
         move_entity(actor, dest)
         Command::Look.show_room(actor, dest)
       end

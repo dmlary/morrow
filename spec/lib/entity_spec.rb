@@ -68,7 +68,7 @@ describe Entity do
 
   describe '#get_component(type)' do
     let(:entity) do
-      e = Entity.new(comp_a)
+      e = Entity.new(comp_a, klass_multi.new)
     end
 
     it 'will return the component if included in the entity' do
@@ -76,6 +76,10 @@ describe Entity do
     end
     it 'will return nil if not present in the entity' do
       expect(entity.get_component(comp_b.class)).to be_nil
+    end
+    it 'will raise an error if the Component type is unique' do
+      expect { entity.get_component(klass_multi) }
+          .to raise_error(ArgumentError)
     end
   end
 
@@ -91,7 +95,7 @@ describe Entity do
     end
 
     it 'will return an empty array if no matches' do
-      expect(entity.get_components(comp_b)).to be_empty
+      expect(entity.get_components(comp_b.class)).to be_empty
     end
   end
 
@@ -102,7 +106,7 @@ describe Entity do
 
     context 'when no component of type exists in entity' do
       it 'will raise an error' do
-        expect { entity.set(:fake_component, 3) }
+        expect { entity.set(Class.new(Component), 3) }
             .to raise_error(Entity::ComponentNotFound)
       end
     end
@@ -118,6 +122,49 @@ describe Entity do
         it 'will raise an error' do
           expect { entity.set(comp_a.class, bad_field: :fail) }
               .to raise_error(ArgumentError)
+        end
+      end
+    end
+  end
+  
+  describe '#get(type, *fields)' do
+    let(:component) do
+      Class.new(Component) do
+        field :a, default: :a_val
+        field :b, default: :b_val
+        field :c, default: :c_val
+      end
+    end
+    let(:entity) { Entity.new(component.new) }
+
+    context 'wth no fields' do
+      it 'will raise an ArgumentError' do
+        expect { entity.get(component) }.to raise_error(ArgumentError)
+      end
+    end
+
+    context 'with a single field' do
+      context 'that is a member of the Component' do
+        it 'will return the value for that key' do
+          expect(entity.get(component, :a)).to eq(:a_val)
+        end
+      end
+      context 'that is not a member of the Component' do
+        it 'will raise an ArgumentError' do
+          expect { entity.get(component, :x) }.to raise_error(ArgumentError)
+        end
+      end
+    end
+
+    context 'with multiple fields' do
+      context 'all fields are members of the Component' do
+        it 'will return an Array of results' do
+          expect(entity.get(component, :a, :c)).to eq([:a_val, :c_val])
+        end
+      end
+      context 'any field is not a member of the Component' do
+        it 'will raise an ArgumentError' do
+          expect { entity.get(component, :x) }.to raise_error(ArgumentError)
         end
       end
     end

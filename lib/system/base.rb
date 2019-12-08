@@ -6,9 +6,8 @@ module System::Base
 
   def send_data(buf, p={})
     entity = p[:entity] || @entity
-    conn = entity.get(:connection) or raise RuntimeError,
-            'send_line(%s) failed; entity has no connection' %
-                entity.inspect
+    conn = entity.get(ConnectionComponent, :conn) or
+        fault("Entity #{entity} has no connection", entity)
     conn.send_data(buf)
     entity
   end

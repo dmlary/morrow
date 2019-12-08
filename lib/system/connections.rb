@@ -5,7 +5,7 @@ module System::Connections
   DISCONNECT_TIMEOUT = 30 * 60
 
   World.register_system(:connections, :connection) do |entity, comp|
-    conn = comp.get or next
+    conn = comp.conn or next
 
     if conn.error?
       # disconnected

@@ -2,8 +2,8 @@ module System::CommandQueue
   extend System::Base
   extend World::Helpers
 
-  World.register_system(:command_queue, :command_queue) do |actor, queue_comp|
-    queue = queue_comp.get or next
+  World.register_system(:command_queue, :command_queue) do |actor, comp|
+    queue = comp.queue or next
     next if queue.empty?
 
     # run the command, which returns output
@@ -19,34 +19,23 @@ module System::CommandQueue
       "error in command; logged to admin\n"
     end
 
+    coder, compact, send_ga = actor.get(PlayerConfigComponent,
+        :coder, :compact, :send_go_ahead)
+
     unless buf.is_a?(String)
       error "command returned non-String; actor=%s command='%s'" %
-          [ actor.get(:keywords).inspect, cmd ]
+          [ actor.get(:keywords, :words).inspect, cmd ]
             
-      buf = (actor.get(:player_config, :coder) ? buf.inspect :
-          "error in command; logged to admin\n")
+      buf = (coder ? buf.inspect : "error in command; logged to admin")
     end
 
     buf << "\n" unless buf[-1] == "\n"
-    buf << "\n" unless actor.get(:player_config, :compact)
+    buf << "\n" unless compact
     # append the prompt
     buf << "> "
-    buf << "\xff\xf9" if actor.get(:player_config, :send_go_ahead)
+    buf << "\xff\xf9" if send_ga
 
     # send the actor the output
     send_data(buf, entity: actor)
-  end
-
-  class << self
-    def command_up(rest)
-      room = get_room or return "unable to find what room you are in!"
-
-      comp = room.get_component(:exit, true)
-          .find { |e| e.get(:direction) == 'up' } or
-              return "There's no exit in that direction"
-
-      move_to_location(@entity, comp.get(:room_id))
-      command_look
-    end
   end
 end

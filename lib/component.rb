@@ -26,6 +26,7 @@ class Component
   class << self
     def inherited(other)
       other.instance_variable_set(:@defaults, {})
+      other.instance_variable_set(:@unique, true)
     end
 
     # find
@@ -41,6 +42,12 @@ class Component
     # Note that this Component will not be unique on the Entity
     def not_unique
       define_method(:unique?) { false }
+      @unique = false
+    end
+
+    # Determine if this Component is unique in the Entity
+    def unique?
+      !!@unique
     end
 
     # To notify Entity#merge that this component should not be merged
@@ -56,14 +63,18 @@ class Component
     # Parameters:
     #   default: default value; defaults to nil
     #   freeze: if the setter should clone & freeze the value; default false
-    def field(name, default: nil, freeze: false)
+    #   clone: if the value should be cloned when set; default true
+    def field(name, default: nil, freeze: false, clone: true)
       name = name.to_sym
       @defaults[name] = default
 
-      attr_reader name
-
-      buf = (freeze ? FREEZE_SETTER_METHOD : SETTER_METHOD) % { name: name }
-      instance_eval(buf, __FILE__, __LINE__)
+      if clone
+        attr_reader name
+        buf = (freeze ? FREEZE_SETTER_METHOD : SETTER_METHOD) % { name: name }
+        instance_eval(buf, __FILE__, __LINE__)
+      else
+        attr_accessor name
+      end
     end
   end
 

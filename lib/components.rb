@@ -8,7 +8,7 @@ end
 
 # Set of keywords a player may use to reference this Entity
 class KeywordsComponent < Component
-  field :words, default: []
+  field :words
 end
 
 # Contains references to Entities that reside within it
@@ -79,13 +79,13 @@ end
 
 # Command queue for characters
 class CommandQueueComponent < Component
-  field :queue    # Queue instance
-  field :blocked_until    # Time instance that next command can be processed
+  field :queue, clone: false  # Queue instance
+  field :blocked_until    # Time that next command can be processed
 end
 
 # Connection for players
 class ConnectionComponent < Component
-  field :sock     # Socket for send/recv
+  field :conn     # TelnetServer::Connection instance
   field :buf      # pending output?
 end
 

@@ -17,41 +17,31 @@ module World::Helpers
 
   # Get the cardinal direction from the passage, or the first keyword
   def exit_name(passage)
-    keywords = [ passage.get(:keywords) ].flatten
+    keywords = [ passage.get(:keywords, :words) ].flatten
     (keywords & World::CARDINAL_DIRECTIONS).first or keywords.first
-  end
-
-  def get_room(entity)
-    id = entity.get(:location) or return nil
-    room = World.by_id(id) or missing_entity(location: id, entity: entity)
-    room
   end
 
   # place one entity inside another entity's contents
   def move_entity(entity, dest)
 
     # Remove the entity from any other location it was in previously
-    if entity.has_component?(:location)
-      if old = entity.get(:location)
-        old.get(:container, :contents).delete(entity.ref) 
-      end
+    if curr = entity.get(LocationComponent, :ref)
+      curr.entity
+          .get(ContainerComponent, :contents)
+          .delete(entity.to_ref)
     else
-      entity.add_component(Component.new(:location))
+      begin
+        entity << LocationComponent.new
+      rescue Entity::DuplicateUniqueComponent
+        # noop; we're just ensuring the entity has a LocationComponent for the
+        # next part
+      end
     end
 
-    contents = dest.get(:container, :contents) or
-        fault "dest isn't a container", dest
-    contents << entity.ref
-    entity.set(:location, dest)
-  end
-
-  # Log missing entities/entity id's that don't resolve in the world
-  def missing_entity(p={})
-    p.merge!(stack: caller[0,5])
-    buf  = "Unknown entity id found:\n"
-    buf << p.pretty_inspect.indent(4)
-    warn(buf)
-    true
+    contents = dest.get(ContainerComponent, :contents) or
+        fault "dest #{dest} is not a container", dest
+    contents << entity.to_ref
+    entity.set(LocationComponent, ref: dest)
   end
 
   # get a/all entities from ++pool++ that have keywords that match our
@@ -81,14 +71,15 @@ module World::Helpers
             index == 'all' and !multiple
 
     # resolve any references in our pool first
-    pool.flatten!.map! { |e| e.is_a?(Reference) ? e.resolve : e }
+    pool.flatten!.map! { |e| e.is_a?(Reference) ? e.entity : e }
 
     # if the user hasn't specified an index, or the caller hasn't specified
     # that they want multiple matches, do the simple find here to grab and
     # return the first match
     if index.nil? and multiple != true
       return pool.find do |entity|
-        ((entity.get(:keywords) || []) & keywords).size == keywords.size
+        ((entity.get(:keywords, :words) || []) & keywords)
+            .size == keywords.size
       end
     end
 
@@ -118,7 +109,7 @@ module World::Helpers
     entity = World.new_entity(base)
     add_list << entity
 
-    if contents = entity.get(:contents)
+    if contents = entity.get(:contents, :list)
       contents.map! do |ref|
         item = spawn(entity, ref)
         add_list << item

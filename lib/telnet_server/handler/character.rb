@@ -5,11 +5,11 @@ class TelnetServer::Handler::Character < TelnetServer::Handler::Base
     # What is the difference between a tag and a class/module/constant?
 
     # Create a new entity in the world
-    @char = World.new_entity('base:player')
+    @char = World.new_entity(base: 'base:player')
     @cmd_queue = Queue.new
-    @char.set(:connection, conn)
-    @char.set(:command_queue, @cmd_queue)
-    @char.set(:player_config, :color, true)
+    @char.set(:connection, conn: conn)
+    @char.set(:command_queue, queue: @cmd_queue)
+    @char.set(:player_config, color: true)
 
     # Add this char to the world
     World.add_entity(@char)

@@ -36,6 +36,21 @@ describe Component do
     end
   end
 
+  describe '.unique?' do
+    context 'on a unique Component' do
+      let(:component) { Class.new(Component) }
+      it 'will return true' do
+        expect(component.unique?).to eq(true)
+      end
+    end
+    context 'on a non-unique Component' do
+      let(:component) { Class.new(Component) { not_unique } }
+      it 'will return false' do
+        expect(component.unique?).to eq(false)
+      end
+    end
+  end
+
   describe '#unique?' do
     context 'on a unique Component' do
       let(:component) { Class.new(Component).new }
@@ -110,6 +125,24 @@ describe Component do
           component.value = str
           expect(component.value.__id__).to eq(str.__id__)
         end
+      end
+    end
+
+    context 'when the field is declared with clone: false' do
+      let(:component) do
+        Class.new(Component) do
+          field :value, clone: false
+        end.new
+      end
+      it 'will not clone the value' do
+        value = "test"
+        component.value = value
+        expect(component.value).to be(value)
+      end
+      it 'will not freeze the value' do
+        value = "test"
+        component.value = value
+        expect(component.value).to_not be_frozen
       end
     end
   end

@@ -2,29 +2,30 @@ module Command::Look
   extend World::Helpers
 
   Command.register('look') do |actor, arg|
-    room = actor.get(:location) or fault "actor has no location", actor
+    room = actor.get(LocationComponent, :ref) or
+        fault "actor has no location", actor
     show_contents = false
 
     target = case arg
       when nil, ""
-        room
+        room.entity
       when "self", "me"
         actor
       when /^in\s(.*?)$/
         show_contents = true
         match_keyword($1, 
-          room.get(:exits),
+          room.get(:exits, :list),
           room.get(:container, :contents),
           actor.get(:container, :contents))
       else
         match_keyword(arg,
-            room.get(:exits),
+            room.get(:exits, :list),
             room.get(:container, :contents),
             actor.get(:container, :contents))
       end
 
     next "You do not see that here." unless target &&
-        target.has_component?(:viewable)
+        target.has_component?(ViewableComponent)
 
     return target.pretty_inspect if actor.get(:player_config, :coder)
 
@@ -48,18 +49,18 @@ module Command::Look
 
   class << self
     def show_room(actor, room)
-      exits = room.get(:exits).map do |p_ref|
-        passage = p_ref.resolve
+      exits = room.get(:exits, :list).map do |p_ref|
+        passage = p_ref.entity
         name = exit_name(passage)
         closed = passage.get(:closable, :closed)
         desc = (closed ? '[ &K%s&0 ]' : '%s') % name
         [ name, desc ]
       end.sort_by { |n,d| d }.map(&:last)
 
-      view = room.get_component(:viewable)
+      title, desc = room.get(ViewableComponent, :short, :desc)
 
-      buf = "&W%s&0\n" % room.get(:viewable, :short)
-      buf << room.get(:viewable, :desc)
+      buf = "&W%s&0\n" % title
+      buf << desc
       buf << "\n"
       buf << "&WExits: &0%s&0" % exits.join(" ")
       buf << "\n"
