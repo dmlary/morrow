@@ -294,4 +294,46 @@ describe Component do
       expect(component.clone.value.__id__).to eq(str.__id__)
     end
   end
+
+  describe '#merge!(other)' do
+    let(:comp) do
+      Class.new(Component) do
+        field :a, default: :unchanged
+        field :b, default: :unchanged
+        field :c, default: :unchanged
+      end
+    end
+    let(:base) { comp.new }
+    let(:other) { comp.new }
+
+    shared_examples 'when merged' do |pairs|
+      pairs.each do |key,value|
+        it "will set #{key} to #{value.inspect}" do
+          expect(base.send(key)).to eq(value)
+        end
+      end
+    end
+
+    context 'when other is a Hash' do
+      before(:each) do
+        base.merge!(a: :passed, b: :passed)
+      end
+      include_examples 'when merged', a: :passed, b: :passed, c: :unchanged
+    end
+
+    context 'when other is an instance of the same class' do
+      before(:each) do
+        other.a = :passed
+        other.c = :passed
+        base.merge!(other)
+      end
+      include_examples 'when merged', a: :passed, b: :unchanged, c: :passed
+    end
+    context 'when other is an instance of a different Component' do
+      it 'will raise an error' do
+        other = Class.new(Component).new
+        expect { base.merge!(other) }.to raise_error(ArgumentError)
+      end
+    end
+  end
 end

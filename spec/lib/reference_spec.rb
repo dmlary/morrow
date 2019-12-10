@@ -96,6 +96,26 @@ describe Reference do
     end
   end
 
+  describe '#value' do
+    context 'on Entity Reference' do
+      it 'will raise a Reference::NoField error' do
+        expect { entity_ref.value }.to raise_error(Reference::NoField)
+      end
+    end
+    context 'on Invalid Reference' do
+      it 'will raise a EntityManager::UnknownVirtual error' do
+        expect { invalid_ref.value }
+            .to raise_error(EntityManager::UnknownVirtual)
+      end
+    end
+    context 'on Component Field Reference' do
+      it 'will call the setter on the Component' do
+        expect(exits).to receive(:list=).with(:pass)
+        field_ref.value = :pass
+      end
+    end
+  end
+
   describe '#initialize(Entity)' do
     it 'will set the entity_id' do
       r = Reference.new(entity)

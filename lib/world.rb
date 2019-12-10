@@ -25,12 +25,13 @@ module World
 
   class << self
     extend Forwardable
-    attr_reader :exceptions, :entity_manager
+    attr_reader :exceptions
+    attr_accessor :entity_manager # setter exposed for testing
     def_delegators :@entity_manager, :entity_from_template, :entities
 
     # reset the internal state of the World
     def reset!
-      @entity_manager.clear
+      @entity_manager = EntityManager.new
       @systems.clear
     end
 

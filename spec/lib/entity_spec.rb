@@ -188,6 +188,10 @@ describe Entity do
         end
       end
 
+      it 'will return self' do
+        expect(base.merge!(other)).to be(base)
+      end
+
       context 'when the base has no components' do
         before(:each) do
           other.add_component(comp_a)

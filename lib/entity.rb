@@ -169,7 +169,8 @@ class Entity
   # merge!
   #
   # Merge the components & component values of another Entity into this entity.
-  # See spec/lib/entity_spec.rb for more details
+  # Behaves similarly to Hash#merge!(); see spec/lib/entity_spec.rb for
+  # example usage.
   #
   def merge!(*others, all: false)
     others.flatten.compact.each do |other|
@@ -179,7 +180,7 @@ class Entity
       other.components.each do |theirs|
         next unless all || theirs.merge?
         if theirs.unique? && mine = get_component(theirs.class)
-          theirs.diff(mine).each { |k,v| mine.send("#{k}=", v) }
+          mine.merge!(theirs)
         else
           add_component(theirs.clone)
         end

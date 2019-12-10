@@ -34,7 +34,11 @@ class Component
     # Given a human-readable component name as a String or Symbol, return the
     # Class for that Component type.
     def find(name)
-      Kernel.constant("#{name}_component".modulize)
+      begin
+        Kernel.constant("#{name}_component".modulize)
+      rescue NameError
+        raise ArgumentError, "unknown Component, #{name}"
+      end
     end
 
     attr_accessor :defaults
@@ -148,5 +152,18 @@ class Component
   def clone
     values = self.class.defaults.keys.map { |k| send(k) }
     self.class.new(values)
+  end
+
+  # merge!
+  #
+  # Merge in another Component, or component values
+  #
+  # Arguments:
+  #   other: Hash, or Component instance
+  def merge!(other)
+    other = other.to_h if other.is_a?(self.class)
+    raise ArgumentError, "invalid other #{other.inspect}" unless
+        other.is_a?(Hash)
+    other.each { |k,v| send("#{k}=", v) if send(k) != v }
   end
 end

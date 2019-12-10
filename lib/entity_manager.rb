@@ -21,9 +21,9 @@ class EntityManager
 
   def initialize()
     @entities = []
-    @deferred = []
+    @tasks = []
   end
-  attr_reader :entities, :pending
+  attr_reader :entities
 
   # Load entities from the file at +path+
   def load(path)
@@ -39,15 +39,37 @@ class EntityManager
     @deferred.clear
   end
 
-  # lookup an entity by a virtual id
+  # entity_by_id
+  #
+  # lookup an entity by an entity id
+  #
+  # Arguments:
+  #   id: Entity.id value
+  #
+  # Returns:
+  #   Entity when found
+  #   nil when not found
+  def entity_by_id(id)
+    obj = begin
+      ObjectSpace._id2ref(id)
+    rescue RangeError
+      nil
+    end
+    @entities.include?(obj) ? obj : nil
+  end
+
+  # entity_by_virtual
+  #
+  # lookup an entity by a virtual id, or raise UnknownVirtual
+  #
+  # Arguments:
+  #   virtual: id to be found in the VirtualComponent of an Entity
+  #
+  # Returns:
+  #   Entity on success
   def entity_by_virtual(virtual)
     @entities.find { |e| e.get(VirtualComponent, :id) == virtual } or
         raise UnknownVirtual, virtual
-  end
-
-  # lookup an entity by an entity id
-  def entity_by_id(id)
-    ObjectSpace._id2ref(id)
   end
 
   # new_entity
@@ -62,7 +84,12 @@ class EntityManager
   #   player = new_entity('base:player', 'base:race/elf')
   #   chest = new_entity('base:obj/chest/locked')
   #
-  def new_entity(*others)
+  def new_entity(*others, components: [], links: [], add: false)
+    raise ArgumentError, 'cannot link without :add being set' unless
+        add or links.empty?
+
+    # Construct our output Entity by merging each of the others into an empty
+    # Entity.
     out = others.flatten.inject(Entity.new) do |base,other|
       other = case other
         when Entity
@@ -76,66 +103,28 @@ class EntityManager
         end
 
       base.merge!(other)
+      base
     end
-    out.rem_component(:virtual)
-  end
 
-  # define_entity
-  #
-  # Used by EntityManager::Loader::* to create and add an Entity to the
-  # EntityManager.  This method supports deferred loading, so if a Reference
-  # does not resolve at the time this is called, it will be added to the
-  # deferred queue to be processed when #resolve! is called.
-  #
-  # If you're not a Loader, you probably want to use EntityManager#new_entity()
-  #
-  # Parameters:
-  #   components: Array of Hashes; Hash is { component_type: component_fields }
-  #   base: Array of virtuals to use as a base for this Entity
-  #   area: Name of the area to-which this Entity belongs
-  #   links: Array of References that should be updated to contain a Reference
-  #          to the new Entity when #resolve! is called
-  #   defer: set to false to disable deferring
-  #
-  # Returns:
-  #   Entity on success
-  #   nil on error
-  def define_entity(components: [], base: [], area: nil, links: [],
-      defer: true)
-    entity = begin
-      new_entity(base)
-    rescue UnknownVirtual
-      if defer
-        @deferred << [ :define_entity, base: base,
-            components: components, area: area, links: links ]
+    # don't do any extra work if no components were provided
+    unless components.empty?
+      components.each do |add|
+        if add.unique? and comp = out.get_component(add.class)
+          comp.merge!(add)
+        else
+          out << add
+        end
       end
-
-      return nil
     end
 
-    # Throw together an entity of just the components specified
-    mods = Entity.new
-    components.each do |klass, config|
-      component = config ? klass.new(config) : klass.new
-      if area and klass == VirtualComponent and virtual = component.id
-        component.id = virtual.gsub(/^([^:]+:)?/, '%s:' % area)
-      end
-      mods << component
-    end
+    # short circut the rest unless we're adding the enity
+    return out unless add
 
-    # merge the modifications into our templated entity, and add it
-    entity.merge!(mods, all: true)
-    add(entity)
+    # Add the entity, and schedule any linking to it that needs to occur
+    add(out)
+    links.each { |r| schedule(:link, ref: r, entity: out) }
 
-    # add any linking to the deferred list
-    links.each do |ref|
-      raise ArgumentError, "Not a Reference: #{ref}" unless
-          ref.is_a?(Reference)
-      @deferred << [ :link, ref: ref, entity: entity ]
-    end
-
-    # return the entity
-    entity
+    out
   end
 
   # add
@@ -152,6 +141,19 @@ class EntityManager
     @entities << entity
     entity
   end
+  alias << add
+
+  # schedule
+  #
+  # Add a task to be run during #resolve!
+  #
+  # Arguments:
+  #   task: Task type; :link, or :new_entity
+  #
+  def schedule(task, args)
+    @tasks.push([task, args])
+    self
+  end
 
   # resolve!
   #
@@ -159,34 +161,52 @@ class EntityManager
   # entity creation & linking.
   #
   def resolve!
-    info "resolving all entity references"
-    loop do
-      before = @deferred.size 
+    info "running pending tasks"
 
-      @deferred.delete_if do |type, arg|
-        case type
-        when :define_entity
-          define_entity(arg.merge(defer: false))
-        when :link
-          begin
+    loop do
+      before = @tasks.size 
+
+      @tasks.delete_if do |type, arg|
+        begin
+          case type
+
+          # New entity we pass off to the #new_entity method; it'll raise an
+          # UnknownVirtual error if any of the bases don't exist.
+          when :new_entity
+            arg.is_a?(Array) ? new_entity(*arg) : new_entity(arg)
+
+          # For linking, we'll resolve the value of the Reference; if it's an
+          # Array we'll push our Entity Reference into it, otherwise we'll just
+          # replace the value.
+          #
+          # Reference#value will raise UnknownVirtual if the Reference won't
+          # resolve.
+          when :link
             value = arg[:ref].value
             if value.is_a?(Array)
               value << arg[:entity].to_ref
             else
               arg[:ref].value = arg[:entity]
             end
-            true
-          rescue UnknownVirtual
-            false
           end
+
+          # If we got this far, the task has been completed; we can delete it
+          true
+
+        # If we get an UnknownVirtual exception, that means we're missing some
+        # dependency for this task, so we should try it again on the next pass.
+        rescue UnknownVirtual
+          false   # do not delete from @tasks
         end
       end
 
-      break if @deferred.empty? or @deferred.size == before
+      # Break out of the loop if all the tasks have been completed, or none of
+      # them could be completed this time.
+      break if @tasks.empty? or @tasks.size == before
     end
 
-    raise 'Failed to resolve all deferred items' unless @deferred.empty?
-    info "all entity references resolved successfully"
+    raise 'Failed to resolve all deferred items' unless @tasks.empty?
+    info "all pending tasks completed successfully"
   end
 end
 

@@ -69,7 +69,17 @@ class Reference
     raise NoField, "no component field found in #{@match[0].inspect}" unless
         has_field?
 
-    entity.get(Component.find(@match[:component]), @match[:field])
+    entity.get(@match[:component], @match[:field])
+  end
+
+  # value=
+  #
+  # For Component Field References, set the value to the value provided.  If
+  # this Reference is not for a Component Field, it will raise an error.
+  def value=(val)
+    raise NoField, "no component field found in #{@match[0].inspect}" unless
+        has_field?
+    entity.set(@match[:component], @match[:field] => val)
   end
 
   # absolute?
