@@ -250,6 +250,7 @@ describe Entity do
           base.add_component(base_comp)
 
           other_comp = comp_a.clone
+          other_comp.a = :a
           other.add_component(other_comp)
 
           base.merge!(other)

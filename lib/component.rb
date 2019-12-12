@@ -7,22 +7,8 @@ require 'facets/string/modulize'
 require 'facets/kernel/constant'
 
 class Component
-  # setter function template for non-frozen fields; used in Component.field
-  SETTER_METHOD = <<~METHOD
-    define_method('%<name>s=') do |value|
-      value = value.to_ref if value.is_a?(Entity)
-      @%<name>s = (value.frozen? ? value : value.clone)
-    end
-  METHOD
 
-  # setter function template for frozen fields; used in Component.field
-  FREEZE_SETTER_METHOD = <<~METHOD
-    define_method('%<name>s=') do |value|
-      value = value.to_ref if value.is_a?(Entity)
-      @%<name>s = (value.frozen? ? value : value.clone.freeze)
-    end
-  METHOD
-
+  # class methods
   class << self
     def inherited(other)
       other.instance_variable_set(:@defaults, {})
@@ -70,14 +56,35 @@ class Component
     #   clone: if the value should be cloned when set; default true
     def field(name, default: nil, freeze: false, clone: true)
       name = name.to_sym
+      variable = "@#{name}".to_sym
+      modified = "@__modified_#{name}".to_sym
+
+      # set our default value in the class
       @defaults[name] = default
 
-      if clone
-        attr_reader name
-        buf = (freeze ? FREEZE_SETTER_METHOD : SETTER_METHOD) % { name: name }
-        instance_eval(buf, __FILE__, __LINE__)
-      else
-        attr_accessor name
+      # declare the getter
+      attr_reader name
+
+      # the setter is a little more complicated
+      define_method('%s=' % name) do |value, set_modified: true|
+
+        # always convert an Entity to a Reference before setting
+        value = value.to_ref if value.is_a?(Entity)
+
+        # We don't need to do anything to a frozen variable, but if it's not
+        # frozen, if we're supposed to clone it, do so, and if we're supposed
+        # to freeze it, also do that.
+        unless value.frozen?
+          value = value.clone if clone
+          value.freeze if freeze
+        end
+
+        # set the instance variable for this field
+        instance_variable_set(variable, value)
+
+        # also, unless explicitly told not to, mark this variable as modified.
+        # This exception is used by the initializer to set the defaults.
+        instance_variable_set(modified, true) if set_modified
       end
     end
   end
@@ -87,21 +94,30 @@ class Component
   def initialize(arg={})
     fields = self.class.defaults
 
-    if arg.is_a?(Array)
+    case arg
+    when Array
       raise ArgumentError, "got #{arg}; need #{fields.size} values" unless
           arg.size == fields.size
-      fields.each_with_index { |(k,_),i| fields[k] = arg[i] }
-    elsif arg.is_a?(Hash)
+      fields.each_with_index { |(k,_),i| send("#{k}=", arg[i]) }
+
+    when Hash
       unknown = arg.keys - fields.keys
       raise ArgumentError,
           "Unknown component fields, #{unknown}, for #{self}" unless
               unknown.empty?
-      fields.merge!(arg)
+
+      # For hashes, we'll use the setter method for any field provided, but if
+      # one wasn't provided, we'll set it to the default
+      fields.each do |key,default|
+        if arg.has_key?(key)
+          send("#{key}=", arg[key])
+        else
+          send("#{key}=", default, set_modified: false)
+        end
+      end
     else
       raise ArgumentError, "Unsupported argument type: #{arg.inspect}"
     end
-
-    fields.each { |k,v| send("#{k}=", v) }
   end
 
   # unique?
@@ -122,6 +138,10 @@ class Component
   def merge?
     true
   end
+
+  # entity_id / entity_id=
+  #
+  # Get/set entity_id
   attr_accessor :entity_id
 
   # to_h
@@ -135,11 +155,11 @@ class Component
     end
   end
 
-  # diff
+  # - / diff
   #
   # Return a Hash of the difference between this Component and another
   # Component of the same type, or a Hash with the same field keys
-  def diff(other)
+  def -(other)
     other = other.to_h if other.is_a?(self.class)
     raise ArgumentError, "Unsupported type for diff; #{other.inspect}" unless
         other.is_a?(Hash)
@@ -154,6 +174,18 @@ class Component
     self.class.new(values)
   end
 
+  # get_modified_fields
+  #
+  # Obscenely long name to try to not conflict with a possible field value, but
+  # this will get a Hash containing field & modified value for every field in
+  # this component that has been modified.
+  def get_modified_fields
+    self.class.defaults.inject({}) do |out,(k,_)|
+      out[k] = send(k) if instance_variable_get("@__modified_#{k}")
+      out
+    end
+  end
+
   # merge!
   #
   # Merge in another Component, or component values
@@ -161,9 +193,9 @@ class Component
   # Arguments:
   #   other: Hash, or Component instance
   def merge!(other)
-    other = other.to_h if other.is_a?(self.class)
+    other = other.get_modified_fields if other.is_a?(self.class)
     raise ArgumentError, "invalid other #{other.inspect}" unless
         other.is_a?(Hash)
-    other.each { |k,v| send("#{k}=", v) if send(k) != v }
+    other.each { |k,v| send("#{k}=", v) }
   end
 end

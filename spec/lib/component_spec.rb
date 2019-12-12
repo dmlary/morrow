@@ -196,8 +196,10 @@ describe Component do
           klass.new(a: 1)
         end
         it 'will call the remaining field setters with default values' do
-          expect_any_instance_of(klass).to receive(:b=).with(:b)
-          expect_any_instance_of(klass).to receive(:c=).with(:c)
+          expect_any_instance_of(klass).to receive(:b=)
+              .with(:b, set_modified: false)
+          expect_any_instance_of(klass).to receive(:c=)
+              .with(:c, set_modified: false)
           klass.new(a: 1)
         end
       end
@@ -205,9 +207,12 @@ describe Component do
 
     context 'when no argument is provided' do
       it 'will call the field setters with the default values' do
-        expect_any_instance_of(klass).to receive(:a=).with(:a)
-        expect_any_instance_of(klass).to receive(:b=).with(:b)
-        expect_any_instance_of(klass).to receive(:c=).with(:c)
+        expect_any_instance_of(klass).to receive(:a=)
+            .with(:a, set_modified: false)
+        expect_any_instance_of(klass).to receive(:b=)
+            .with(:b, set_modified: false)
+        expect_any_instance_of(klass).to receive(:c=)
+            .with(:c, set_modified: false)
         klass.new
       end
     end
@@ -231,7 +236,7 @@ describe Component do
     end
   end
 
-  describe '#diff(other)' do
+  describe '#-(other)' do
     let(:klass) do
       Class.new(Component) do
         field :a, default: :a
@@ -251,21 +256,22 @@ describe Component do
     context 'when other is a Component' do
       context 'of a different type' do
         it 'will raise an ArgumentError' do
-          expect { base.diff(other_b) }.to raise_error(ArgumentError)
+          expect { base - other_b }.to raise_error(ArgumentError)
         end
       end
       context 'of the same type' do
         it 'will call other.to_h()' do
           expect(other).to receive(:to_h).and_return({})
-          base.diff(other)
+          base - other
         end
       end
     end
+
     context 'when other is a Hash' do
       let(:diff) do
         base.a = :base
         other.a = :other
-        base.diff(other)
+        base - other
       end
 
       context 'when a value differs' do
@@ -295,15 +301,31 @@ describe Component do
     end
   end
 
+  describe '#get_modified_fields' do
+    let(:comp) do
+      Class.new(Component) do
+        field :a, default: :fail
+      end.new
+    end
+    context 'on a Component with no modifications' do
+      it 'will return an empty Hash' do
+        expect(comp.get_modified_fields).to eq({})
+      end
+    end
+    context 'on a Component that a setter has been called' do
+      it 'will return a Hash with the field and value'
+    end
+  end
+
   describe '#merge!(other)' do
     let(:comp) do
       Class.new(Component) do
-        field :a, default: :unchanged
+        field :a, default: :default
         field :b, default: :unchanged
         field :c, default: :unchanged
       end
     end
-    let(:base) { comp.new }
+    let(:base) { comp.new(a: :failed) }
     let(:other) { comp.new }
 
     shared_examples 'when merged' do |pairs|
@@ -323,11 +345,11 @@ describe Component do
 
     context 'when other is an instance of the same class' do
       before(:each) do
-        other.a = :passed
+        other.a = :default
         other.c = :passed
         base.merge!(other)
       end
-      include_examples 'when merged', a: :passed, b: :unchanged, c: :passed
+      include_examples 'when merged', a: :default, b: :unchanged, c: :passed
     end
     context 'when other is an instance of a different Component' do
       it 'will raise an error' do
