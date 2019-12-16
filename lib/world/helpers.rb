@@ -106,18 +106,30 @@ module World::Helpers
   def spawn(dest, base)
     add_list = []
 
-    entity = World.new_entity(base)
+    entity = World.new_entity(base: base)
     add_list << entity
 
-    if contents = entity.get(:contents, :list)
+    if contents = entity.get(:container, :contents)
       contents.map! do |ref|
         item = spawn(entity, ref)
         add_list << item
-        item.ref
+        item.to_ref
       end
     end
 
     add_list.each { |e| World.add_entity(e) }
     move_entity(entity, dest)
+  end
+
+  # visible_contents
+  #
+  # Return the array of Entities within a Container Entity that are visibile to
+  # the actor.
+  def visible_contents(actor: nil, cont: nil)
+    raise ArgumentError, 'no actor' unless actor
+    raise ArgumentError, 'no container' unless cont
+
+    # XXX handle visibility checks at some point
+    cont.get(ContainerComponent, :contents) || []
   end
 end

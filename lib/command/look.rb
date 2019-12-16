@@ -4,17 +4,17 @@ module Command::Look
   Command.register('look') do |actor, arg|
     room = actor.get(LocationComponent, :ref) or
         fault "actor has no location", actor
+    room = room.entity
     show_contents = false
 
     target = case arg
       when nil, ""
-        room.entity
+        room
       when "self", "me"
         actor
       when /^in\s(.*?)$/
         show_contents = true
-        match_keyword($1, 
-          room.get(:exits, :list),
+        match_keyword($1,
           room.get(:container, :contents),
           actor.get(:container, :contents))
       else
@@ -85,7 +85,7 @@ module Command::Look
       # XXX short is a <RACE>
       # XXX He/She/They/It is in <CONDITION>
       buf << target.get(:viewable, :short)
-      buf << " may be referred to as '&C%s&0'.\n" % target.get(:keywords).join('-')
+      buf << " may be referred to as '&C%s&0'.\n" % keywords(target)
 
       # XXX equipment
     end
@@ -98,7 +98,7 @@ module Command::Look
       end
 
       buf << target.get(:viewable, :short)
-      buf << " may be referred to as '&C%s&0'.\n" % target.get(:keywords).join('-')
+      buf << " may be referred to as '&C%s&0'.\n" % keywords(target)
     end
 
     def show_contents(actor, target)
@@ -107,9 +107,9 @@ module Command::Look
 
       contents = target.get(:container, :contents) or
           return "#{buf} is not a container."
-      
+
       return "#{buf} is closed." if target.get(:closable, :closed)
-  
+
       if contents.empty?
         return buf << " is empty"
       end
@@ -123,6 +123,12 @@ module Command::Look
         end
       end
       buf
+    end
+
+    private
+
+    def keywords(entity)
+      entity.get(:keywords, :words).join('-')
     end
   end
 end

@@ -69,6 +69,7 @@ end
 
 # To schedule the spawning of an Entity within a container Entity
 class SpawnPointComponent < Component
+  not_unique
   field :entity   # ref to Entity to be spawned
   field :active, default: 0   # number of active entities spawned from point
   field :min, default: 1      # minimum number present after spawning

@@ -11,6 +11,8 @@
            There is a "No Tipping" notice pinned to the darkness.
   - spawn_point:
       entity: !ref mob/puff
+  - spawn_point:
+      entity: !ref obj/limbo-chest
 
 - base: !ref base:exit
   link: !ref base:room/void.exits.list
@@ -33,7 +35,6 @@
   - destination: !ref base:room/void
 
 - base: !ref base:obj/chest/wooden
-  link: !ref room/limbo.container.contents
   components:
   - virtual: obj/limbo-chest
   - spawn_point:

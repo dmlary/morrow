@@ -1,0 +1,149 @@
+---
+# Base Entities used throughout the system.  Any Entity may be used as the base
+# for another Entity, these are just the most generic among them.
+- components:
+  - virtual: room
+  - viewable:
+      format: room
+      short: An indescribable room
+      long: |-
+        There is space here.
+  - exits
+  - container
+
+- components:
+  - virtual: character
+  - keywords:
+    - [ char ]
+  - viewable:
+      format: character
+      short: a non-descript character
+      long: |-
+        You see nothing special about them.
+  - container
+  - command_queue
+
+- components:
+  - virtual: object
+  - keywords:
+    - [ obj ]
+  - viewable:
+      format: object
+      short: an object
+      long: You see nothing special...
+
+- base: !ref character
+  components:
+  - virtual: player
+  - player_config
+  - connection
+
+- components:
+  - virtual: exit
+  - viewable:
+      format: exit
+      long: You see nothing special...
+  - destination:
+
+- base: !ref exit
+  components:
+  - virtual: door/closed
+  - keywords: door
+  - viewable:
+      format: object
+      short: a door
+      desc: A wooden door bars your way.
+
+- base: !ref object
+  components:
+  - virtual: obj/bag/small
+  - keywords:
+    - [ small, bag ]
+  - viewable:
+      short: a small bag
+      long: a small bag is here, collecting dust
+  - container:
+      max_volume: 10
+  - closable
+
+- base: !ref object
+  components:
+  - virtual: obj/chest/wooden
+  - keywords:
+    - [ wooden, chest ]
+  - viewable:
+      short: a wooden chest
+      long: a wooden chest rests on the floor
+  - container:
+      max_volume: 100
+  - closable
+
+- base: !ref object
+  components:
+  - virtual: obj/chest_closed
+  - keywords:
+    - [ chest, closed ]
+  - viewable:
+      short: a wooden chest
+      long: a wooden chest rests on the floor
+  - container:
+      max_volume: 100
+  - closable
+
+- base: !ref object
+  components:
+  - virtual: obj/chest_open_empty
+  - keywords:
+    - [ chest, open, empty ]
+  - viewable:
+      short: a wooden chest
+      long: a wooden chest rests on the floor
+  - container:
+      max_volume: 100
+  - closable:
+      closed: false
+
+- base: !ref object
+  components:
+  - virtual: obj/junk/ball
+  - keywords: 
+    - [red, rubber, ball]
+  - viewable:
+      short: a red rubber ball
+      long: a red rubber ball is on the floor
+
+- base: !ref character
+  components:
+  - virtual: mob/leonidas
+  - keywords:
+    - [ leonidas ]
+  - viewable:
+      short: Leonidas
+      long: Leonidas the Cursed
+      desc: |
+        Shoulders hunched, and back bent, this man stands as
+        though the world has beaten him, and he is bracing for the next
+        blow.  His eyes, downcast and lined with concern, dart about the
+        room, never lighting on anything for more than a moment.
+
+- base: !ref room
+  components:
+  - virtual: room/testing
+  - viewable:
+      short: The Testing Room
+      desc: |
+        A horrific room where all manner of gruesome experiments are conducted
+        against hapless, helpess, and hopeless victims.  Oddly, this room is
+        not yet covered in blood.
+  - spawn_point:
+      entity: !ref obj/chest_closed
+  - spawn_point:
+      entity: !ref obj/chest_open_empty
+
+- base: !ref exit
+  link: !ref room/testing.exits.list
+  components:
+  - keywords: up
+  - destination: !ref room/void
+
+

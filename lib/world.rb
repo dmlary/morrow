@@ -7,6 +7,7 @@ require_relative 'components'
 require_relative 'entity'
 require_relative 'reference'
 require_relative 'entity_manager'
+require_relative 'entity_view'
 
 module World
   class Fault < Helpers::Error; end
@@ -38,7 +39,7 @@ module World
     def new_entity(base: [], components: [])
       # XXX this components parameter may be problematic; what happens if we
       # want to merge?
-      @entity_manager.new_entity(*base).add_component(*components)
+      @entity_manager.new_entity(*base, components: components)
     end
 
     # add_entity - add an entity to the world
@@ -165,4 +166,5 @@ end
 
 require_relative 'world/constants'
 require_relative 'world/helpers'
+require_relative 'system'
 World.extend(World::Helpers)

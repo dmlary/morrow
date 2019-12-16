@@ -17,10 +17,27 @@ module Helpers
       Entity.new(config['type'], *components)
     end
   end
+
+  def load_test_world
+    World.reset!
+    World.load(File.join(File.dirname(__FILE__), 'test-world.yml'))
+  end
+
+  # spawn_entities
+  #
+  # Kick off the spawning system one time
+  def spawn_entities
+    World.entities.each do |entity|
+      entity.get_components(SpawnPointComponent).each do |point|
+        System::Spawner.spawn_entities(entity, point)
+      end
+    end
+  end
 end
 
 RSpec.configure do |config|
   config.include(Helpers)
+  config.before(:suite) { Helpers::Logging.logger.level = Logger::ERROR }
 end
 
 # Helper for testing, add a method to strip our custom color codes
