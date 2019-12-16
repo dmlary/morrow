@@ -105,19 +105,9 @@ module World::Helpers
   #   base: base Entity to spawn
   def spawn(dest, base)
     add_list = []
-
-    entity = World.new_entity(base: base)
-    add_list << entity
-
-    if contents = entity.get(:container, :contents)
-      contents.map! do |ref|
-        item = spawn(entity, ref)
-        add_list << item
-        item.to_ref
-      end
-    end
-
-    add_list.each { |e| World.add_entity(e) }
+    entity = World.add_entity(World.new_entity(base: base))
+    # XXX how do we trigger the spawning of things in the base in this new
+    # entity?
     move_entity(entity, dest)
   end
 

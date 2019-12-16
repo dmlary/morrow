@@ -17,19 +17,22 @@
 - base: !ref base:exit
   link: !ref base:room/void.exits.list
   components:
-  - keywords: up
+  - keywords:
+    - [ up ]
   - destination: !ref room/limbo
 
 - base: !ref base:exit
   link: !ref room/limbo.exits.list
   components:
-  - keywords: down
+  - keywords:
+    - [ down ]
   - destination: !ref base:room/void
 
 - base: !ref base:door/closed
   link: !ref room/limbo.exits.list
   components:
-  - keywords: east
+  - keywords:
+    - [ east ]
   - closable:
       closed: true
   - destination: !ref base:room/void
