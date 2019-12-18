@@ -23,6 +23,8 @@ module World::Helpers
 
   # place one entity inside another entity's contents
   def move_entity(entity, dest)
+    dest = dest.entity if dest.is_a?(Reference)
+    entity = entity.entity if entity.is_a?(Reference)
 
     # Remove the entity from any other location it was in previously
     if curr = entity.get(LocationComponent, :ref)

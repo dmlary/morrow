@@ -124,6 +124,19 @@ describe EntityView do
           expect(non_uniq).to contain_exactly(*non_uniqs)
         end
       end
+
+      context 'and multiple Entity instances have the Component' do
+        let(:non_uniq_a) { non_uniq.new }
+        let(:non_uniq_b) { non_uniq.new }
+        let(:entity_a) { Entity.new(non_uniq_a) }
+        let(:entity_b) { Entity.new(non_uniq_b) }
+        before(:each) { view.update!(entity_a); view.update!(entity_b) }
+
+        it 'will include only the Components in that Entity in the record' do
+          id, opt, non_uniq = view.each.find { |id,*_| id == entity_b.id }
+          expect(non_uniq).to contain_exactly(non_uniq_b)
+        end
+      end
     end
   end
 end

@@ -7,7 +7,7 @@ module Command::ActWiz
     Spawn an Entity in the current room based off <virtual>.
   HELP
     entity = begin
-      entity = spawn(actor.get(:location), arg)
+      entity = spawn(actor.get(:location, :ref), arg)
       "You wave your hand and #{entity.get(:viewable, :short)} appears."
     rescue EntityManager::UnknownVirtual
       "Entity not found: #{arg}"

@@ -6,10 +6,6 @@ class EntityView
     any.each  { |c| @comp_map[c] = [ @comp_map.size, :optional, c.unique? ] }
     excl.each { |c| @comp_map[c] = [ @comp_map.size, :excluded, c.unique? ] }
 
-    @entry_base = @comp_map.values.inject([]) do |o,(i,t,uniq)|
-      o << (uniq ? nil : [])
-    end
-
     @required = all
     @optional = any
   end
@@ -29,7 +25,11 @@ class EntityView
     # If this entity is tracked in the view, remove it now
     @entities.delete(entity.id)
 
-    entry = entity.components.inject(@entry_base.clone) do |out,comp|
+    # Construct an empty entry for this view
+    base = @comp_map.map { |c,(_,_,uniq)| uniq ? nil : [] }
+
+    # flesh out the entry with the components in the Entity
+    entry = entity.components.inject(base) do |out,comp|
       index, type, uniq = @comp_map[comp.class]
 
       next out unless index
@@ -58,6 +58,7 @@ class EntityView
     return false unless @optional.empty? or optional_found
 
     @entities[entity.id] = entry
+    self
   end
 
   # each

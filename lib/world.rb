@@ -56,6 +56,8 @@ module World
       entity = entity.resolve if entity.is_a?(Reference)
       @entity_manager.add(entity)
       entity.in_world = true
+      update_views(entity)
+      entity
     end
 
     # load the world
@@ -72,6 +74,7 @@ module World
       end
       @loading_dir = nil
       @entity_manager.resolve!
+      entities.each { |e| update_views(e) }
     end
 
     # area_from_filename
@@ -121,37 +124,27 @@ module World
       info "Registered #{name} system"
     end
 
-    # Need to create arrays to track entities with a subscribe set of
-    # components.
-    #
-    # We notify the individual Component types of which arrays to manage as the
-    # entity type is set/cleared; hooked into Entity#remove.
-    #
-    # register_system(:command_exec, :command_queue, &block)
-    #   group = @entity_groups[[:command_queue]] ||= []
-    #   @systems[:command_exec] = [ group, block ]
-    #   Component.subscribe(:command_queue, group)
-    #
-    #
-    # Component subscriptions: systems subscribe to component types
-    #
-    # XXX in #new_entity don't copy virtual?  End up with duplicate virtuals,
-    # which should be unique.  Do we need to enforce unique?
-
     # update_views
     #
     # Used by the Entity class, notifies World of changes to an Entity for
     # propigation to the various views.
+    #
+    # Note: this is an asynchronous call; updates are processed at the start of
+    # the World.update method.
     def update_views(entity)
       @entities_updated << entity
     end
 
     # update
     def update
-      @entities_updated.uniq.each { |e| @views.each { |v| v.update!(e) } }
+      start = Time.now
+
+      # apply the updates
+      @entities_updated.uniq!
+      @entities_updated.each { |e| @views.each { |v| v.update!(e) } }
+      updates = @entities_updated.size
       @entities_updated.clear
 
-      start = Time.now
       @systems.each do |system,(view, block)|
         view.each do |id,*comps|
           begin
@@ -168,7 +161,10 @@ module World
       delta = Time.now - start
       warn 'update exceeded time-slice; delta=%.04f > limit=%.04f' %
           [ delta, @update_frequency ] if delta > @update_frequency
-      @update_time[@update_index] = Time.now - start
+      @update_time[@update_index] = {
+        time: Time.now - start,
+        entities_updated: updates
+      }
       @update_index += 1
       @update_index = 0 if @update_index == @update_time.size
       true

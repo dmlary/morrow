@@ -44,9 +44,6 @@
       entity: !ref base:obj/junk/ball
       max: 100
 
-- base: !ref base:obj/junk/ball
-  link: !ref obj/limbo-chest.container.contents
-
 - base: !ref base:character
   components:
   - virtual: mob/puff
