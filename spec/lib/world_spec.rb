@@ -3,6 +3,9 @@ require 'entity'
 require 'component'
 
 describe World do
+  describe '.update_views(entity)' do
+    it 'will call EntityView#update! on each view'
+  end
 
   describe '.update' do
     context 'with no systems registered' do

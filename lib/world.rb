@@ -17,6 +17,8 @@ module World
 
   @entity_manager = EntityManager.new
   @systems = {}
+  @views = []
+  @entities_updated = []
 
   @exceptions = []
 
@@ -34,6 +36,7 @@ module World
     def reset!
       @entity_manager = EntityManager.new
       @systems.clear
+      @views.clear
     end
 
     def new_entity(base: [], components: [])
@@ -52,6 +55,7 @@ module World
     def add_entity(entity)
       entity = entity.resolve if entity.is_a?(Reference)
       @entity_manager.add(entity)
+      entity.in_world = true
     end
 
     # load the world
@@ -100,7 +104,6 @@ module World
     #
     # Arguments:
     #   ++name++  identifier for the system
-    #   ++types++ List of Component types
     #   ++block++ block to run on entities with component types
     #
     # Parameters:
@@ -108,10 +111,14 @@ module World
     #   ++:any++ entities must have at least one of ++types++
     #   ++:none++ entities must not have any of ++types++
     #   method: system handler method (instead of block)
-    def register_system(name, *types, method: nil, &block)
-      p = types.last.is_a?(Hash) ? types.pop : {}
-      @systems[name] = [ types, block || method ]
-      info 'Registered system for %s' % [ types.inspect ]
+    def register_system(name, all: [], any: [], excl: [], method: nil, &block)
+
+      # XXX need to try re-using EntityViews in the future
+      view = EntityView.new(all: all, any: any, excl: excl)
+      @views << view
+
+      @systems[name] = [ view, block || method ]
+      info "Registered #{name} system"
     end
 
     # Need to create arrays to track entities with a subscribe set of
@@ -131,19 +138,24 @@ module World
     # XXX in #new_entity don't copy virtual?  End up with duplicate virtuals,
     # which should be unique.  Do we need to enforce unique?
 
+    # update_views
+    #
+    # Used by the Entity class, notifies World of changes to an Entity for
+    # propigation to the various views.
+    def update_views(entity)
+      @entities_updated << entity
+    end
+
     # update
     def update
-      start = Time.now
-      @systems.each do |system,(types, block)|
-        entities.each do |entity|
-          comps = types.inject([]) do |o, type|
-            found = entity.get_components(type)
-            break false if found.empty?
-            o.push(*found)
-          end or next
+      @entities_updated.uniq.each { |e| @views.each { |v| v.update!(e) } }
+      @entities_updated.clear
 
+      start = Time.now
+      @systems.each do |system,(view, block)|
+        view.each do |id,*comps|
           begin
-            block.call(entity, *comps)
+            block.call(id, *comps)
           rescue Fault => ex
             error "Fault in system #{system}: #{ex}"
             @exceptions << ex

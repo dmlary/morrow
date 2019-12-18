@@ -2,9 +2,12 @@ module System::CommandQueue
   extend System::Base
   extend World::Helpers
 
-  World.register_system(:command_queue, :command_queue) do |actor, comp|
+  World.register_system(:command_queue,
+      all: [ CommandQueueComponent ]) do |id, comp|
     queue = comp.queue or next
     next if queue.empty?
+
+    actor = World.by_id(id)
 
     # run the command, which returns output
     cmd = queue.shift

@@ -41,6 +41,7 @@ describe Entity do
   end
 
   describe '#add_component(*components)' do
+
     context 'with multiple components' do
       it 'will add the components' do
         entity = Entity.new
@@ -49,19 +50,39 @@ describe Entity do
       end
     end
     context 'with a non-duplicate unique component' do
-      let(:entity) { Entity.new(comp_a) }
-
       it 'will add the component' do
+        entity = Entity.new(comp_a)
         entity.add_component(comp_b)
         expect(entity.components).to contain_exactly(comp_a, comp_b)
       end
     end
     context 'with a duplicate unique component' do
-      let(:entity) { Entity.new(comp_a) }
-
       it 'will raise an DuplicateUniqueComponent error' do
+        entity = Entity.new(comp_a)
         expect { entity.add_component(comp_a) }
             .to raise_error(Entity::DuplicateUniqueComponent)
+      end
+    end
+
+    context 'when the Entity has been added to the World' do
+      it 'will call World.update_views(self)' do
+        entity = Entity.new
+        World.add_entity(entity)
+
+        world = class_double('World')
+            .as_stubbed_const(transfer_nested_constants: true)
+        expect(world).to receive(:update_views).with(entity)
+        entity.add_component(components)
+      end
+    end
+    context 'when the Entity has not been added to the World' do
+      it 'will not call World.update_views(self)' do
+        entity = Entity.new
+
+        world = class_double('World')
+            .as_stubbed_const(transfer_nested_constants: true)
+        expect(world).to_not receive(:update_views).with(entity)
+        entity.add_component(components)
       end
     end
   end

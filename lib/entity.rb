@@ -32,6 +32,8 @@ class Entity
       @components << component
       component.entity_id = id
     end
+    World.update_views(self) if in_world?
+
     self
   end
   alias << add_component
@@ -45,6 +47,8 @@ class Entity
     @components.reject! do |comp|
       args.include?(comp) or args.include?(comp.class)
     end
+    World.update_views(self) if in_world?
+
     self
   end
 
@@ -188,4 +192,12 @@ class Entity
     end
     self
   end
+
+  # in_world?
+  #
+  # Returns true if this Entity has been added to the world.
+  def in_world?
+    !!@in_world
+  end
+  attr_writer :in_world
 end

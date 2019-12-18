@@ -4,7 +4,8 @@ module System::Connections
   IDLE_TIMEOUT = 5 * 60           # XXX not implemented
   DISCONNECT_TIMEOUT = 30 * 60
 
-  World.register_system(:connections, :connection) do |entity, comp|
+  World.register_system(:connections,
+      all: [ ConnectionComponent ]) do |id, comp|
     conn = comp.conn or next
 
     if conn.error?
@@ -15,7 +16,7 @@ module System::Connections
     elsif Time.now > conn.last_recv + DISCONNECT_TIMEOUT
       # timed out
       info("client timed out; #{conn.inspect}")
-      send_data("Timed out; closing connection\n", entity: entity)
+      send_data("Timed out; closing connection\n", id: id)
       conn.close_connection_after_writing
       comp.set(nil)
     end

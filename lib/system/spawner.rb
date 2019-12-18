@@ -2,7 +2,8 @@ module System::Spawner
   extend System::Base
   extend World::Helpers
 
-  def self.spawn_entities(dest, *points)
+  def self.spawn_entities(id, points)
+    dest = World.by_id(id)
     points.each do |sp|
       next_spawn = sp.next_spawn
       next if next_spawn && Time.now < next_spawn
@@ -27,6 +28,6 @@ module System::Spawner
     end
   end
 
-  World.register_system(:spawner, :spawn_point,
+  World.register_system(:spawner, all: [ SpawnPointComponent ],
       method: method(:spawn_entities))
 end
