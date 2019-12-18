@@ -167,7 +167,8 @@ class Entity
   # Returns true if the Entity has a Component of the specified type.
   #
   def has_component?(type)
-    get_components(type).size > 0
+    type = Component.find(type) unless type.is_a?(Class)
+    @components.find { |c| c.class == type } != nil
   end
 
   # merge!

@@ -12,13 +12,13 @@ module System::Connections
       # disconnected
       info("client disconnected; #{conn.inspect}")
       conn.close_connection
-      comp.set(nil)
+      comp.conn = nil
     elsif Time.now > conn.last_recv + DISCONNECT_TIMEOUT
       # timed out
       info("client timed out; #{conn.inspect}")
       send_data("Timed out; closing connection\n", id: id)
       conn.close_connection_after_writing
-      comp.set(nil)
+      comp.conn = nil
     end
   end
 end
