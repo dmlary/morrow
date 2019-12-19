@@ -90,6 +90,13 @@ class Reference
     @match.nil?
   end
 
+  # to_s
+  #
+  # Return a String representation for this Reference
+  def to_s
+    @match[0]
+  end
+
   # YAML-base initialization
   YAML.add_tag '!ref', self
   def init_with(coder)

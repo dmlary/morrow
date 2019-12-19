@@ -145,5 +145,3 @@
   components:
   - keywords: up
   - destination: !ref room/void
-
-

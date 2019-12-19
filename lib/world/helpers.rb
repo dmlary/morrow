@@ -127,4 +127,18 @@ module World::Helpers
     # XXX handle visibility checks at some point
     cont.get(ContainerComponent, :contents) || []
   end
+
+  # entity_desc
+  #
+  # Get a human-readable description for an entity
+  def entity_desc(entity)
+    if id = entity.get(VirtualComponent, :id)
+      return id
+    end
+
+    base = (entity.get(LoadedComponent, :base) || []).map(&:to_s)
+    words = entity.get(KeywordsComponent, :words)
+
+    "[%s] %s" % [ base.join(', '), words.join('-') ]
+  end
 end

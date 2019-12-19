@@ -30,4 +30,23 @@ describe World::Helpers do
       it 'will not be included in the results'
     end
   end
+
+  describe 'entity_desc(entity)' do
+    context 'when Entity has VirtualComponent' do
+      it 'will return VirtualComponent.id' do
+        entity = Entity.new
+        entity << VirtualComponent.new(id: 'passed')
+        expect(entity_desc(entity)).to eq('passed')
+      end
+    end
+    context 'when Entity does not have VirtualComponent' do
+      it 'will return LoadedComponent.base and KeywordComponent.words' do
+        entity = Entity.new
+        entity << LoadedComponent.new(base: [ Reference.new('test:base') ],
+                                      area: 'test')
+        entity << KeywordsComponent.new(words: ['words', 'passed'])
+        expect(entity_desc(entity)).to eq('[test:base] words-passed')
+      end
+    end
+  end
 end

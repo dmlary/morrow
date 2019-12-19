@@ -66,7 +66,8 @@ class EntityManager::Loader::Yaml < EntityManager::Loader::Base
 
       # Also add a LoadedComponent to say where the entity came from
       components << LoadedComponent.new(area: area,
-          save_hints: { path: path, base: base, link: links})
+          base: base,
+          save_hints: { path: path, link: links})
 
       @manager.schedule(:new_entity,
           [ *base, components: components, links: links, add: true ])

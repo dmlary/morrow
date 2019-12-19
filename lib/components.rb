@@ -61,6 +61,7 @@ end
 # Loader hints used by EntityManager::Loader::* for use when saving
 class LoadedComponent < Component
   not_merged
+  field :base
   field :area, freeze: true
   field :save_hints, default: {}
 end
