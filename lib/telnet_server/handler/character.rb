@@ -2,21 +2,15 @@ class TelnetServer::Handler::Character < TelnetServer::Handler::Base
   include World::Helpers
 
   def initialize(conn)
-    # What is the difference between a tag and a class/module/constant?
-
-    # Create a new entity in the world
-    @char = World.new_entity(base: 'base:player')
+    # create our command queue
     @cmd_queue = Queue.new
+
+    # Create a new player in the world (stick them in the void)
+    void = World.by_virtual('base:room/void')
+    @char = World.spawn(void, 'base:player')
     @char.set(:connection, conn: conn)
     @char.set(:command_queue, queue: @cmd_queue)
     @char.set(:player_config, color: true)
-
-    # Add this char to the world
-    World.add_entity(@char)
-
-    # move the player into the void
-    void = World.by_virtual('base:room/void')
-    move_entity(@char, void)
 
     # Add the 'look' command to the queue
     @cmd_queue.push('look')

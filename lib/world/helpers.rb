@@ -107,7 +107,10 @@ module World::Helpers
   #   base: base Entity to spawn
   def spawn(dest, base)
     add_list = []
-    entity = World.add_entity(World.new_entity(base: base))
+    entity = World.new_entity(base: base)
+    entity.rem_component(ViewExemptComponent)
+    World.add_entity(entity)
+
     # XXX how do we trigger the spawning of things in the base in this new
     # entity?
     move_entity(entity, dest)

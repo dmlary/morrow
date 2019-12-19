@@ -2,9 +2,10 @@ class EntityManager::View
   def initialize(all: [], any: [], excl: [])
     @entities = {}
     @comp_map = {}
-    all.each  { |c| @comp_map[c] = [ @comp_map.size, :required, c.unique? ] }
-    any.each  { |c| @comp_map[c] = [ @comp_map.size, :optional, c.unique? ] }
-    excl.each { |c| @comp_map[c] = [ @comp_map.size, :excluded, c.unique? ] }
+    index = -1;
+    all.each  { |c| @comp_map[c] = [ index += 1, :required, c.unique? ] }
+    any.each  { |c| @comp_map[c] = [ index += 1, :optional, c.unique? ] }
+    excl.each { |c| @comp_map[c] = [ nil, :excluded, c.unique? ] }
 
     @required = all
     @optional = any
@@ -26,13 +27,17 @@ class EntityManager::View
     @entities.delete(entity.id)
 
     # Construct an empty entry for this view
-    base = @comp_map.map { |c,(_,_,uniq)| uniq ? nil : [] }
+    base = @comp_map.inject([]) do |out,(c,(i,_,uniq))|
+      next out unless i
+      out[i] = uniq ? nil : []
+      out
+    end
 
     # flesh out the entry with the components in the Entity
     entry = entity.components.inject(base) do |out,comp|
       index, type, uniq = @comp_map[comp.class]
 
-      next out unless index
+      next out unless type
 
       case type
       when :excluded

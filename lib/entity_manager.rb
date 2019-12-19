@@ -45,6 +45,8 @@ class EntityManager
   #
   # Get a view of specific entities
   def get_view(all: [], any: [], excl: [])
+    excl << ViewExemptComponent unless
+        (all + any + excl).include?(ViewExemptComponent)
     k = { all: all, any: any, excl: excl }
     @views[k] ||= View.new(k)
   end

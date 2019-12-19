@@ -140,4 +140,16 @@ describe EntityManager::View do
       end
     end
   end
+
+  describe '#each' do
+    context 'with excluded Components' do
+      let(:view) { EntityManager::View.new(excl: [ VirtualComponent ]) }
+      let(:entity) { Entity.new }
+      before(:each) { view.update!(entity) }
+
+      it 'will not yield a value for excluded components' do
+        expect(view.each.to_a.first).to eq([entity.id])
+      end
+    end
+  end
 end

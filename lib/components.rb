@@ -1,5 +1,12 @@
 require_relative 'component'
 
+# This Component is to mark those Entity instances that should not be visible
+# to Systems via EntityManager::View.  This primarily applies to mob & object
+# entities loaded from disk, and used as templates to spawn other Entity
+# instances into the world.
+class ViewExemptComponent < Component
+end
+
 # Human-readable value to identify this object internally
 class VirtualComponent < Component
   not_merged

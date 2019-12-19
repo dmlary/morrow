@@ -256,4 +256,47 @@ describe EntityManager do
       end
     end
   end
+
+  describe '#get_view' do
+    context 'for a new view' do
+      it 'will create a new View instance' do
+        args = {
+            all: [ VirtualComponent ],
+            any: [ ExitsComponent ],
+            excl: [ ContainerComponent ] }
+
+        expect(EntityManager::View).to receive(:new) do |p|
+          expect(p).to eq(args)
+        end
+        em.get_view(args)
+      end
+
+      context 'without ViewExemptComponent in a parameter' do
+        it 'will add ViewExemptComponent to the exclude list' do
+          expect(EntityManager::View).to receive(:new) do |p|
+            expect(p[:excl]).to include(ViewExemptComponent)
+          end
+          em.get_view()
+        end
+      end
+
+      %i{ all any }.each do |type|
+        context "with ViewExemptComponent in #{type}" do
+          it 'will not add ViewExemptComponent to the exclude list' do
+            expect(EntityManager::View).to receive(:new) do |p|
+              expect(p[:excl]).to_not include(ViewExemptComponent)
+            end
+            em.get_view(type => [ ViewExemptComponent ])
+          end
+        end
+      end
+    end
+    context 'for an existing view' do
+      it 'will return the existing view' do
+        a = em.get_view(all: [ ContainerComponent ])
+        b = em.get_view(all: [ ContainerComponent ])
+        expect(a).to be(b)
+      end
+    end
+  end
 end

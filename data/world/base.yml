@@ -13,6 +13,7 @@
 
 - components:
   - virtual: character
+  - view_exempt
   - keywords:
     - [ char ]
   - viewable:
@@ -25,6 +26,7 @@
 
 - components:
   - virtual: object
+  - view_exempt
   - keywords:
     - [ obj ]
   - viewable:
