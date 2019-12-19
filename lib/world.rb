@@ -7,7 +7,6 @@ require_relative 'components'
 require_relative 'entity'
 require_relative 'reference'
 require_relative 'entity_manager'
-require_relative 'entity_view'
 
 module World
   class Fault < Helpers::Error; end
@@ -117,7 +116,7 @@ module World
     def register_system(name, all: [], any: [], excl: [], method: nil, &block)
 
       # XXX need to try re-using EntityViews in the future
-      view = EntityView.new(all: all, any: any, excl: excl)
+      view = @entity_manager.get_view(all: all, any: any, excl: excl)
       @views << view
 
       @systems[name] = [ view, block || method ]

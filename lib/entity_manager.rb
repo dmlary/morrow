@@ -22,6 +22,7 @@ class EntityManager
   def initialize()
     @entities = []
     @tasks = []
+    @views = {}
   end
   attr_reader :entities
 
@@ -36,7 +37,16 @@ class EntityManager
   # clear all entities from the system
   def clear
     @entities.clear
-    @deferred.clear
+    @tasks.clear
+    @views.clear
+  end
+
+  # get_view
+  #
+  # Get a view of specific entities
+  def get_view(all: [], any: [], excl: [])
+    k = { all: all, any: any, excl: excl }
+    @views[k] ||= View.new(k)
   end
 
   # entity_by_id
@@ -211,3 +221,4 @@ class EntityManager
 end
 
 require_relative 'entity_manager/loader'
+require_relative 'entity_manager/view'

@@ -87,6 +87,7 @@ describe TelnetServer::Handler::StateMachine do
               prompt { @prompt_called = true }
             end
           end
+          @machine.active = true
           @machine.input_line('test123')
         end
 
@@ -106,6 +107,8 @@ describe TelnetServer::Handler::StateMachine do
           @machine = new_machine do
             initial_state :invalid
           end
+          expect(@machine).to receive(:active?).and_return(true)
+
           expect { @machine.input_line('test123') }.to \
               raise_error(TelnetServer::Handler::StateMachine::UnknownState)
         end
@@ -148,6 +151,7 @@ describe TelnetServer::Handler::StateMachine do
             state :first
             state(:second) { enter { @called = true } }
           end
+          expect(machine).to receive(:active?).and_return(true)
           machine.state = :second
           expect(machine.called).to eq(true)
         end

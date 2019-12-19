@@ -1,4 +1,4 @@
-describe EntityView do
+describe EntityManager::View do
   let(:req_a) { Class.new(Component) }
   let(:req_b) { Class.new(Component) }
   let(:optional) { Class.new(Component) }
@@ -6,7 +6,8 @@ describe EntityView do
   let(:non_uniq) { Class.new(Component) { not_unique } }
   let(:entity) { World.add_entity(Entity.new) }
   let(:view) do
-    EntityView.new(all: [ req_a, req_b ], any: [ optional ], excl: [ excluded ])
+    EntityManager::View
+        .new(all: [ req_a, req_b ], any: [ optional ], excl: [ excluded ])
   end
 
   describe '#update!(entity)' do
@@ -80,7 +81,7 @@ describe EntityView do
     end
 
     context 'when one required Component is unique, and one is non-unique' do
-      let(:view) { EntityView.new(all: [ req_a, non_uniq]) }
+      let(:view) { EntityManager::View.new(all: [ req_a, non_uniq]) }
 
       context 'and two non-unique instances exist on the Entity' do
         before(:each) { 2.times { entity << non_uniq.new } }
@@ -100,7 +101,7 @@ describe EntityView do
       end
     end
     context 'when an optional Component is non-unique' do
-      let(:view) { EntityView.new(any: [ optional, non_uniq ]) }
+      let(:view) { EntityManager::View.new(any: [ optional, non_uniq ]) }
 
       context 'and no non-unique instances are provided' do
         before(:each) do

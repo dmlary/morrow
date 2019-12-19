@@ -27,11 +27,7 @@ module Helpers
   #
   # Kick off the spawning system one time
   def spawn_entities
-    World.entities.each do |entity|
-      entity.get_components(SpawnPointComponent).each do |point|
-        System::Spawner.spawn_entities(entity, point)
-      end
-    end
+    World.update
   end
 end
 

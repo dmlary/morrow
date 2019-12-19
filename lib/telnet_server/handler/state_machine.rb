@@ -61,6 +61,10 @@ module TelnetServer::Handler::StateMachine
     end  
   end
 
+  def active?
+    !!@active
+  end
+
   private
 
   # Call a handler

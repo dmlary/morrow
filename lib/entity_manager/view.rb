@@ -1,4 +1,4 @@
-class EntityView
+class EntityManager::View
   def initialize(all: [], any: [], excl: [])
     @entities = {}
     @comp_map = {}
