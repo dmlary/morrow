@@ -5,8 +5,10 @@ require_relative 'helpers'
 class EntityManager
   include Helpers::Logging
 
-  class UnsupportedFileType < ArgumentError; end
-  class UnknownVirtual < ArgumentError; end
+  class Error < RuntimeError; end
+  class UnsupportedFileType < Error; end
+  class DuplicateId < Error; end
+  class UnknownId < Error; end
 
   @loaders = Set.new
   class << self
@@ -20,11 +22,94 @@ class EntityManager
   end
 
   def initialize()
-    @entities = []
     @tasks = []
     @views = {}
+
+    # hash containing all the entities
+    @entities = {}
+
+    # used for assigning entity ids
+    @entity_index = 0
   end
   attr_reader :entities
+
+  # create_entity
+  #
+  # Create a new entity.
+  #
+  # Returns:
+  #   String: Entity ID
+  #
+  # Examples
+  #   em.create_entity                    # => 'none:empty-8391893'
+  #   em.create_entity(id: 'test:id')     # => 'test:id'
+  #   em.create_entity(base: 'test:id')   # => 'test:id-32193'
+  #   em.create_entity(id: 'base:passage/locked',
+  #       base: 'base:passage',
+  #       components: [ ClosableComponent.new(locked: true) ])
+  #                                       # => 'base:passage/locked'
+  def create_entity(id: nil, base: [], components: [])
+    base = [ base ] unless base.is_a?(Array)
+    components = [ components ] unless components.is_a?(Array)
+
+    # create an id if one wasn't provided
+    if id.nil?
+      id = '%s-%d' % [ base.empty? ? 'none:empty' : base.first, @entity_index ]
+      @entity_index += 1
+    end
+
+    # make sure the id isn't a duplicate
+    raise DuplicateId, id if @entities.has_key?(id)
+    entity = @entities[id] = {}
+
+    # merge any requested bases into the new entity
+    base.each { |b| merge_entity(id, b) }
+
+    # then add our components
+    add_component(id, *components) unless components.empty?
+
+    # return the id
+    id
+  end
+
+  # merge_entity
+  #
+  # Merge one entity into another
+  def merge_entity(dest_id, other_id)
+    raise UnknownId, dest_id unless dest = @entities[dest_id]
+    raise UnknownId, other_id unless others = @entities[other_id]
+
+    others.each_pair do |klass, other|
+      dest[klass] = other
+    end
+  end
+
+  # add_component
+  #
+  # Add components to an entity
+  def add_component(id, *components)
+    raise UnknownId, id unless entity = @entities[id]
+
+    components.each do |component|
+      klass, instance = component.is_a?(Class) ?
+          [ component, component.new ] :
+          [ component.class, component ]
+
+      if klass.unique?
+        entity[klass] = instance
+      else
+        (entity[klass] ||= []) << instance
+      end
+    end
+  end
+
+  # get_component
+  #
+  # Get a component for an entity.
+  def get_component(id, comp)
+    raise UnknownId, id unless entity = @entities[id]
+    entity[comp]
+  end
 
   # Load entities from the file at +path+
   def load(path)
@@ -49,39 +134,6 @@ class EntityManager
         (all + any + excl).include?(ViewExemptComponent)
     k = { all: all, any: any, excl: excl }
     @views[k] ||= View.new(k)
-  end
-
-  # entity_by_id
-  #
-  # lookup an entity by an entity id
-  #
-  # Arguments:
-  #   id: Entity.id value
-  #
-  # Returns:
-  #   Entity when found
-  #   nil when not found
-  def entity_by_id(id)
-    obj = begin
-      ObjectSpace._id2ref(id)
-    rescue RangeError
-      nil
-    end
-    @entities.include?(obj) ? obj : nil
-  end
-
-  # entity_by_virtual
-  #
-  # lookup an entity by a virtual id, or raise UnknownVirtual
-  #
-  # Arguments:
-  #   virtual: id to be found in the VirtualComponent of an Entity
-  #
-  # Returns:
-  #   Entity on success
-  def entity_by_virtual(virtual)
-    @entities.find { |e| e.get(VirtualComponent, :id) == virtual } or
-        raise UnknownVirtual, virtual
   end
 
   # new_entity
