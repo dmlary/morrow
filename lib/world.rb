@@ -174,4 +174,5 @@ end
 require_relative 'world/constants'
 require_relative 'world/helpers'
 require_relative 'system'
+require_relative 'command'
 World.extend(World::Helpers)

@@ -86,6 +86,16 @@ class SpawnPointComponent < Component
   field :next_spawn               # next spawn event; Time instance
 end
 
+# Note that the Entity came from a SpawnPoint.  When this Entity is removed
+# from the World, the active count in the corresponding SpawnPointComponent
+# must be decremented.
+#
+# Aww FUCK.  I think this is the moment where we have to move
+# SpawnPointComponents out of the Room Entity.  A Room may have multiple
+# SpawnPointComponents.  We can only reference an Entity within a Component.
+# How do we make this SpawnedComponent point at a specific Component within the
+# Entity?
+
 # Command queue for characters
 class CommandQueueComponent < Component
   field :queue, clone: false  # Queue instance

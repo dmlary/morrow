@@ -16,7 +16,7 @@ module System::Connections
     elsif Time.now > conn.last_recv + DISCONNECT_TIMEOUT
       # timed out
       info("client timed out; #{conn.inspect}")
-      send_data("Timed out; closing connection\n", id: id)
+      conn.send_data("Timed out; closing connection\n")
       conn.close_connection_after_writing
       comp.conn = nil
     end
