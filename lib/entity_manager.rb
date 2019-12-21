@@ -10,11 +10,12 @@ class EntityManager
   class UnsupportedFileType < Error; end
   class DuplicateId < Error; end
   class UnknownId < Error; end
+  class ComponentPresent < Error; end
 
   def initialize()
     @entities = {}          # hash containing all the entities
     @entity_index = 0       # used for assigning entity ids
-    @comp_map = {}          # mapping Component -> [ index, unique ]
+    @comp_map = {}          # mapping Component -> [ index, klass ]
     @comp_index_max = -1    # maximum index in the Entity Array
     @views = {}             # any active views
   end
@@ -83,28 +84,37 @@ class EntityManager
   #
   # Add a component type to EntityManager.  This is called from #add_component
   # when the Component class doesn't already have an index in the Entity Array.
-  def add_component_type(klass)
-    raise ArgumentError, "invalid component type: #{klass.inspect}" unless
-        klass.is_a?(Class) && klass.superclass == Component
+  #
+  # Arguments:
+  #   type: Component class, or Symbol (Component name)
+  #
+  # Returns:
+  #   index: index of component in entity array
+  #   class: Component class
+  def add_component_type(type)
+    if entry = @comp_map[type]
+      return entry
+    end
 
-    # look if there's already an index for it
-    index, _ = @comp_map[klass]
-    return index if index
+    type = Component.find(type) if type.is_a?(Symbol)
+
+    raise ArgumentError, "invalid component type: #{type.inspect}" unless
+        type.is_a?(Class) && type.superclass == Component
 
     index = (@comp_index_max += 1)
-    entry = [ index, klass.unique? ]
-    @comp_map[klass] = entry
+    entry = [ index, type ]
+    @comp_map[type] = entry
 
     begin
-      Module.const_get(klass.to_s)
-      sym = klass.to_s.snakecase.sub(/_component$/, '').to_sym
+      Module.const_get(type.to_s)
+      sym = type.to_s.snakecase.sub(/_component$/, '').to_sym
       @comp_map[sym] = entry
     rescue NameError
       # the class hasn't been assigned a constant, so don't create a symbol
       # shortcut for the component.
     end
 
-    index
+    entry
   end
 
   # add_component
@@ -113,17 +123,25 @@ class EntityManager
   def add_component(id, *components)
     raise UnknownId, id unless entity = @entities[id]
 
-    components.map do |component|
-
-      # from the argument, get both a klass and an instance
-      klass, instance = component.is_a?(Class) ?
-          [ component, component.new ] :
-          [ component.class, component ]
+    out = components.map do |arg|
+      key, instance = case arg
+      when Component
+        [ arg.class, arg ]
+      when Symbol
+        [ arg, nil ]
+      when Class
+        [ arg, arg.new ]
+      else
+        raise ArgumentError, "unsupported argument type: #{arg.inspect}"
+      end
 
       # find the index for this component class in the entity array
-      index, _ = (@comp_map[klass] || add_component_type(klass))
+      index, klass = (@comp_map[key] || add_component_type(key))
+      instance ||= klass.new
 
       if klass.unique?
+        raise ComponentPresent,
+            "entity #{id} already has component #{klass}" if entity[index]
         entity[index] = instance
       else
         (entity[index] ||= []) << instance
@@ -131,19 +149,28 @@ class EntityManager
 
       instance
     end
+
+    out.size == 1 ? out.first : out
   end
 
   # get_component
   #
   # Get a component for an entity.
-  def get_component(id, comp)
+  def get_component(id, type)
     raise UnknownId, id unless entity = @entities[id]
 
-    index, unique = @comp_map[comp]
-    return nil unless index
+    index, klass = @comp_map[type]
+
+    if klass.nil?
+      klass = type.is_a?(Symbol) ? Component.find(type) : type
+    end
 
     raise ArgumentError,
-        'use #get_components for non-unique Components' unless unique
+        'use #get_components for non-unique Components' if klass &&
+            !klass.unique?
+
+    return nil unless index
+
     entity[index]
   end
 
@@ -153,7 +180,7 @@ class EntityManager
   def get_components(id, comp)
     raise UnknownId, id unless entity = @entities[id]
 
-    index, unique = @comp_map[comp]
+    index, _ = @comp_map[comp]
     return [] unless index
 
     out = entity[index] || []
