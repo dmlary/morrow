@@ -2,7 +2,7 @@ module EntityManager::Loader
   class Base
     class << self
       def inherited(other)
-        EntityManager.register_loader(other)
+        # EntityManager.register_loader(other)
       end
 
       def load(manager, path)

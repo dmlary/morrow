@@ -1,4 +1,5 @@
 require 'set'
+require 'facets/string/snakecase'
 require_relative 'entity'
 require_relative 'helpers'
 
@@ -10,26 +11,12 @@ class EntityManager
   class DuplicateId < Error; end
   class UnknownId < Error; end
 
-  @loaders = Set.new
-  class << self
-    def register_loader(other)
-      @loaders << other
-    end
-
-    def get_loader(path)
-      @loaders.find { |l| l.support?(path) }
-    end
-  end
-
   def initialize()
-    @tasks = []
-    @views = {}
-
-    # hash containing all the entities
-    @entities = {}
-
-    # used for assigning entity ids
-    @entity_index = 0
+    @entities = {}          # hash containing all the entities
+    @entity_index = 0       # used for assigning entity ids
+    @comp_map = {}          # mapping Component -> [ index, unique ]
+    @comp_index_max = -1    # maximum index in the Entity Array
+    @views = {}             # any active views
   end
   attr_reader :entities
 
@@ -60,7 +47,7 @@ class EntityManager
 
     # make sure the id isn't a duplicate
     raise DuplicateId, id if @entities.has_key?(id)
-    entity = @entities[id] = {}
+    entity = @entities[id] = []
 
     # merge any requested bases into the new entity
     base.each { |b| merge_entity(id, b) }
@@ -74,14 +61,50 @@ class EntityManager
 
   # merge_entity
   #
-  # Merge one entity into another
+  # Merge one entity into another.  If both entities have a common unique
+  # Component, the Component will be merged into dest.
   def merge_entity(dest_id, other_id)
     raise UnknownId, dest_id unless dest = @entities[dest_id]
     raise UnknownId, other_id unless others = @entities[other_id]
 
-    others.each_pair do |klass, other|
-      dest[klass] = other
+    others.each_with_index do |other,i|
+      if other.is_a?(Array)
+        mine = (dest[i] ||= [])
+        other.each { |o| mine << o.clone }
+      elsif mine = dest[i]
+        mine.merge!(other)
+      else
+        dest[i] = other
+      end
     end
+  end
+
+  # add_component_type
+  #
+  # Add a component type to EntityManager.  This is called from #add_component
+  # when the Component class doesn't already have an index in the Entity Array.
+  def add_component_type(klass)
+    raise ArgumentError, "invalid component type: #{klass.inspect}" unless
+        klass.is_a?(Class) && klass.superclass == Component
+
+    # look if there's already an index for it
+    index, _ = @comp_map[klass]
+    return index if index
+
+    index = (@comp_index_max += 1)
+    entry = [ index, klass.unique? ]
+    @comp_map[klass] = entry
+
+    begin
+      Module.const_get(klass.to_s)
+      sym = klass.to_s.snakecase.sub(/_component$/, '').to_sym
+      @comp_map[sym] = entry
+    rescue NameError
+      # the class hasn't been assigned a constant, so don't create a symbol
+      # shortcut for the component.
+    end
+
+    index
   end
 
   # add_component
@@ -90,16 +113,23 @@ class EntityManager
   def add_component(id, *components)
     raise UnknownId, id unless entity = @entities[id]
 
-    components.each do |component|
+    components.map do |component|
+
+      # from the argument, get both a klass and an instance
       klass, instance = component.is_a?(Class) ?
           [ component, component.new ] :
           [ component.class, component ]
 
+      # find the index for this component class in the entity array
+      index, _ = (@comp_map[klass] || add_component_type(klass))
+
       if klass.unique?
-        entity[klass] = instance
+        entity[index] = instance
       else
-        (entity[klass] ||= []) << instance
+        (entity[index] ||= []) << instance
       end
+
+      instance
     end
   end
 
@@ -108,27 +138,67 @@ class EntityManager
   # Get a component for an entity.
   def get_component(id, comp)
     raise UnknownId, id unless entity = @entities[id]
-    entity[comp]
+
+    index, unique = @comp_map[comp]
+    return nil unless index
+
+    raise ArgumentError,
+        'use #get_components for non-unique Components' unless unique
+    entity[index]
   end
 
-  # Load entities from the file at +path+
-  def load(path)
-    loader = EntityManager.get_loader(path) or
-        raise UnsupportedFileType, path
-    info "loading entities from #{path}"
-    loader.load(self, path)
+  # get_components
+  #
+  # Get all instances of a Component for the Entity.
+  def get_components(id, comp)
+    raise UnknownId, id unless entity = @entities[id]
+
+    index, unique = @comp_map[comp]
+    return [] unless index
+
+    out = entity[index] || []
+    out.is_a?(Array) ? out.clone.freeze : [ out ]
   end
 
-  # clear all entities from the system
-  def clear
-    @entities.clear
-    @tasks.clear
-    @views.clear
+  # remove_component
+  #
+  # Remove a Component instance, or class of Component from an Entity.
+  #
+  # Arguments:
+  #   id: Entity id
+  #   type: Component, Component instance, or Component name (Symbol)
+  #
+  # Returns:
+  #   Array of component instances removed
+  def remove_component(id, type)
+    raise UnknownId, id unless entity = @entities[id]
+
+    # Massage our type to handle someone passing in a component instance
+    type, instance = type.is_a?(Component) ?
+        [ type.class, type ] :
+        [ type, nil ]
+
+    index, _ = @comp_map[type]
+
+    # if it's an unknown component, or there's nothing for that component in
+    # the entity, return an empty array
+    return [] unless index and components = entity[index]
+
+    out = if instance.nil? || components == instance
+      entity[index] = nil
+      components
+    elsif components.is_a?(Array)
+      components.delete(instance)
+    else
+      []
+    end
+
+    out.is_a?(Array) ? out : [ out ]
   end
 
   # get_view
   #
-  # Get a view of specific entities
+  # Get an EntityManager::View instance for a given criteria
   def get_view(all: [], any: [], excl: [])
     excl << ViewExemptComponent unless
         (all + any + excl).include?(ViewExemptComponent)
@@ -136,141 +206,13 @@ class EntityManager
     @views[k] ||= View.new(k)
   end
 
-  # new_entity
+  private
+
+  # update_views
   #
-  # Create a new Entity instance based off other Entity instances.  An +other+
-  # may be an Entity instance, a Reference instance, or a String containing a
-  # virtual.  A new Entity instance is created, then each +others+ in order is
-  # merged to the Entity using `Entity#merge!`.
-  #
-  # Examples:
-  #   bare_entity = new_entity    # equivalent to Entity.new
-  #   player = new_entity('base:player', 'base:race/elf')
-  #   chest = new_entity('base:obj/chest/locked')
-  #
-  def new_entity(*others, components: [], links: [], add: false)
-    raise ArgumentError, 'cannot link without :add being set' unless
-        add or links.empty?
-
-    # Construct our output Entity by merging each of the others into an empty
-    # Entity.
-    out = others.flatten.inject(Entity.new) do |base,other|
-      other = case other
-        when Entity
-          other
-        when Reference
-          other.entity
-        when String, Symbol
-          entity_by_virtual(other)
-        else
-          raise ArgumentError, "unsupported other type: #{other.inspect}"
-        end
-
-      base.merge!(other)
-      base
-    end
-
-    # don't do any extra work if no components were provided
-    unless components.empty?
-      components.each do |add|
-        if add.unique? and comp = out.get_component(add.class)
-          comp.merge!(add)
-        else
-          out << add
-        end
-      end
-    end
-
-    # short circut the rest unless we're adding the enity
-    return out unless add
-
-    # Add the entity, and schedule any linking to it that needs to occur
-    add(out)
-    links.each { |r| schedule(:link, ref: r, entity: out) }
-
-    out
-  end
-
-  # add
-  #
-  # Add an Entity to the EntityManager.  If the EntityManager is being serviced
-  # by any System, this will make the Entity subject to that System.
-  #
-  # Arguments:
-  #   entity: an Entity
-  #
-  def add(entity)
-    raise ArgumentError, "not an Entity: #{entity.inspect}" unless
-        entity.is_a?(Entity)
-    @entities << entity
-    entity
-  end
-  alias << add
-
-  # schedule
-  #
-  # Add a task to be run during #resolve!
-  #
-  # Arguments:
-  #   task: Task type; :link, or :new_entity
-  #
-  def schedule(task, args)
-    @tasks.push([task, args])
-    self
-  end
-
-  # resolve!
-  #
-  # Called after all #load() calls have been made; performs all deferred
-  # entity creation & linking.
-  #
-  def resolve!
-    info "running pending tasks"
-
-    loop do
-      before = @tasks.size 
-
-      @tasks.delete_if do |type, arg|
-        begin
-          case type
-
-          # New entity we pass off to the #new_entity method; it'll raise an
-          # UnknownVirtual error if any of the bases don't exist.
-          when :new_entity
-            arg.is_a?(Array) ? new_entity(*arg) : new_entity(arg)
-
-          # For linking, we'll resolve the value of the Reference; if it's an
-          # Array we'll push our Entity Reference into it, otherwise we'll just
-          # replace the value.
-          #
-          # Reference#value will raise UnknownVirtual if the Reference won't
-          # resolve.
-          when :link
-            value = arg[:ref].value
-            if value.is_a?(Array)
-              value << arg[:entity].to_ref
-            else
-              arg[:ref].value = arg[:entity]
-            end
-          end
-
-          # If we got this far, the task has been completed; we can delete it
-          true
-
-        # If we get an UnknownVirtual exception, that means we're missing some
-        # dependency for this task, so we should try it again on the next pass.
-        rescue UnknownVirtual
-          false   # do not delete from @tasks
-        end
-      end
-
-      # Break out of the loop if all the tasks have been completed, or none of
-      # them could be completed this time.
-      break if @tasks.empty? or @tasks.size == before
-    end
-
-    raise 'Failed to resolve all deferred items' unless @tasks.empty?
-    info "all pending tasks completed successfully"
+  # Called internally during add_component/remove_component to update all the
+  # views of the change to the entity
+  def update_views(id, change)
   end
 end
 
