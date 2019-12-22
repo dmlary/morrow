@@ -1,14 +1,9 @@
 class EntityManager::View
   def initialize(all: [], any: [], excl: [])
+    @required = all.map { |i,k| [ i, k, k.unique? ] }
+    @optional = any.map { |i,k| [ i, k, k.unique? ] }
+    @exclude  = excl.map { |i,k| [ i, k, k.unique? ] }
     @entities = {}
-    @comp_map = {}
-    index = -1;
-    all.each  { |c| @comp_map[c] = [ index += 1, :required, c.unique? ] }
-    any.each  { |c| @comp_map[c] = [ index += 1, :optional, c.unique? ] }
-    excl.each { |c| @comp_map[c] = [ nil, :excluded, c.unique? ] }
-
-    @required = all
-    @optional = any
   end
 
   # update!
@@ -19,51 +14,32 @@ class EntityManager::View
   #
   # Arguments:
   #   entity: Entity that has been updated
-  def update!(entity)
-    required = @required.clone
-    optional_found = false
+  def update!(entity, components)
+    excluded = @exclude.find { |i,_| components[i] }
+    entry = nil
 
-    # If this entity is tracked in the view, remove it now
-    @entities.delete(entity.id)
-
-    # Construct an empty entry for this view
-    base = @comp_map.inject([]) do |out,(c,(i,_,uniq))|
-      next out unless i
-      out[i] = uniq ? nil : []
-      out
+    if !excluded
+      entry = @required.inject([]) do |o,(i,_,unique)|
+        v = components[i] or break nil
+        o << (unique ? v : (v || []))
+      end
     end
 
-    # flesh out the entry with the components in the Entity
-    entry = entity.components.inject(base) do |out,comp|
-      index, type, uniq = @comp_map[comp.class]
-
-      next out unless type
-
-      case type
-      when :excluded
-        return false
-      when :optional
-        optional_found = true
-      when :required
-        required.delete(comp.class)
-      else
-        raise "unknown type #{type}"
+    if entry && !@optional.empty?
+      found = false
+      @optional.each do |i,_,unique|
+        v = components[i]
+        found = true if v != nil
+        entry << (unique ? v : (v || []))
       end
-
-      if uniq
-        out[index] = comp
-      else
-        out[index] << comp
-      end
-
-      out
+      entry = nil unless found
     end
 
-    return false unless required.empty?
-    return false unless @optional.empty? or optional_found
-
-    @entities[entity.id] = entry
-    self
+    if entry
+      @entities[entity] = entry
+    else
+      @entities.delete(entity)
+    end
   end
 
   # each

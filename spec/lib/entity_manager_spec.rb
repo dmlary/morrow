@@ -171,6 +171,11 @@ describe EntityManager do
     end
   end
 
+  describe '#destroy_entity()' do
+    it 'will call update_views'
+    it 'will remove the entity'
+  end
+
   describe '#add_component_type(type)' do
 
     # 'add component'
@@ -182,28 +187,32 @@ describe EntityManager do
     #
     # Parameters:
     #   by_sym: include tests for getting component by Symbol; default true
-    shared_examples 'add component' do |by_sym: true|
+    shared_examples 'add component type' do |by_sym: true|
       context 'present' do
         it 'will return the existing index & class' do
-          first = em.add_component_type(type)
-          expect(em.add_component_type(type)).to eq(first)
+          first = em.send(:add_component_type, type)
+          expect(em.send(:add_component_type, type)).to eq(first)
         end
       end
       context 'absent' do
         let(:existing) do
-          5.times.map { em.add_component_type(Class.new(Component)).first }
+          5.times.map do
+            em.send(:add_component_type, Class.new(Component)).first
+          end
         end
 
         it 'will return a unique index' do
-          expect(existing).to_not include(em.add_component_type(type).first)
+          expect(existing)
+              .to_not include(em.send(:add_component_type, type).first)
         end
 
         it 'will return the component class' do
-          expect(em.add_component_type(type)[1]).to be(comp)
+          expect(em.send(:add_component_type, type)[1])
+              .to be(comp)
         end
 
         it 'will allow the component to be referenced by Class' do
-          em.add_component_type(comp)
+          em.send(:add_component_type, comp)
           instance = comp.new
           id = em.create_entity(components: instance)
           expect(em.get_component(id, comp)).to be(instance)
@@ -211,7 +220,7 @@ describe EntityManager do
 
         if by_sym
           it 'will allow the component to be referenced by Symbol' do
-            em.add_component_type(comp)
+            em.send(:add_component_type, comp)
             instance = comp.new
             id = em.create_entity(components: instance)
             expect(em.get_component(id, comp_sym)).to be(instance)
@@ -225,14 +234,14 @@ describe EntityManager do
       let(:comp_sym) { :unique_test }
       let(:type) { comp }
 
-      include_examples 'add component'
+      include_examples 'add component type'
     end
 
     context 'anonymous Component' do
       let(:comp) { Class.new(Component) }
       let(:type) { comp }
 
-      include_examples 'add component', by_sym: false
+      include_examples 'add component type', by_sym: false
     end
 
     context 'Symbol' do
@@ -242,14 +251,14 @@ describe EntityManager do
 
       it 'will call Component.find' do
         expect(Component).to receive(:find).and_return(Class.new(Component))
-        em.add_component_type(:test)
+        em.send(:add_component_type, :test)
       end
-      include_examples 'add component'
+      include_examples 'add component type'
     end
 
     context 'non-component Class' do
       it 'will raise an ArgumentError' do
-        expect { em.add_component_type(Class.new) }
+        expect { em.send(:add_component_type, Class.new) }
             .to raise_error(ArgumentError)
       end
     end
@@ -311,6 +320,15 @@ describe EntityManager do
         else
           expect(em.get_components(entity, comp)).to include(instance)
         end
+      end
+
+      it 'will call update_views' do
+        entity  # fetch this early so we don't cause a loop while mocking
+        expect(em).to receive(:update_views) do |id,comps|
+          expect(id).to eq(entity)
+          expect(comps).to be(em.entities[entity])
+        end
+        em.add_component(entity, comp_arg)
       end
     end
 
@@ -401,7 +419,7 @@ describe EntityManager do
       end
 
       context 'absent' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity }
         let(:result) { nil }
         include_examples 'by component argument type',
@@ -411,7 +429,7 @@ describe EntityManager do
       end
 
       context 'present' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity(components: comp_instance) }
         let(:result) { comp_instance }
 
@@ -447,7 +465,7 @@ describe EntityManager do
       end
 
       context 'absent' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity }
         include_examples 'by component argument type',
             include: 'raise error',
@@ -455,7 +473,7 @@ describe EntityManager do
       end
 
       context 'present' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity(components: comp_instance) }
         include_examples 'by component argument type',
             include: 'raise error',
@@ -500,7 +518,7 @@ describe EntityManager do
       end
 
       context 'absent' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity }
         let(:result) { [] }
         include_examples 'by component argument type',
@@ -510,7 +528,7 @@ describe EntityManager do
       end
 
       context 'present' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity(components: comp_instance) }
         let(:result) { [ comp_instance ] }
 
@@ -536,7 +554,7 @@ describe EntityManager do
       end
 
       context 'absent' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:entity) { em.create_entity }
         let(:result) { [] }
 
@@ -547,7 +565,7 @@ describe EntityManager do
       end
 
       context 'present' do
-        before(:each) { em.add_component_type(comp) }
+        before(:each) { em.send(:add_component_type, comp) }
         let(:components) { 5.times.map { comp.new } }
         let(:entity) { em.create_entity(components: components) }
         let(:result) { components }
@@ -579,8 +597,10 @@ describe EntityManager do
     # Parameters:
     #   remove: human-readable description of what is removed
     #   returns: human-readable description of result
+    #   update: should update_views be called
     #
-    shared_examples 'remove component' do |remove: nil, returns: nil|
+    shared_examples 'remove component' do |remove: nil, returns: nil,
+        update: true|
       let(:other_components) { 3.times.map { Class.new(Component).new } }
       before(:each) { em.add_component(entity, *other_components) }
 
@@ -597,6 +617,22 @@ describe EntityManager do
           expect(em.get_component(entity, comp.class)).to be(comp)
         end
       end
+
+      if update
+        it 'will call update_views' do
+          entity  # fetch this early so we don't cause a loop while mocking
+          expect(em).to receive(:update_views) do |id,comps|
+            expect(id).to eq(entity)
+            expect(comps).to be(em.entities[entity])
+          end
+          em.remove_component(entity, comp_arg)
+        end
+      else
+        it 'will not call update_views' do
+          expect(em).to_not receive(:update_views)
+          em.remove_component(entity, comp_arg)
+        end
+      end
     end
 
     context 'unique component' do
@@ -611,7 +647,8 @@ describe EntityManager do
         include_examples 'by component argument type',
             include: 'remove component',
             remove: 'nothing',
-            returns: 'empty array'
+            returns: 'empty array',
+            update: false
       end
 
       context 'present' do
@@ -633,7 +670,8 @@ describe EntityManager do
         let(:after) { [ comp_instance ] }
         include_examples 'remove component',
             remove: 'nothing',
-            returns: 'empty array'
+            returns: 'empty array',
+            update: false
       end
     end
 
@@ -649,7 +687,8 @@ describe EntityManager do
         include_examples 'by component argument type',
             include: 'remove component',
             remove: 'nothing',
-            returns: 'empty array'
+            returns: 'empty array',
+            update: false
       end
 
       context 'single instance' do
@@ -774,162 +813,125 @@ describe EntityManager do
   end
 
   describe '#get_view' do
-    context 'for a new view' do
-      it 'will create a new View instance' do
-        args = {
-            all: [ VirtualComponent ],
-            any: [ ExitsComponent ],
-            excl: [ ContainerComponent ] }
+    # 'gets a view'
+    #
+    # Lets:
+    #   all: :all argument
+    #   any: :any argument
+    #   excl: :excl argument
+    #
+    # Parameters:
+    #   add_excl: should ViewExemptComponent automatically be added to excl
+    shared_examples 'gets a view' do |add_excl: true|
 
-        expect(EntityManager::View).to receive(:new) do |p|
-          expect(p).to eq(args)
+      it 'will call add_component_type() for all types provided' do
+
+        # expect all of our types to be passed in
+        types = [ all ] + [ any ] + [ excl ]
+        types.flatten.compact.each do |type|
+          expect(em).to receive(:add_component_type).with(type)
+              .and_return([0, type])
         end
-        em.get_view(args)
+
+        if add_excl
+          allow(em).to receive(:add_component_type).with(ViewExemptComponent)
+              .and_return([0, ViewExemptComponent])
+        else
+          expect(em).to receive(:add_component_type).with(ViewExemptComponent)
+              .and_return([0, ViewExemptComponent])
+        end
+
+        em.get_view(all: all, any: any, excl: excl)
       end
 
-      context 'without ViewExemptComponent in a parameter' do
-        it 'will add ViewExemptComponent to the exclude list' do
-          expect(EntityManager::View).to receive(:new) do |p|
-            expect(p[:excl]).to include(ViewExemptComponent)
+      it 'will call EntityManager::View.new' do
+        args = { all: all, any: any, excl: excl }.inject({}) do |o,(key, ary)|
+          ary = [ ary ].flatten.compact
+          o[key] = ary.map { |t| em.send(:add_component_type, t) }
+          o
+        end
+        args[:excl] << em.send(:add_component_type, ViewExemptComponent) if
+            add_excl
+
+        expect(EntityManager::View).to receive(:new).with(args)
+        em.get_view(all: all, any: any, excl: excl)
+      end
+
+    end
+
+    context 'new view' do
+      context 'with duplicate components' do
+        shared_examples 'will error' do
+          it 'will raise an ArgumentError' do
+            expect { em.get_view(all: all, any: any, excl: excl) }
+                .to raise_error(ArgumentError)
           end
-          em.get_view()
+        end
+        context 'in all and any' do
+          let(:all) { UniqueTestComponent }
+          let(:any) { UniqueTestComponent }
+          let(:excl) { nil }
+          include_examples 'will error'
+        end
+        context 'in all and excl' do
+          let(:all) { UniqueTestComponent }
+          let(:any) { nil }
+          let(:excl) { UniqueTestComponent }
+          include_examples 'will error'
+        end
+        context 'in any and excl' do
+          let(:all) { nil }
+          let(:any) { UniqueTestComponent }
+          let(:excl) { UniqueTestComponent }
+          include_examples 'will error'
         end
       end
 
-      %i{ all any }.each do |type|
-        context "with ViewExemptComponent in #{type}" do
-          it 'will not add ViewExemptComponent to the exclude list' do
-            expect(EntityManager::View).to receive(:new) do |p|
-              expect(p[:excl]).to_not include(ViewExemptComponent)
-            end
-            em.get_view(type => [ ViewExemptComponent ])
-          end
+      context 'no conflicting components' do
+        let(:all) { Class.new(Component) }
+        let(:any) { Class.new(Component) }
+        let(:excl) { Class.new(Component) }
+        include_examples 'gets a view'
+      end
+    end
+
+    context 'existing view' do
+      context 'with same ordered arguments' do
+        it 'will return the existing view' do
+          view = em.get_view(all: [:unique_test, :non_unique_test])
+          expect(em.get_view(all: [:unique_test, :non_unique_test]))
+              .to be(view)
+        end
+      end
+      context 'with different ordered arguments' do
+        it 'will return the existing view' do
+          view = em.get_view(all: [:unique_test, :non_unique_test])
+          expect(em.get_view(all: [:non_unique_test, :unique_test]))
+              .to be(view)
         end
       end
     end
-    context 'for an existing view' do
-      it 'will return the existing view' do
-        a = em.get_view(all: [ ContainerComponent ])
-        b = em.get_view(all: [ ContainerComponent ])
-        expect(a).to be(b)
+  end
+
+  describe '#update_view(entity, components)' do
+    context 'when no views exist' do
+      it 'will not error' do
+        expect { em.send(:update_views, 'test', 'components') }.to_not raise_error
+      end
+    end
+
+    context 'when views exist' do
+      it 'will call View#update! on each view' do
+        view_1 = em.get_view(all: UniqueTestComponent)
+        view_2 = em.get_view(any: UniqueTestComponent)
+        expect(view_1).to receive(:update!).with(:entity, :components)
+        expect(view_2).to receive(:update!).with(:entity, :components)
+        em.send(:update_views, :entity, :components)
       end
     end
   end
 end
 
-#   describe '#new_entity()' do
-#     let(:entity) { Entity.new }
-#
-#     context 'when called with no arguments' do
-#       it 'will return an Entity with no Components' do
-#         expect(em.new_entity.components).to be_empty
-#       end
-#     end
-#
-#     shared_examples 'will return a merged Entity' do
-#       it 'will return an Entity instance' do
-#         expect(em.new_entity(arg)).to be_a_kind_of(Entity)
-#       end
-#       it 'will not add the Entity to the EntityManager' do
-#         new = em.new_entity(arg)
-#         expect(em.entity_by_id(new.id)).to be_nil
-#       end
-#       it 'will call Entity#merge! on the base Entity' do
-#         expect_any_instance_of(Entity).to receive(:merge!).with(entity)
-#         em.new_entity(arg)
-#       end
-#     end
-#
-#     context 'when called with an Entity argument' do
-#       let(:arg) { entity }
-#       include_examples 'will return a merged Entity'
-#     end
-#     context 'when called with a Reference argument' do
-#       before(:each) { em.add(entity) }
-#       let(:arg) { entity.to_ref }
-#       include_examples 'will return a merged Entity'
-#     end
-#     context 'when called with a String argument' do
-#       before(:each) do
-#         entity << VirtualComponent.new(id: 'test:entity')
-#         em.add(entity)
-#       end
-#       let(:arg) { 'test:entity' }
-#       include_examples 'will return a merged Entity'
-#     end
-#     context 'when called with an Array' do
-#       # Ran into problems implementing this with a expect_any_instance_of mock.
-#       it 'will call Entity#merge! Array.size times'
-#     end
-#
-#     context 'component: [ Component ]' do
-#       let(:comp) { Class.new(Component) }
-#
-#       context 'the Component is unique' do
-#         context 'and exists in base' do
-#           let(:comp_arg) { comp.new }
-#           let(:other_comp) { comp.new }
-#           let(:other) { Entity.new(other_comp) }
-#           it 'will call #merge! on the base Component' do
-#             expect_any_instance_of(comp).to receive(:merge!).with(comp_arg)
-#             em.new_entity(other, components: [comp_arg])
-#           end
-#         end
-#         context 'and does not exist in base' do
-#           it 'will add the Component to base' do
-#             component = comp.new
-#             entity = em.new_entity(components: [component])
-#             expect(entity.components).to include(component)
-#           end
-#         end
-#       end
-#       context 'the Component is not unique' do
-#         it 'will add the Component to base' do
-#           comp = Class.new(Component) { not_unique }
-#           base_comp = comp.new
-#           add_comp = comp.new
-#           base = Entity.new(base_comp)
-#           entity = em.new_entity(base, components: [add_comp])
-#           expect(entity.get_components(comp).size).to eq(2)
-#         end
-#       end
-#     end
-#
-#     context 'add: false' do
-#       it 'will not call EntityManager#add' do
-#         expect(em).to_not receive(:add)
-#         em.new_entity(add: false)
-#       end
-#
-#       context 'link: [ Reference ]' do
-#         it 'will raise an ArgumentError' do
-#           ref = em.new_entity(add: true).to_ref
-#           expect { em.new_entity(add: false, link: [ref]) }
-#               .to raise_error(ArgumentError)
-#         end
-#       end
-#     end
-#
-#     context 'add: true' do
-#       it 'will call EntityManager#add' do
-#         expect(em).to receive(:add)
-#         em.new_entity(add: true)
-#       end
-#
-#       context 'link: [ Reference ]' do
-#         let(:ref) { em.new_entity(add: true).to_ref }
-#
-#         it 'will call EntityManager#schedule(:link, ref: ref, entity: ?)' do
-#           expect(em).to receive(:schedule) do |name,args|
-#             expect(name).to be(:link)
-#             expect(args).to include(ref: ref)
-#           end
-#           em.new_entity(add: true, links: [ ref ])
-#         end
-#       end
-#     end
-#   end
-#
 #   describe '#schedule(task, args)' do
 #     it 'will call @tasks.push' do
 #       expect(em.instance_variable_get(:@tasks)).to receive(:push)
@@ -1026,49 +1028,6 @@ end
 #           em.schedule(:link, ref: ref, entity: entity)
 #           expect { em.resolve! }.to raise_error(RuntimeError)
 #         end
-#       end
-#     end
-#   end
-#
-#   describe '#get_view' do
-#     context 'for a new view' do
-#       it 'will create a new View instance' do
-#         args = {
-#             all: [ VirtualComponent ],
-#             any: [ ExitsComponent ],
-#             excl: [ ContainerComponent ] }
-#
-#         expect(EntityManager::View).to receive(:new) do |p|
-#           expect(p).to eq(args)
-#         end
-#         em.get_view(args)
-#       end
-#
-#       context 'without ViewExemptComponent in a parameter' do
-#         it 'will add ViewExemptComponent to the exclude list' do
-#           expect(EntityManager::View).to receive(:new) do |p|
-#             expect(p[:excl]).to include(ViewExemptComponent)
-#           end
-#           em.get_view()
-#         end
-#       end
-#
-#       %i{ all any }.each do |type|
-#         context "with ViewExemptComponent in #{type}" do
-#           it 'will not add ViewExemptComponent to the exclude list' do
-#             expect(EntityManager::View).to receive(:new) do |p|
-#               expect(p[:excl]).to_not include(ViewExemptComponent)
-#             end
-#             em.get_view(type => [ ViewExemptComponent ])
-#           end
-#         end
-#       end
-#     end
-#     context 'for an existing view' do
-#       it 'will return the existing view' do
-#         a = em.get_view(all: [ ContainerComponent ])
-#         b = em.get_view(all: [ ContainerComponent ])
-#         expect(a).to be(b)
 #       end
 #     end
 #   end

@@ -80,43 +80,6 @@ class EntityManager
     end
   end
 
-  # add_component_type
-  #
-  # Add a component type to EntityManager.  This is called from #add_component
-  # when the Component class doesn't already have an index in the Entity Array.
-  #
-  # Arguments:
-  #   type: Component class, or Symbol (Component name)
-  #
-  # Returns:
-  #   index: index of component in entity array
-  #   class: Component class
-  def add_component_type(type)
-    if entry = @comp_map[type]
-      return entry
-    end
-
-    type = Component.find(type) if type.is_a?(Symbol)
-
-    raise ArgumentError, "invalid component type: #{type.inspect}" unless
-        type.is_a?(Class) && type.superclass == Component
-
-    index = (@comp_index_max += 1)
-    entry = [ index, type ]
-    @comp_map[type] = entry
-
-    begin
-      Module.const_get(type.to_s)
-      sym = type.to_s.snakecase.sub(/_component$/, '').to_sym
-      @comp_map[sym] = entry
-    rescue NameError
-      # the class hasn't been assigned a constant, so don't create a symbol
-      # shortcut for the component.
-    end
-
-    entry
-  end
-
   # add_component
   #
   # Add components to an entity
@@ -149,6 +112,9 @@ class EntityManager
 
       instance
     end
+
+    # update all of the views for the changes
+    update_views(id, entity)
 
     out.size == 1 ? out.first : out
   end
@@ -220,26 +186,83 @@ class EntityManager
       []
     end
 
-    out.is_a?(Array) ? out : [ out ]
+    # package the removed instances as an array
+    out = [ out ] unless out.is_a?(Array)
+
+    # update all of the views if there were changes
+    update_views(id, entity) unless out.empty?
+
+    out
   end
 
   # get_view
   #
   # Get an EntityManager::View instance for a given criteria
   def get_view(all: [], any: [], excl: [])
-    excl << ViewExemptComponent unless
-        (all + any + excl).include?(ViewExemptComponent)
-    k = { all: all, any: any, excl: excl }
-    @views[k] ||= View.new(k)
+    seen = []
+    args = { all: all, any: any, excl: excl }.inject({}) do |o,(key,val)|
+      val = [ val ].flatten.compact
+      o[key] = val.map do |type|
+        index, klass = add_component_type(type)
+        raise ArgumentError, "#{klass} present more than once in args" if
+            seen.include?(klass)
+        seen << klass
+        [ index, klass ]
+      end.sort_by { |i,k| k.to_s }
+      o
+    end
+
+    args[:excl] << add_component_type(ViewExemptComponent) unless
+        seen.include?(ViewExemptComponent)
+
+    @views[args] ||= View.new(args)
   end
 
   private
+
+  # add_component_type
+  #
+  # Add a component type to EntityManager.  This is called from #add_component
+  # when the Component class doesn't already have an index in the Entity Array.
+  #
+  # Arguments:
+  #   type: Component class, or Symbol (Component name)
+  #
+  # Returns:
+  #   index: index of component in entity array
+  #   class: Component class
+  def add_component_type(type)
+    if entry = @comp_map[type]
+      return entry
+    end
+
+    type = Component.find(type) if type.is_a?(Symbol)
+
+    raise ArgumentError, "invalid component type: #{type.inspect}" unless
+        type.is_a?(Class) && type.superclass == Component
+
+    index = (@comp_index_max += 1)
+    entry = [ index, type ]
+    @comp_map[type] = entry
+
+    begin
+      Module.const_get(type.to_s)
+      sym = type.to_s.snakecase.sub(/_component$/, '').to_sym
+      @comp_map[sym] = entry
+    rescue NameError
+      # the class hasn't been assigned a constant, so don't create a symbol
+      # shortcut for the component.
+    end
+
+    entry
+  end
 
   # update_views
   #
   # Called internally during add_component/remove_component to update all the
   # views of the change to the entity
-  def update_views(id, change)
+  def update_views(id, components)
+    @views.each_value { |v| v.update!(id, components) }
   end
 end
 
