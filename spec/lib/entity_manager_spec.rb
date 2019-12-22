@@ -9,9 +9,7 @@ describe EntityManager do
     end
   end
 
-  let(:em) do
-    World.entity_manager = EntityManager.new
-  end
+  let(:em) { EntityManager.new }
   let(:comp) { Class.new(Component) }
 
   # 'by component argument type'

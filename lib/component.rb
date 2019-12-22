@@ -68,9 +68,6 @@ class Component
       # the setter is a little more complicated
       define_method('%s=' % name) do |value, set_modified: true|
 
-        # always convert an Entity to a Reference before setting
-        value = value.to_ref if value.is_a?(Entity)
-
         # We don't need to do anything to a frozen variable, but if it's not
         # frozen, if we're supposed to clone it, do so, and if we're supposed
         # to freeze it, also do that.

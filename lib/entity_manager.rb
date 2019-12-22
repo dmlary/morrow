@@ -1,6 +1,5 @@
 require 'set'
 require 'facets/string/snakecase'
-require_relative 'entity'
 require_relative 'helpers'
 
 class EntityManager

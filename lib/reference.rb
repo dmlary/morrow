@@ -30,28 +30,17 @@ class Reference
 
   # Reference.new("area:type/name")
   # Reference.new("type/name", source: path)
-  # Reference.new(Entity)
   def initialize(arg)
-    if arg.is_a?(Entity)
-      @entity_id = arg.id
-    else
-      raise ArgumentError, "unsupported argument, #{arg.inspect}" unless
-          @match = arg.match(REFERENCE_PATTERN)
-    end
+    @match = arg.match(REFERENCE_PATTERN) or
+        raise ArgumentError, "unsupported argument, #{arg.inspect}"
   end
-  attr_reader :match, :entity_id
+  attr_reader :match
 
   # entity
   #
-  # Return the Entity instance in World that this Reference refers to.  If no
-  # such Entity exists, a EntityManager::UnknownVirtual exception will be
-  # raised.
+  # Return the entity id that this Reerence refers to.
   def entity
-    return World.by_id(@entity_id) if @entity_id
-
-    entity = World.by_virtual("#{@match[:area]}:#{@match[:virtual]}")
-    @entity_id = entity.id
-    entity
+    @entity ||= "#{@match[:area]}:#{@match[:virtual]}"
   end
 
   # has_field?
@@ -69,7 +58,8 @@ class Reference
     raise NoField, "no component field found in #{@match[0].inspect}" unless
         has_field?
 
-    entity.get(@match[:component], @match[:field])
+    comp = World.get_component(entity, @match[:component].to_sym)
+    comp.send(@match[:field])
   end
 
   # value=
@@ -79,15 +69,9 @@ class Reference
   def value=(val)
     raise NoField, "no component field found in #{@match[0].inspect}" unless
         has_field?
-    entity.set(@match[:component], @match[:field] => val)
-  end
 
-  # absolute?
-  #
-  # Returns true if this is an absolute Reference to a specific Entity ID, not
-  # a relative one from a reference string.
-  def absolute?
-    @match.nil?
+    comp = World.get_component!(entity, @match[:component].to_sym)
+    comp.send('%s=' % @match[:field], val)
   end
 
   # to_s

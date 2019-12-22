@@ -4,7 +4,6 @@ require 'forwardable'
 require_relative 'helpers'
 require_relative 'component'
 require_relative 'components'
-require_relative 'entity'
 require_relative 'reference'
 require_relative 'entity_manager'
 
@@ -28,8 +27,10 @@ module World
   class << self
     extend Forwardable
     attr_reader :exceptions
-    attr_accessor :entity_manager # setter exposed for testing
-    def_delegators :@entity_manager, :entity_from_template, :entities
+    attr_reader :entity_manager
+    alias em entity_manager   # shortcut for my sanity
+    def_delegators :@entity_manager, :entities, :create_entity, :destroy_entity,
+        :add_component, :remove_component, :get_component, :get_components
 
     # reset the internal state of the World
     def reset!
@@ -38,25 +39,12 @@ module World
       @views.clear
     end
 
-    def new_entity(base: [], components: [])
-      # XXX this components parameter may be problematic; what happens if we
-      # want to merge?
-      @entity_manager.new_entity(*base, components: components)
-    end
-
-    # add_entity - add an entity to the world
+    # get_component!
     #
-    # Arguments:
-    #   arg: Entity or Reference
-    #
-    # Returns:
-    #   Entity::Id
-    def add_entity(entity)
-      entity = entity.resolve if entity.is_a?(Reference)
-      @entity_manager.add(entity)
-      entity.in_world = true
-      update_views(entity)
-      entity
+    # Get a unique component for the entity.  If one does not yet exist, it
+    # will create the component.
+    def get_component!(entity, type)
+      em.get_component(entity, type) or em.add_component(entity, type)
     end
 
     # load the world
@@ -152,7 +140,7 @@ module World
             error "Fault in system #{system}: #{ex}"
             @exceptions << ex
           rescue Exception => ex
-            error "Exception in system #{system}: #{ex}" 
+            error "Exception in system #{system}: #{ex}"
             @exceptions << ex
           end
         end
