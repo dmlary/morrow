@@ -54,40 +54,24 @@ module World
     #
     # Returns: self
     def load(base)
-      @loading_dir = base
+      info "loading world from #{base} ..."
+      @loader = Loader.new(@entity_manager)
       Find.find(base) do |path|
-        next if File.basename(path)[0] == '.'
-        @entity_manager.load(path) if FileTest.file?(path)
+        next if File.basename(path)[0] == '.' or !FileTest.file?(path)
+
+        # Grab the area name from the path
+        area = if path =~ %r{#{base}/([^/.]+)}
+          $1
+        else
+          # support loading a single filename as the world
+          File.basename(path).sub(/\..*$/, '')
+        end
+
+        @loader.load(path: path, area: area)
       end
       @loading_dir = nil
-      @entity_manager.resolve!
-      entities.each { |e| update_views(e) }
-    end
-
-    # area_from_filename
-    #
-    # Given a filename, return the name of the area the Entities within that
-    # file belong to.
-    def area_from_filename(path)
-
-      # If we're loading from a specific directory, then the area is the first
-      # word after the loading_dir
-      if @loading_dir && path =~ %r{#{@loading_dir}/([^/.]+)}
-        $1
-      else
-        # otherwise it's just the filename without any extension
-        File.basename(path).sub(/\..*$/, '')
-      end
-    end
-
-    # find an entity by virtual id
-    def by_virtual(virtual)
-      @entity_manager.entity_by_virtual(virtual)
-    end
-
-    # find an entity by Entity id
-    def by_id(id)
-      @entity_manager.entity_by_id(id)
+      @loader.finish
+      info "completed loading world from #{base}"
     end
 
     # register_system - register a system to run during update
@@ -161,6 +145,7 @@ end
 
 require_relative 'world/constants'
 require_relative 'world/helpers'
+require_relative 'world/loader'
 require_relative 'system'
 require_relative 'command'
 World.extend(World::Helpers)

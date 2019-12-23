@@ -45,7 +45,6 @@ describe EntityManager do
       let(:comp_arg) { comp_name }
       include_examples next_include, p
     end if types.include?(:name) or types.empty?
-
   end
 
   describe '#create_entity()' do
@@ -95,8 +94,8 @@ describe EntityManager do
 
       include_examples 'will create an entity'
 
-      it 'will include "test:base" in the entity id' do
-        expect(id).to include('test:base')
+      it 'will include base in the entity id' do
+        expect(id).to include(':base-')
       end
 
       it 'will call EntityManager#merge_entity(id, "test:base")' do
@@ -116,12 +115,12 @@ describe EntityManager do
 
       include_examples 'will create an entity'
 
-      it 'will include "test:base_a" in the entity id' do
-        expect(id).to include('test:base_a')
+      it 'will include "base_b" in the entity id' do
+        expect(id).to include(':base_b-')
       end
 
-      it 'will not include "test:base_b" in the entity id' do
-        expect(id).to_not include('test:base_b')
+      it 'will not include "base_a" in the entity id' do
+        expect(id).to_not include(':base_a')
       end
 
       it 'will call EntityManager#merge_entity() for each base in order' do
@@ -132,6 +131,15 @@ describe EntityManager do
           expect(base).to eq('test:base_b')
         end
         id
+      end
+    end
+
+    context 'when #merge_entity raises an error' do
+      it 'will not reserve the entity id' do
+        expect(em).to receive(:merge_entity).and_raise(ArgumentError)
+        expect { em.create_entity(id: 'failed', base: :unknown) }
+            .to raise_error(ArgumentError)
+        expect(em.entities).to_not have_key('failed')
       end
     end
 
@@ -159,6 +167,24 @@ describe EntityManager do
         id
       end
     end
+
+    context 'when add_component raises an exception' do
+      it 'will not reserve the entity id' do
+        expect(em).to receive(:add_component).and_raise(ArgumentError)
+        expect { em.create_entity(id: 'failed', components: :unknown) }
+            .to raise_error(ArgumentError)
+        expect(em.entities).to_not have_key('failed')
+      end
+    end
+    context 'with an duplicate unique component' do
+      it 'will not reserve the entity id' do
+        expect(em).to receive(:add_component).and_raise(ArgumentError)
+        expect { em.create_entity(id: 'failed', components: :unknown) }
+            .to raise_error(ArgumentError)
+        expect(em.entities).to_not have_key('failed')
+      end
+    end
+
 
     context 'with base and components' do
       it 'will apply base before merging components' do
@@ -255,7 +281,7 @@ describe EntityManager do
     end
 
     context 'non-component Class' do
-      it 'will raise an ArgumentError' do
+      it 'will raise ArgumentError' do
         expect { em.send(:add_component_type, Class.new) }
             .to raise_error(ArgumentError)
       end
@@ -336,17 +362,17 @@ describe EntityManager do
       let(:comp_name) { :unique_test }
 
       context 'present' do
-        let(:entity) { em.create_entity(components: comp.new) }
+        let(:entity) { em.create_entity(components: comp_instance) }
 
-        shared_examples 'raise component present error' do
-          it 'will raise a EntityManager::ComponentPresent error' do
-            expect { em.add_component(entity, comp_arg) }
-                .to raise_error(EntityManager::ComponentPresent)
+        shared_examples 'merge component' do
+          it 'will call Component#merge!' do
+            expect(comp_instance).to receive(:merge!)
+            em.add_component(entity, comp_arg)
           end
         end
 
         include_examples 'by component argument type',
-            include: 'raise component present error'
+            include: 'merge component'
       end
 
       context 'absent' do

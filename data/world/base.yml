@@ -1,8 +1,8 @@
 ---
 # Base Entities used throughout the system.  Any Entity may be used as the base
 # for another Entity, these are just the most generic among them.
-- components:
-  - virtual: room
+- id: room
+  components:
   - viewable:
       format: room
       short: An indescribable room
@@ -11,8 +11,8 @@
   - exits
   - container
 
-- components:
-  - virtual: character
+- id: char
+  components:
   - view_exempt
   - keywords:
     - [ char ]
@@ -24,8 +24,8 @@
   - container
   - command_queue
 
-- components:
-  - virtual: object
+- id: obj
+  components:
   - view_exempt
   - keywords:
     - [ obj ]
@@ -34,53 +34,54 @@
       short: an object
       long: You see nothing special...
 
-- base: !ref room
+- id: room/void
+  base: room
   components:
-  - virtual: room/void
   - viewable:
       short: The Void
       desc: You are floating in nothing
 
-- base: !ref character
+- id: player
+  base: char
   components:
-  - virtual: player
   - player_config
   - connection
 
-- base: !ref character
+- id: race/human
+  base: char
   components:
   - virtual: race/human
   - viewable:
       short: a human
 
-- base: !ref character
+- id: race/elf
+  base: char
   components:
-  - virtual: race/elf
   - viewable:
       short: an elf
   - affect: [ attributes, strength, modify, -2 ]
   - affect: [ attributes, dexterity, modify, 1 ]
   - affect: [ attributes, wisdon, modify, 1 ]
 
-- components:
-  - virtual: exit
+- id: exit
+  components:
   - viewable:
       format: exit
       long: You see nothing special...
   - destination:
 
-- base: !ref exit
+- id: door/closed
+  base: exit
   components:
-  - virtual: door/closed
   - keywords: door
   - viewable:
       format: object
       short: a door
       desc: A wooden door bars your way.
 
-- base: !ref object
+- id: obj/bag/small
+  base: obj
   components:
-  - virtual: obj/bag/small
   - keywords:
     - [ small, bag ]
   - viewable:
@@ -90,9 +91,9 @@
       max_volume: 10
   - closable
 
-- base: !ref object
+- id: obj/chest/wooden
+  base: obj
   components:
-  - virtual: obj/chest/wooden
   - keywords:
     - [ wooden, chest ]
   - viewable:
@@ -102,10 +103,10 @@
       max_volume: 100
   - closable
 
-- base: !ref object
+- id: obj/junk/ball
+  base: obj
   components:
-  - virtual: obj/junk/ball
-  - keywords: 
+  - keywords:
     - [red, rubber, ball]
   - viewable:
       short: a red rubber ball

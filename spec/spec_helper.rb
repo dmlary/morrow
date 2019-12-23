@@ -33,7 +33,9 @@ end
 
 RSpec.configure do |config|
   config.include(Helpers)
-  config.before(:suite) { Helpers::Logging.logger.level = Logger::ERROR }
+  config.before(:suite) do
+    Helpers::Logging.logger.level = Logger::ERROR
+  end
 end
 
 # Helper for testing, add a method to strip our custom color codes

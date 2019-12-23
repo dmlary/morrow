@@ -81,25 +81,4 @@ describe Reference do
       end
     end
   end
-
-  context 'loaded from yaml' do
-    context 'a relative reference' do
-      let(:relative_ref) do
-        YAML.load_file(File.join(File.dirname(__FILE__),
-            'reference_relative.yml'))
-      end
-      it 'will set the area to "reference_spec" if not specified' do
-        expect(relative_ref.entity).to eq('reference_relative:entity')
-      end
-    end
-    context 'an absolute reference' do
-      let(:abs_ref) do
-        YAML.load_file(File.join(File.dirname(__FILE__),
-            'reference_absolute.yml'))
-      end
-      it 'will not change the area' do
-        expect(abs_ref.entity).to eq('test:entity')
-      end
-    end
-  end
 end

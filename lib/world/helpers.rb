@@ -1,6 +1,13 @@
+require 'forwardable'
 require 'facets/string/indent'
 
 module World::Helpers
+  extend Forwardable
+  def_delegators :World, :create_entity, :destroy_entity,
+      :add_component, :remove_component, :get_component, :get_components,
+      :get_component!
+
+
   # raise an exception with a message, and all manner of extra data
   #
   # Arguments:
@@ -23,27 +30,16 @@ module World::Helpers
 
   # place one entity inside another entity's contents
   def move_entity(entity, dest)
-    dest = dest.entity if dest.is_a?(Reference)
-    entity = entity.entity if entity.is_a?(Reference)
+    container = get_component(dest, :container) or
+        fault("#{dest} is not a container")
+    location = get_component!(entity, :location)
 
-    # Remove the entity from any other location it was in previously
-    if curr = entity.get(LocationComponent, :ref)
-      curr.entity
-          .get(ContainerComponent, :contents)
-          .delete(entity.to_ref)
-    else
-      begin
-        entity << LocationComponent.new
-      rescue Entity::DuplicateUniqueComponent
-        # noop; we're just ensuring the entity has a LocationComponent for the
-        # next part
-      end
+    if old = location.ref && src = get_component(old, :container)
+      src.contents.delete(entity)
     end
 
-    contents = dest.get(ContainerComponent, :contents) or
-        fault "dest #{dest} is not a container", dest
-    contents << entity.to_ref
-    entity.set(LocationComponent, ref: dest)
+    location.ref = dest
+    container.contents << entity
   end
 
   # get a/all entities from ++pool++ that have keywords that match our

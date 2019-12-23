@@ -1,7 +1,7 @@
 ---
-- base: !ref base:room
+- id: room/limbo
+  base: base:room
   components:
-  - virtual: room/limbo
   - viewable:
       short: Limbo
       desc: |-
@@ -14,21 +14,21 @@
   - spawn_point:
       entity: !ref obj/limbo-chest
 
-- base: !ref base:exit
+- base: base:exit
   link: !ref base:room/void.exits.list
   components:
   - keywords:
     - [ up ]
   - destination: !ref room/limbo
 
-- base: !ref base:exit
+- base: base:exit
   link: !ref room/limbo.exits.list
   components:
   - keywords:
     - [ down ]
   - destination: !ref base:room/void
 
-- base: !ref base:door/closed
+- base: base:door/closed
   link: !ref room/limbo.exits.list
   components:
   - keywords:
@@ -37,20 +37,20 @@
       closed: true
   - destination: !ref base:room/void
 
-- base: !ref base:obj/chest/wooden
+- id: obj/limbo-chest
+  base: base:obj/chest/wooden
   components:
-  - virtual: obj/limbo-chest
   - spawn_point:
       entity: !ref base:obj/junk/ball
       max: 100
 
-- base: !ref base:character
+- id: mob/puff
+  base: base:char
   components:
-  - virtual: mob/puff
   - keywords: [[ puff, dragon, fractal ]]
   - viewable:
       short: Puff
       long: Puff the Fractal Dragon is here, contemplating a higher reality.
       desc: |-
         Is that some type of differential curve involving some strange, and
-        unknown calculus that she seems to be made out of?  
+        unknown calculus that she seems to be made out of?

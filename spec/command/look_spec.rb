@@ -6,9 +6,9 @@ describe Command::Look do
   include World::Helpers
 
   before(:all) { load_test_world; spawn_entities }
-  let(:room) { World.by_virtual('test-world:room/testing') }
-  let(:leo) { World.by_virtual('test-world:mob/leonidas') }
-  let(:chest_closed) { World.by_virtual('test-world:obj/chest_closed') }
+  let(:room) { 'test-world:room/testing' }
+  let(:leo) { 'test-world:mob/leonidas' }
+  let(:chest_closed) { 'test-world:obj/chest_closed' }
   before(:each) { move_entity(leo, room) }
 
   describe 'command parsing' do

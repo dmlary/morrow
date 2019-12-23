@@ -87,10 +87,6 @@ class Reference
     raise RuntimeError, "invalid reference: %s " %
         [ coder.send(coder.type).inspect ] unless coder.type == :scalar
     buf = coder.scalar.to_s
-    unless buf.include?(':')
-      area = World.area_from_filename(YAML.current_filename)
-      buf = "#{area}:#{buf}"
-    end
     @match = buf.match(REFERENCE_PATTERN) or
         raise ArgumentError, "invalid reference, #{buf.inspect}"
   end

@@ -40,20 +40,31 @@ class EntityManager
     components = [ components ] unless components.is_a?(Array)
 
     # create an id if one wasn't provided
-    if id.nil?
-      id = '%s-%d' % [ base.empty? ? 'none:empty' : base.first, @entity_index ]
-      @entity_index += 1
+    if id.nil? || id[-1] == ':'
+      area = id ? id : 'none:'
+      type = base.empty? ? 'empty' : base.last.to_s.sub(/^[^:]+:/, '')
+      loop do
+        id = '%s%s-%d' % [ area, type, @entity_index ]
+        @entity_index += 1
+        break unless @entities[id]
+      end
     end
 
     # make sure the id isn't a duplicate
     raise DuplicateId, id if @entities.has_key?(id)
-    entity = @entities[id] = []
 
-    # merge any requested bases into the new entity
-    base.each { |b| merge_entity(id, b) }
+    begin
+      entity = @entities[id] = []
 
-    # then add our components
-    add_component(id, *components) unless components.empty?
+      # merge any requested bases into the new entity
+      base.each { |b| merge_entity(id, b) }
+
+      # then add our components
+      add_component(id, *components) unless components.empty?
+    rescue Exception
+      @entities.delete(id)
+      raise
+    end
 
     # return the id
     id
@@ -64,8 +75,8 @@ class EntityManager
   # Merge one entity into another.  If both entities have a common unique
   # Component, the Component will be merged into dest.
   def merge_entity(dest_id, other_id)
-    raise UnknownId, dest_id unless dest = @entities[dest_id]
-    raise UnknownId, other_id unless others = @entities[other_id]
+    raise UnknownId, dest_id unless dest = @entities[dest_id.to_s]
+    raise UnknownId, other_id unless others = @entities[other_id.to_s]
 
     others.each_with_index do |other,i|
       if other.is_a?(Array)
@@ -102,9 +113,11 @@ class EntityManager
       instance ||= klass.new
 
       if klass.unique?
-        raise ComponentPresent,
-            "entity #{id} already has component #{klass}" if entity[index]
-        entity[index] = instance
+        if value = entity[index]
+          value.merge!(instance)
+        else
+          entity[index] = instance
+        end
       else
         (entity[index] ||= []) << instance
       end
