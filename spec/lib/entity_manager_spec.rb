@@ -176,15 +176,6 @@ describe EntityManager do
         expect(em.entities).to_not have_key('failed')
       end
     end
-    context 'with an duplicate unique component' do
-      it 'will not reserve the entity id' do
-        expect(em).to receive(:add_component).and_raise(ArgumentError)
-        expect { em.create_entity(id: 'failed', components: :unknown) }
-            .to raise_error(ArgumentError)
-        expect(em.entities).to_not have_key('failed')
-      end
-    end
-
 
     context 'with base and components' do
       it 'will apply base before merging components' do

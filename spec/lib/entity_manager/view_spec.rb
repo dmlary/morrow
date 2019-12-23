@@ -155,7 +155,7 @@ describe EntityManager::View do
 
   describe '#each' do
     context 'with excluded Components' do
-      let(:view) { create_view(excl: [ VirtualComponent ]) }
+      let(:view) { create_view(excl: [ ContainerComponent ]) }
       before(:each) { view.update!(entity, em.entities[entity]) }
 
       it 'will not yield a value for excluded components' do

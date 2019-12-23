@@ -136,11 +136,6 @@ class Component
     true
   end
 
-  # entity_id / entity_id=
-  #
-  # Get/set entity_id
-  attr_accessor :entity_id
-
   # to_h
   #
   # Return a Hash of field/value pairs

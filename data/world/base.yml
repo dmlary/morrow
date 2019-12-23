@@ -50,7 +50,6 @@
 - id: race/human
   base: char
   components:
-  - virtual: race/human
   - viewable:
       short: a human
 

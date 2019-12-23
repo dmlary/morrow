@@ -210,14 +210,6 @@ describe Component do
     end
   end
 
-  describe '#entity_id=' do
-    it 'will set the entity id'
-  end
-
-  describe 'entity_id' do
-    it 'will get the entity id'
-  end
-
   describe '#to_h' do
     it 'will return a hash of all field values' do
       comp = Class.new(Component) do

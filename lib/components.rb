@@ -7,12 +7,6 @@ require_relative 'component'
 class ViewExemptComponent < Component
 end
 
-# Human-readable value to identify this object internally
-class VirtualComponent < Component
-  not_merged
-  field :id, freeze: true
-end
-
 # Set of keywords a player may use to reference this Entity
 class KeywordsComponent < Component
   field :words
@@ -61,9 +55,8 @@ end
 # Loader hints used by EntityManager::Loader::* for use when saving
 class LoadedComponent < Component
   not_merged
-  field :base
+  field :src, freeze: true
   field :area, freeze: true
-  field :save_hints, default: {}
 end
 
 # Denote an Entity is closable/lockable and their current state

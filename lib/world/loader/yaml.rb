@@ -24,7 +24,7 @@ class World::Loader::Yaml < World::Loader::Base
 
       unknown_keys = definition.keys - SUPPORTED_KEYS
       unless unknown_keys.empty?
-        warn "unknown keys #{unknown_keys} at #{path}@#{map.start_line}"
+        warn "unknown keys #{unknown_keys} at #{path}:#{map.start_line}"
       end
 
       # Create an Array of the various base Entities that will be layered into
@@ -60,11 +60,14 @@ class World::Loader::Yaml < World::Loader::Base
 
           Component.find(comp).new(config)
         else
-          warn 'skipping unsupported component config at %s@%d: %s' %
+          warn 'skipping unsupported component config at %s:%d: %s' %
               [ path, map.start_line, conf.inspect ]
           next
         end
       end
+
+      components << LoadedComponent.new(src: "#{path}:#{map.start_line}",
+                                        area: area)
 
       # common arguments for creating an entity
       args = { base: base, components: components, link: links }
