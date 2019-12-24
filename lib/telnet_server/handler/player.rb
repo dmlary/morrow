@@ -13,7 +13,7 @@ class TelnetServer::Handler::Player < TelnetServer::Handler::Base
       old_conn.send_line("Connected from another link; disconnecting")
       old_conn.close_connection(true)
     end
-    
+
     # update the connection reference
     char.conn = conn
 

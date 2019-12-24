@@ -92,14 +92,6 @@ describe Component do
           expect(component.value.__id__).to eq(str.__id__)
         end
       end
-
-      context 'when called with an Entity' do
-        it 'will store a Reference to the Entity' do
-          e = Entity.new
-          component.value = e
-          expect(component.value).to be_a_kind_of(Reference)
-        end
-      end
     end
     context 'when the field is declared with freeze: true' do
       let(:component) do
@@ -216,14 +208,6 @@ describe Component do
         klass.new
       end
     end
-  end
-
-  describe '#entity_id=' do
-    it 'will set the entity id'
-  end
-
-  describe 'entity_id' do
-    it 'will get the entity id'
   end
 
   describe '#to_h' do

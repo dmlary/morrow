@@ -2,9 +2,10 @@ module Command::Look
   extend World::Helpers
 
   Command.register('look') do |actor, arg|
-    room = actor.get(LocationComponent, :ref) or
+    loc = get_component(actor, LocationComponent) or
         fault "actor has no location", actor
-    room = room.entity
+    room = loc.entity
+
     show_contents = false
 
     target = case arg
@@ -15,22 +16,21 @@ module Command::Look
       when /^in\s(.*?)$/
         show_contents = true
         match_keyword($1,
-          room.get(:container, :contents),
-          actor.get(:container, :contents))
+            visible_contents(actor: actor, cont: room),
+            visible_contents(actor: actor, cont: actor))
       else
         match_keyword(arg,
-            room.get(:exits, :list),
-            room.get(:container, :contents),
-            actor.get(:container, :contents))
+            visible_exits(actor: actor, room: room),
+            visible_contents(actor: actor, cont: room),
+            visible_contents(actor: actor, cont: actor))
       end
 
-    next "You do not see that here." unless target &&
-        target.has_component?(ViewableComponent)
+    next "You do not see that here." unless target and
+        viewable = get_component(target, ViewableComponent)
 
-    return target.pretty_inspect if actor.get(:player_config, :coder)
+    return target.pretty_inspect if player_config(actor, :coder)
 
-    format = target.get(:viewable, :format)
-    case format
+    case viewable.format
     when "room"
       show_room(actor, target)
     when "character"
@@ -125,10 +125,5 @@ module Command::Look
       buf
     end
 
-    private
-
-    def keywords(entity)
-      entity.get(:keywords, :words).join('-')
-    end
   end
 end

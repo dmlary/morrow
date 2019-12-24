@@ -7,28 +7,23 @@ require_relative 'component'
 class ViewExemptComponent < Component
 end
 
-# Human-readable value to identify this object internally
-class VirtualComponent < Component
-  not_merged
-  field :id, freeze: true
-end
-
 # Set of keywords a player may use to reference this Entity
 class KeywordsComponent < Component
   field :words
 end
 
-# Contains references to Entities that reside within it
+# maintains a list of entities that are within this component.  Goes in Rooms,
+# and Bags and Characters.
 class ContainerComponent < Component
-  field :contents, default: []    # Array of Reference instances
+  field :contents, default: []    # Array of entity id's
   field :max_volume               # Maximum volume of the container
 end
 
-# Reference to the Entity in which this Entity is inside.  If location is going
-# to change, this Entity must first be removed from the old Entity's
+# Tracks which entity this entity is inside.  If the location of an entity is
+# going to change, this entity must first be removed from the old entity's
 # ContainerComponent#contents Array.
 class LocationComponent < Component
-  field :ref
+  field :entity
 end
 
 # This Entity is viewable in the world
@@ -47,7 +42,7 @@ end
 
 # Where this Entity leads to, be it a room, or a portal
 class DestinationComponent < Component
-  field :ref        # Reference to an Entity with a ContainerComponent
+  field :entity     # entity with a ContainerComponent
 end
 
 # Per-Player Configuration
@@ -61,9 +56,8 @@ end
 # Loader hints used by EntityManager::Loader::* for use when saving
 class LoadedComponent < Component
   not_merged
-  field :base
+  field :src, freeze: true
   field :area, freeze: true
-  field :save_hints, default: {}
 end
 
 # Denote an Entity is closable/lockable and their current state
@@ -78,13 +72,23 @@ end
 # To schedule the spawning of an Entity within a container Entity
 class SpawnPointComponent < Component
   not_unique
-  field :entity   # ref to Entity to be spawned
+  field :entity               # entity to be spawned
   field :active, default: 0   # number of active entities spawned from point
   field :min, default: 1      # minimum number present after spawning
   field :max, default: 1      # maximum number that can be active at one time
   field :frequency, default: 300  # seconds between spawn events
   field :next_spawn               # next spawn event; Time instance
 end
+
+# Note that the Entity came from a SpawnPoint.  When this Entity is removed
+# from the World, the active count in the corresponding SpawnPointComponent
+# must be decremented.
+#
+# Aww FUCK.  I think this is the moment where we have to move
+# SpawnPointComponents out of the Room Entity.  A Room may have multiple
+# SpawnPointComponents.  We can only reference an Entity within a Component.
+# How do we make this SpawnedComponent point at a specific Component within the
+# Entity?
 
 # Command queue for characters
 class CommandQueueComponent < Component

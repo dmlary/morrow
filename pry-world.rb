@@ -10,7 +10,7 @@ require_relative 'lib/world'
 Pry.enable_rescuing!
 
 begin
-  World.load('./data/world')
+  World.load(ARGV[0] || './data/world')
   World.pry
 rescue Exception => ex
   Pry.rescued(ex)
