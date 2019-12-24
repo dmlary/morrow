@@ -1,6 +1,6 @@
 ---
 - id: room/limbo
-  base: base:room
+  base: !id base:room
   components:
   - viewable:
       short: Limbo
@@ -10,42 +10,42 @@
         darkness around you without any trace of edges or shadow.
            There is a "No Tipping" notice pinned to the darkness.
   - spawn_point:
-      entity: !ref mob/puff
+      entity: !id mob/puff
   - spawn_point:
-      entity: !ref obj/limbo-chest
+      entity: !id obj/limbo-chest
 
-- base: base:exit
-  link: !ref base:room/void.exits.list
+- base: !id base:exit
+  link: !id base:room/void.exits.list
   components:
   - keywords:
     - [ up ]
-  - destination: !ref room/limbo
+  - destination: !id room/limbo
 
-- base: base:exit
-  link: !ref room/limbo.exits.list
+- base: !id base:exit
+  link: !id room/limbo.exits.list
   components:
   - keywords:
     - [ down ]
-  - destination: !ref base:room/void
+  - destination: !id base:room/void
 
-- base: base:door/closed
-  link: !ref room/limbo.exits.list
+- base: !id base:door/closed
+  link: !id room/limbo.exits.list
   components:
   - keywords:
     - [ east ]
   - closable:
       closed: true
-  - destination: !ref base:room/void
+  - destination: !id base:room/void
 
 - id: obj/limbo-chest
-  base: base:obj/chest/wooden
+  base: !id base:obj/chest/wooden
   components:
   - spawn_point:
-      entity: !ref base:obj/junk/ball
+      entity: !id base:obj/junk/ball
       max: 100
 
 - id: mob/puff
-  base: base:char
+  base: !id base:char
   components:
   - keywords: [[ puff, dragon, fractal ]]
   - viewable:

@@ -33,7 +33,7 @@
       long: You see nothing special...
 
 - id: player
-  base: char
+  base: !id char
   components:
   - player_config
   - connection
@@ -46,7 +46,7 @@
   - destination:
 
 - id: door/closed
-  base: exit
+  base: !id exit
   components:
   - keywords: door
   - viewable:
@@ -55,7 +55,7 @@
       desc: A wooden door bars your way.
 
 - id: obj/bag/small
-  base: obj
+  base: !id obj
   components:
   - keywords:
     - [ small, bag ]
@@ -67,7 +67,7 @@
   - closable
 
 - id: obj/chest/wooden
-  base: obj
+  base: !id obj
   components:
   - keywords:
     - [ wooden, chest ]
@@ -79,7 +79,7 @@
   - closable
 
 - id: obj/chest_closed
-- base: obj
+  base: !id obj
   components:
   - keywords:
     - [ chest, closed ]
@@ -91,7 +91,7 @@
   - closable
 
 - id: obj/chest_open_empty
-  base: obj/chest_closed
+  base: !id obj/chest_closed
   components:
   - keywords:
     - [ chest, open, empty ]
@@ -102,7 +102,7 @@
       closed: false
 
 - id: obj/junk/ball
-  base: obj
+  base: !id obj
   components:
   - keywords:
     - [red, rubber, ball]
@@ -111,7 +111,7 @@
       long: a red rubber ball is on the floor
 
 - id: mob/leonidas
-  base: char
+  base: !id char
   components:
   - keywords:
     - [ leonidas ]
@@ -125,7 +125,7 @@
         room, never lighting on anything for more than a moment.
 
 - id: room/testing
-  base: room
+  base: !id room
   components:
   - viewable:
       short: The Testing Room
@@ -134,12 +134,12 @@
         against hapless, helpess, and hopeless victims.  Oddly, this room is
         not yet covered in blood.
   - spawn_point:
-      entity: !ref obj/chest_closed
+      entity: !id obj/chest_closed
   - spawn_point:
-      entity: !ref obj/chest_open_empty
+      entity: !id obj/chest_open_empty
 
-- base: exit
-  link: !ref room/testing.exits.list
+- base: !id exit
+  link: !id room/testing.exits.list
   components:
   - keywords: up
-  - destination: !ref room/void
+  - destination: !id room/void

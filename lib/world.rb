@@ -4,7 +4,6 @@ require 'forwardable'
 require_relative 'helpers'
 require_relative 'component'
 require_relative 'components'
-require_relative 'reference'
 require_relative 'entity_manager'
 
 module World

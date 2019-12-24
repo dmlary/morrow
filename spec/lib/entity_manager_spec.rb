@@ -472,7 +472,7 @@ describe EntityManager do
         end
       end
 
-      context 'unknown ' do
+      context 'unknown' do
         let(:entity) { em.create_entity }
         include_examples 'by component argument type',
             include: 'raise error',
@@ -772,9 +772,15 @@ describe EntityManager do
       let(:dest) { em.create_entity }
       let(:other) { em.create_entity(components: comp.new(value: :pass)) }
 
-      it 'will copy other component into dest' do
+      it 'will add the component to dest' do
         em.merge_entity(dest, other)
         expect(em.get_component(dest, comp).value).to eq(:pass)
+      end
+
+      it 'will clone the component' do
+        em.merge_entity(dest, other)
+        expect(em.get_component(dest, comp))
+            .to_not be(em.get_component(other, comp))
       end
     end
 
@@ -946,104 +952,3 @@ describe EntityManager do
     end
   end
 end
-
-#   describe '#schedule(task, args)' do
-#     it 'will call @tasks.push' do
-#       expect(em.instance_variable_get(:@tasks)).to receive(:push)
-#       em.schedule(:link, ref: nil, entity: nil)
-#     end
-#   end
-#
-#   describe '#resolve!' do
-#     before(:all) { Helpers::Logging.logger.level = Logger::ERROR }
-#     context 'a :new_entity task' do
-#       context 'with only arguments' do
-#         it 'will call #new_entity(*args)' do
-#           em.schedule(:new_entity, [1, 2, 3])
-#           expect(em).to receive(:new_entity) do |*others|
-#             expect(others).to eq([1,2,3])
-#           end
-#           em.resolve!
-#         end
-#       end
-#
-#       context 'with only parameters' do
-#         it 'will call #new_entity with parameters' do
-#           em.schedule(:new_entity, add: true)
-#           expect(em).to receive(:new_entity) do |*args, add: false|
-#             expect(add).to be(true)
-#           end
-#           em.resolve!
-#         end
-#       end
-#
-#       context 'with arguments & parameters' do
-#         it 'will call #new_entity with args & parameters' do
-#           em.schedule(:new_entity, [ 'test:room', add: true ])
-#           expect(em).to receive(:new_entity) do |*args, add: false|
-#             expect(args).to eq(['test:room'])
-#             expect(add).to be(true)
-#           end
-#           em.resolve!
-#         end
-#       end
-#
-#       context 'with an unknown base' do
-#         it 'will raise a RuntimeError' do
-#           em.schedule(:new_entity, 'missing')
-#           expect { em.resolve! }.to raise_error(RuntimeError)
-#         end
-#       end
-#
-#       context 'with an unknown link' do
-#         it 'will raise a RuntimeError' do
-#           em.schedule(:new_entity, add: true,
-#               links: [Reference.new('test:missing.other.thing')])
-#           expect { em.resolve! }.to raise_error(RuntimeError)
-#         end
-#       end
-#     end
-#
-#     context 'a :link task' do
-#       context 'with a Reference to a valid Entity' do
-#         let(:dest) do
-#           e = Entity.new
-#           e << VirtualComponent.new(id: 'test:entity')
-#           e << ContainerComponent.new
-#           e
-#         end
-#         before(:each) { em << dest }
-#
-#         context 'to an Array value' do
-#           it 'will push an Entity reference onto the Array' do
-#             ref = Reference.new('test:entity.container.contents')
-#             entity = em.new_entity(add: true)
-#             em.schedule(:link, ref: ref, entity: entity)
-#             em.resolve!
-#             expect(dest.get(:container, :contents).map(&:entity))
-#                 .to eq([entity])
-#           end
-#         end
-#         context 'to a non-Array value' do
-#           it 'will replace the value' do
-#             ref = Reference.new('test:entity.container.max_volume')
-#             entity = em.new_entity(add: true)
-#             em.schedule(:link, ref: ref, entity: entity)
-#             em.resolve!
-#             expect(dest.get(:container, :max_volume).entity)
-#                 .to be(entity)
-#           end
-#         end
-#       end
-#
-#       context 'with a Reference to an undefined Entity' do
-#         it 'will raise EntityManager::UnknownVirtual' do
-#           ref = Reference.new('test:missing.a.b')
-#           entity = em.new_entity(add: true)
-#           em.schedule(:link, ref: ref, entity: entity)
-#           expect { em.resolve! }.to raise_error(RuntimeError)
-#         end
-#       end
-#     end
-#   end
-#end

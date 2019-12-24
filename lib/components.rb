@@ -12,17 +12,18 @@ class KeywordsComponent < Component
   field :words
 end
 
-# Contains references to Entities that reside within it
+# maintains a list of entities that are within this component.  Goes in Rooms,
+# and Bags and Characters.
 class ContainerComponent < Component
-  field :contents, default: []    # Array of Reference instances
+  field :contents, default: []    # Array of entity id's
   field :max_volume               # Maximum volume of the container
 end
 
-# Reference to the Entity in which this Entity is inside.  If location is going
-# to change, this Entity must first be removed from the old Entity's
+# Tracks which entity this entity is inside.  If the location of an entity is
+# going to change, this entity must first be removed from the old entity's
 # ContainerComponent#contents Array.
 class LocationComponent < Component
-  field :ref
+  field :entity
 end
 
 # This Entity is viewable in the world
@@ -41,7 +42,7 @@ end
 
 # Where this Entity leads to, be it a room, or a portal
 class DestinationComponent < Component
-  field :ref        # Reference to an Entity with a ContainerComponent
+  field :entity     # entity with a ContainerComponent
 end
 
 # Per-Player Configuration
@@ -71,7 +72,7 @@ end
 # To schedule the spawning of an Entity within a container Entity
 class SpawnPointComponent < Component
   not_unique
-  field :entity   # ref to Entity to be spawned
+  field :entity               # entity to be spawned
   field :active, default: 0   # number of active entities spawned from point
   field :min, default: 1      # minimum number present after spawning
   field :max, default: 1      # maximum number that can be active at one time

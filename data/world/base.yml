@@ -8,7 +8,6 @@
       short: An indescribable room
       long: |-
         There is space here.
-  - exits
   - container
 
 - id: char
@@ -22,7 +21,6 @@
       long: |-
         You see nothing special about them.
   - container
-  - command_queue
 
 - id: obj
   components:
@@ -35,26 +33,27 @@
       long: You see nothing special...
 
 - id: room/void
-  base: room
+  base: !id room
   components:
   - viewable:
       short: The Void
       desc: You are floating in nothing
 
 - id: player
-  base: char
+  base: !id char
   components:
   - player_config
   - connection
+  - command_queue
 
 - id: race/human
-  base: char
+  base: !id char
   components:
   - viewable:
       short: a human
 
 - id: race/elf
-  base: char
+  base: !id char
   components:
   - viewable:
       short: an elf
@@ -70,7 +69,7 @@
   - destination:
 
 - id: door/closed
-  base: exit
+  base: !id exit
   components:
   - keywords: door
   - viewable:
@@ -79,7 +78,7 @@
       desc: A wooden door bars your way.
 
 - id: obj/bag/small
-  base: obj
+  base: !id obj
   components:
   - keywords:
     - [ small, bag ]
@@ -91,7 +90,7 @@
   - closable
 
 - id: obj/chest/wooden
-  base: obj
+  base: !id obj
   components:
   - keywords:
     - [ wooden, chest ]
@@ -103,7 +102,7 @@
   - closable
 
 - id: obj/junk/ball
-  base: obj
+  base: !id obj
   components:
   - keywords:
     - [red, rubber, ball]

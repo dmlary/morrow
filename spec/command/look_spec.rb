@@ -33,18 +33,42 @@ describe Command::Look do
       end
     end
 
+    context '"look keyword"' do
+      it 'will call match_keyword("keyword", visible exits, ' +
+          'visible room and actor contents)' do
+        visible = visible_exits(actor: leo, room: room) +
+            visible_contents(actor: leo, cont: room) +
+            visible_contents(actor: leo, cont: leo)
+        expect(Command::Look).to receive(:match_keyword) do |key,*entities|
+          expect(key).to eq('keyword')
+          expect(entities.flatten).to eq(visible.flatten)
+          nil # nothing found
+        end
+        Command.run(leo, 'look keyword')
+      end
+    end
+
+    context '"look in container"' do
+      it 'will call match_keyword("in container", ' +
+          'visible room & actor contents)' do
+        visible = visible_contents(actor: leo, cont: room) +
+            visible_contents(actor: leo, cont: leo)
+        expect(Command::Look).to receive(:match_keyword) do |key,*entities|
+          expect(key).to eq('container')
+          expect(entities.flatten).to eq(visible.flatten)
+          nil # nothing found
+        end
+        Command.run(leo, 'look in container')
+      end
+    end
+
     context '"look leonidas"' do
       let(:cmd) { "look leonidas" }
 
-      it 'will call match_keyword("leonidas", visible entities)' do
-        expected_objs = room.get(:exits, :list)
-        expected_objs += visible_contents(actor: leo, cont: room)
-        expected_objs += visible_contents(actor: leo, cont: leo)
-
+      it 'will call match_keyword("leonidas", ...)' do
         expect(Command::Look).to receive(:match_keyword) do |key,*objs|
           expect(key).to eq('leonidas')
-          expect(objs.flatten).to eq(expected_objs)
-          nil
+          nil # nothing found
         end
         Command.run(leo, cmd)
       end
@@ -64,19 +88,6 @@ describe Command::Look do
     end
 
     context '"look closed-chest"' do
-      it 'will call match_keyword("closed-chest", exits + visible entities)' do
-        expected_objs = room.get(:exits, :list)
-        expected_objs += visible_contents(actor: leo, cont: room)
-        expected_objs += visible_contents(actor: leo, cont: leo)
-
-        expect(Command::Look).to receive(:match_keyword) do |key,*objs|
-          expect(key).to eq('closed-chest')
-          expect(objs.flatten).to eq(expected_objs)
-          nil
-        end
-        Command.run(leo, 'look closed-chest')
-      end
-
       it 'will call show_obj(leo, closed_chest)' do
         expect(Command::Look).to receive(:match_keyword) { chest_closed }
         expect(Command::Look).to receive(:show_obj)
@@ -86,18 +97,6 @@ describe Command::Look do
     end
 
     context '"look in closed-chest"' do
-      it 'will call match_keyword("closed-chest", visible entities)' do
-        expected_objs = visible_contents(actor: leo, cont: room)
-        expected_objs += visible_contents(actor: leo, cont: leo)
-
-        expect(Command::Look).to receive(:match_keyword) do |key,*objs|
-          expect(key).to eq('closed-chest')
-          expect(objs.flatten).to eq(expected_objs)
-          chest_closed
-        end
-        Command.run(leo, 'look in closed-chest')
-      end
-
       it 'will call show_contents(leo, closed_chest)' do
         expect(Command::Look).to receive(:match_keyword) { chest_closed }
         expect(Command::Look).to receive(:show_contents)

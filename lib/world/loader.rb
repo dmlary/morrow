@@ -164,17 +164,36 @@ class World::Loader
     end
   end
 
+  LINK_PATTERN = %r{
+    \A
+    (?<id>[^.]+)\.
+    (?<component>[^\.]+)\.
+    (?<field>.*?)
+    \Z
+  }x
+
   # try_link_entity
   #
   # Try to link an entity to some destination.  If it fails due to UnknownId,
   # this method will return false
   def try_link_entity(entity: nil, dest: nil)
+    link = dest.match(LINK_PATTERN) or
+        raise ArgumentError, "Invalid link format: #{dest}"
+    _, id, component, field = link.to_a
+    component = component.to_sym
+
     begin
-      value = dest.value
+      comp = @em.get_component(id, component)
+      comp ||= @em.add_component(id, component)
+
+      binding.pry if comp != @em.get_component(id, component)
+
+      value = comp.send(field)
+
       if value.is_a?(Array)
         value << entity
       else
-        dest.value = entity
+        comp.send("%s=" % field, entity)
       end
       debug "linked #{entity} to #{dest}"
       true

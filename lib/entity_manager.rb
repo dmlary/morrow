@@ -85,7 +85,7 @@ class EntityManager
       elsif mine = dest[i]
         mine.merge!(other)
       else
-        dest[i] = other
+        dest[i] = other.clone
       end
     end
   end
@@ -278,5 +278,4 @@ class EntityManager
   end
 end
 
-require_relative 'entity_manager/loader'
 require_relative 'entity_manager/view'

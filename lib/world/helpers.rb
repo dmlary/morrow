@@ -34,11 +34,11 @@ module World::Helpers
         fault("#{dest} is not a container")
     location = get_component!(entity, :location)
 
-    if old = location.ref && src = get_component(old, :container)
+    if old = location.entity and src = get_component(old, :container)
       src.contents.delete(entity)
     end
 
-    location.ref = dest
+    location.entity = dest
     container.contents << entity
   end
 
@@ -67,9 +67,6 @@ module World::Helpers
     raise Command::SyntaxError,
         "'#{buf}' is not a valid target for this command" if
             index == 'all' and !multiple
-
-    # resolve any references in our pool first
-    pool.flatten!.map! { |e| e.is_a?(Reference) ? e.entity : e }
 
     # if the user hasn't specified an index, or the caller hasn't specified
     # that they want multiple matches, do the simple find here to grab and
@@ -121,7 +118,20 @@ module World::Helpers
     raise ArgumentError, 'no container' unless cont
 
     # XXX handle visibility checks at some point
-    cont.get(ContainerComponent, :contents) || []
+    comp = get_component(cont, ContainerComponent) || []
+    comp.contents.clone.freeze
+  end
+
+  # visible_exits
+  #
+  # Return the array of exits visible to actor in room.
+  def visible_exits(actor: nil, room: nil)
+    raise ArgumentError, 'no actor' unless actor
+    raise ArgumentError, 'no room' unless room
+
+    # XXX handle visibility checks at some point
+    exits = get_component(room, ExitsComponent) or return []
+    exits.list.clone
   end
 
   # entity_desc
@@ -136,5 +146,20 @@ module World::Helpers
     words = entity.get(KeywordsComponent, :words)
 
     "[%s] %s" % [ base.join(', '), words.join('-') ]
+  end
+
+  # player_config
+  #
+  # Get a specific config value from a entity's PlayerConfigComponent
+  def player_config(player, option)
+    config = get_component(player, PlayerConfigComponent) or return nil
+    config.send(option)
+  end
+
+  # entity_keywords
+  #
+  # Get keywords for an entity
+  def entity_keywords(entity)
+    get_component(entity, KeywordsComponent).words.join('-')
   end
 end

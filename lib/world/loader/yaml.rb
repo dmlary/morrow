@@ -8,11 +8,21 @@ class World::Loader::Yaml < World::Loader::Base
   def load(path: nil, area: 'unknown')
     buf = File.read(path)
 
-    # patch up any relative references before we parse
-    buf.gsub!(/!ref\s*([^:]+)\s*$/, "!ref #{area}:\\1")
+    # parse the document into a Psych tree.  Add a custom tag handler for !id
+    # to prepend the local area if one has not been supplied.
+    doc = begin
 
-    # parse the document into the Psych tree
-    doc = YAML.parse(buf)
+      # Add our !id parser
+      type,_ = YAML.add_domain_type('', 'id') do |_,id|
+        id =~ /^\w+:/ ? id : "#{area}:#{id}"
+      end
+
+      # parse the document
+      YAML.parse(buf)
+    ensure
+      YAML.remove_type(type)
+    end
+
     unless seq = doc.children[0] and seq.sequence?
       raise "expected #{path} does not contain the expected YAML sequence"
     end
@@ -29,9 +39,7 @@ class World::Loader::Yaml < World::Loader::Base
 
       # Create an Array of the various base Entities that will be layered into
       # this Entity
-      base = [definition["base"]].flatten.compact.map do |base|
-        base =~ /^\w+:/ ? base : base.sub(/^/, "#{area}:")
-      end
+      base = [definition["base"]].flatten.compact
 
       # Links are an Array of References (!ref -> Reference done in yaml.load)
       links = [definition["link"]].flatten.compact
