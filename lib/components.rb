@@ -69,9 +69,13 @@ class ClosableComponent < Component
   field :key    # ref to key Entity
 end
 
-# To schedule the spawning of an Entity within a container Entity
+# Spawn entities within this entity's ContainerComponent
 class SpawnPointComponent < Component
-  not_unique
+  field :list, default: []
+end
+
+# To schedule the spawning of an Entity within a container Entity
+class SpawnComponent < Component
   field :entity               # entity to be spawned
   field :active, default: 0   # number of active entities spawned from point
   field :min, default: 1      # minimum number present after spawning
@@ -80,15 +84,9 @@ class SpawnPointComponent < Component
   field :next_spawn               # next spawn event; Time instance
 end
 
-# Note that the Entity came from a SpawnPoint.  When this Entity is removed
-# from the World, the active count in the corresponding SpawnPointComponent
-# must be decremented.
-#
-# Aww FUCK.  I think this is the moment where we have to move
-# SpawnPointComponents out of the Room Entity.  A Room may have multiple
-# SpawnPointComponents.  We can only reference an Entity within a Component.
-# How do we make this SpawnedComponent point at a specific Component within the
-# Entity?
+class SpawnedComponent < Component
+  field :source               # entity this entity was spawned from
+end
 
 # Command queue for characters
 class CommandQueueComponent < Component

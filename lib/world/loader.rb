@@ -107,7 +107,10 @@ class World::Loader
       break if @tasks.empty? or @tasks.size == before
     end
 
-    return if @tasks.empty?
+    if @tasks.empty?
+      @em.flush_updates
+      return
+    end
 
     @tasks.each do |action, args|
       error "failed to resolve: #{action}, #{args.inspect}"

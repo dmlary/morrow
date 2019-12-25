@@ -2,11 +2,11 @@ require 'forwardable'
 require 'facets/string/indent'
 
 module World::Helpers
+  include Helpers::Logging
   extend Forwardable
   def_delegators :World, :create_entity, :destroy_entity,
       :add_component, :remove_component, :get_component, :get_components,
       :get_component!
-
 
   # raise an exception with a message, and all manner of extra data
   #
@@ -30,12 +30,14 @@ module World::Helpers
 
   # place one entity inside another entity's contents
   def move_entity(entity, dest)
-    container = get_component(dest, :container) or
-        fault("#{dest} is not a container")
+    container = get_component!(dest, :container)
     location = get_component!(entity, :location)
 
     if old = location.entity and src = get_component(old, :container)
+      debug "moving #{entity} from #{old} to #{dest}"
       src.contents.delete(entity)
+    else
+      debug "moving #{entity} to #{dest}"
     end
 
     location.entity = dest
@@ -68,13 +70,15 @@ module World::Helpers
         "'#{buf}' is not a valid target for this command" if
             index == 'all' and !multiple
 
+    pool.flatten!
+
     # if the user hasn't specified an index, or the caller hasn't specified
     # that they want multiple matches, do the simple find here to grab and
     # return the first match
     if index.nil? and multiple != true
       return pool.find do |entity|
-        ((entity.get(:keywords, :words) || []) & keywords)
-            .size == keywords.size
+        comp = get_component(entity, :keywords) or next false
+        (comp.words & keywords).size == keywords.size
       end
     end
 
@@ -89,24 +93,48 @@ module World::Helpers
     multiple ? [ matches[index] ].compact : matches[index]
   end
 
-  # spawn
+  # spawn_at
   #
-  # Create a new instance of an Entity base off a +base+ Entity and move it
-  # into a +dest+ Entity (container).  This method **will** add the new Entity
-  # to World.
+  # Create a new instance of an entity from a base entity, and move it to dest.
   #
   # Arguments:
   #   dest: container Entity to move entity to
   #   base: base Entity to spawn
-  def spawn(dest, base)
-    add_list = []
-    entity = World.new_entity(base: base)
-    entity.rem_component(ViewExemptComponent)
-    World.add_entity(entity)
+  def spawn_at(dest: nil, base: nil)
+    raise ArgumentError, 'no dest' unless dest
+    raise ArgumentError, 'no base' unless base
 
-    # XXX how do we trigger the spawning of things in the base in this new
-    # entity?
+    entity = spawn(base: base, area: entity_area(dest))
     move_entity(entity, dest)
+    entity
+  end
+
+  # spawn
+  #
+  # Create a new instance of an entity from a base entity
+  def spawn(base: nil, area: nil)
+    entity = create_entity(base: base, id: area ? "#{area}:" : nil)
+    debug("spawning #{entity} from #{base}")
+    remove_component(entity, ViewExemptComponent)
+
+    if container = get_component(entity, ContainerComponent)
+      bases = container.contents.clone
+      container.contents = bases.map { |b| spawn_at(dest: entity, base: b ) }
+    end
+    if spawn_point = get_component(entity, SpawnPointComponent)
+      bases = spawn_point.list.clone
+      spawn_point.list = bases.map { |b| spawn(base: b, area: area) }
+    end
+
+    entity
+  end
+
+  # entity_location(entity)
+  #
+  # Get the location for a given entity
+  def entity_location(entity)
+    loc = get_component(entity, LocationComponent) or return nil
+    loc.entity
   end
 
   # visible_contents
@@ -118,8 +146,8 @@ module World::Helpers
     raise ArgumentError, 'no container' unless cont
 
     # XXX handle visibility checks at some point
-    comp = get_component(cont, ContainerComponent) || []
-    comp.contents.clone.freeze
+    comp = get_component(cont, ContainerComponent) or return []
+    comp.contents.select { |c| get_component(c, ViewableComponent) }
   end
 
   # visible_exits
@@ -138,14 +166,19 @@ module World::Helpers
   #
   # Get a human-readable description for an entity
   def entity_desc(entity)
-    if id = entity.get(VirtualComponent, :id)
-      return id
+    desc = '%s: ' % entity
+    if words = entity_keywords(entity)
+      desc << "keywords='#{words}', "
+    else
+      desc << "keywords=nil, "
     end
 
-    base = (entity.get(LoadedComponent, :base) || []).map(&:to_s)
-    words = entity.get(KeywordsComponent, :words)
-
-    "[%s] %s" % [ base.join(', '), words.join('-') ]
+    loc = entity_location(entity)
+    desc << 'loc=%s, ' % loc.inspect
+    components = em.entities[entity].compact.flatten
+        .map { |c| component_name(c) }
+    desc << 'comps=%s' % components.inspect
+    desc
   end
 
   # player_config
@@ -160,6 +193,56 @@ module World::Helpers
   #
   # Get keywords for an entity
   def entity_keywords(entity)
-    get_component(entity, KeywordsComponent).words.join('-')
+    keywords = get_component(entity, KeywordsComponent) or return nil
+    words = keywords.words
+    words = [ words ] unless words.is_a?(Array)
+    words.join('-')
+  end
+
+  # component_name
+  #
+  # Given a Component instance or class, return the name
+  def component_name(arg)
+    arg = arg.class if arg.is_a?(Component)
+    arg.to_s.snakecase.sub(/_component$/, '').to_sym
+  end
+
+  # entity_area
+  #
+  # Get the area name from an entity id
+  def entity_area(entity)
+    entity.split(':',2).first
+  end
+
+  # entity_closed?
+  #
+  # Check if an entity has a ClosableComponent and is closed
+  def entity_closed?(entity)
+    closable = get_component(entity, ClosableComponent) or return false
+    !!closable.closed
+  end
+
+  # entity_locked?
+  #
+  # Check if an entity has a ClosableComponent and is locked
+  def entity_locked?(entity)
+    closable = get_component(entity, ClosableComponent) or return false
+    !!closable.locked
+  end
+
+  # entity_short
+  #
+  # Get the short description for an entity
+  def entity_short(entity)
+    view = get_component(entity, ViewableComponent) or return nil
+    view.short
+  end
+
+  # entity_location
+  #
+  # Get the entity this entity resides in
+  def entity_location(entity)
+    loc = get_component(entity, LocationComponent) or return nil
+    loc.entity
   end
 end

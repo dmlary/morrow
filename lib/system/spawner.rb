@@ -2,32 +2,33 @@ module System::Spawner
   extend System::Base
   extend World::Helpers
 
-  def self.spawn_entities(id, points)
-    dest = World.by_id(id)
-    points.each do |sp|
-      next_spawn = sp.next_spawn
-      next if next_spawn && Time.now < next_spawn
-      next if (active = sp.active) >= sp.max
+  def self.update(dest, point)
+    point.list.each do |spawn_entity|
+      spawn = get_component(spawn_entity, SpawnComponent) or next
 
-      unless ref = sp.entity
-        # remove the component so we don't get this error every 0.25 seconds
-        dest.rem_component(sp)
-        fault("No entity field in SpawnPointComponent; removed", dest, comp)
+      active = spawn.active
+      next if active >= spawn.max
+
+      # skip this one if either the next_spawn time hasn't hit, or we have at
+      # least the minimum entities active
+      next_spawn = spawn.next_spawn
+      next if next_spawn && next_spawn > Time.now && active >= spawn.min
+
+      entity = spawn_at(dest: dest, base: spawn.entity)
+      add_component(entity, SpawnedComponent.new(source: spawn_entity))
+      spawn.active = active += 1
+
+      if active < spawn.max
+        spawn.next_spawn ||= Time.now
+        spawn.next_spawn += spawn.frequency
+      else
+        # once we've hit the maximum, clear the next spawn time.  This will be
+        # reset in World::Helpers.destroy_entity().
+        spawn.next_spawn = nil
       end
-
-      min = sp.min
-      min = 1 if min.nil? or min < 0
-
-      count = active >= min ? 1 : min - active
-      count.times do
-        spawn(dest, ref)
-        active += 1
-      end
-      sp.active = active
-      sp.next_spawn = Time.now + sp.frequency
     end
   end
 
   World.register_system(:spawner, all: [ SpawnPointComponent ],
-      method: method(:spawn_entities))
+      method: method(:update))
 end

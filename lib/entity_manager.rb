@@ -17,6 +17,7 @@ class EntityManager
     @comp_map = {}          # mapping Component -> [ index, klass ]
     @comp_index_max = -1    # maximum index in the Entity Array
     @views = {}             # any active views
+    @pending_updates = []   # pending updates to views
   end
   attr_reader :entities
 
@@ -230,6 +231,18 @@ class EntityManager
     @views[args] ||= View.new(args)
   end
 
+  # flush_updates
+  #
+  # After systems have run, this is called to notify the views of changes to
+  # the entities.  This is necessary because we cannot update a view's list of
+  # entities while iterating through it.
+  def flush_updates
+    @pending_updates.each do |update|
+      @views.each_value { |v| v.update!(*update) }
+    end
+    @pending_updates.clear
+  end
+
   private
 
   # add_component_type
@@ -274,7 +287,7 @@ class EntityManager
   # Called internally during add_component/remove_component to update all the
   # views of the change to the entity
   def update_views(id, components)
-    @views.each_value { |v| v.update!(id, components) }
+    @pending_updates << [id, components]
   end
 end
 

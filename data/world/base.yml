@@ -8,11 +8,14 @@
       short: An indescribable room
       long: |-
         There is space here.
-  - container
 
-- id: char
+- id: !id template
   components:
   - view_exempt
+
+- id: char
+  base: !id template
+  components:
   - keywords:
     - [ char ]
   - viewable:
@@ -20,11 +23,10 @@
       short: a non-descript character
       long: |-
         You see nothing special about them.
-  - container
 
 - id: obj
+  base: !id template
   components:
-  - view_exempt
   - keywords:
     - [ obj ]
   - viewable:

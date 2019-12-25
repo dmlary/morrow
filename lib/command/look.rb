@@ -49,15 +49,15 @@ module Command::Look
 
   class << self
     def show_room(actor, room)
-      exits = room.get(:exits, :list).map do |p_ref|
-        passage = p_ref.entity
-        name = exit_name(passage)
-        closed = passage.get(:closable, :closed)
-        desc = (closed ? '[ &K%s&0 ]' : '%s') % name
+      exits = visible_exits(actor: actor, room: room).map do |passage|
+        name = entity_keywords(passage)
+        desc = (entity_closed?(passage) ? '[ &K%s&0 ]' : '%s') % name
         [ name, desc ]
       end.sort_by { |n,d| d }.map(&:last)
 
-      title, desc = room.get(ViewableComponent, :short, :desc)
+      view = get_component(room, ViewableComponent)
+      title = view.short
+      desc = view.desc
 
       buf = "&W%s&0\n" % title
       buf << desc
@@ -65,11 +65,11 @@ module Command::Look
       buf << "&WExits: &0%s&0" % exits.join(" ")
       buf << "\n"
 
-      room.get(:container, :contents).each do |ref|
-        entity = ref.entity
+      visible_contents(actor: actor, cont: room).each do |entity|
         next if entity == actor   # you can't see yourself in the room
-        if long = entity.get(:viewable, :long)
-          buf << long
+        view = get_component(entity, ViewableComponent)
+        if view.long
+          buf << view.long
           buf << "\n"
         end
       end
@@ -78,45 +78,51 @@ module Command::Look
     end
 
     def show_char(actor, target)
+      view = get_component(target, ViewableComponent)
       buf = ""
-      buf << target.get(:viewable, :long)
-      buf << "\n"
+      if view.desc
+        buf << view.desc
+        buf << "\n"
+      end
 
       # XXX short is a <RACE>
       # XXX He/She/They/It is in <CONDITION>
-      buf << target.get(:viewable, :short)
-      buf << " may be referred to as '&C%s&0'.\n" % keywords(target)
+      buf << view.short
+      buf << " may be referred to as '&C%s&0'.\n" % entity_keywords(target)
 
       # XXX equipment
     end
 
     def show_obj(actor, target)
+      view = get_component(target, ViewableComponent)
       buf = ""
-      if long = target.get(:viewable, :desc)
-        buf << long
+      if view.desc
+        buf << view.desc
         buf << "\n" unless buf[-1] == "\n"
       end
 
-      buf << target.get(:viewable, :short)
-      buf << " may be referred to as '&C%s&0'.\n" % keywords(target)
+      buf << view.short
+      buf << " may be referred to as '&C%s&0'.\n" % entity_keywords(target)
     end
 
     def show_contents(actor, target)
+      view = get_component(target, ViewableComponent)
       buf = ""
-      buf << target.get(:viewable, :short)
+      buf << view.short
 
-      contents = target.get(:container, :contents) or
+      container = get_component(target, ContainerComponent) or
           return "#{buf} is not a container."
+      contents = container.contents
 
-      return "#{buf} is closed." if target.get(:closable, :closed)
+      return "#{buf} is closed." if entity_closed?(target)
 
       if contents.empty?
         return buf << " is empty"
       end
 
       buf << ":\n"
-      contents.each do |ref|
-        if short = ref.entity.get(:viewable, :short)
+      contents.each do |entity|
+        if short = entity_short(entity)
           buf << "  "
           buf << short
           buf << "\n"

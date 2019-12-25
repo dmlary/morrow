@@ -133,13 +133,24 @@
         A horrific room where all manner of gruesome experiments are conducted
         against hapless, helpess, and hopeless victims.  Oddly, this room is
         not yet covered in blood.
-  - spawn_point:
-      entity: !id obj/chest_closed
-  - spawn_point:
-      entity: !id obj/chest_open_empty
 
 - base: !id exit
   link: !id room/testing.exits.list
   components:
   - keywords: up
   - destination: !id room/void
+
+# Spawn testing
+- id: obj/spawn-bag
+  base: !id obj/bag/small
+  components:
+  - spawn_point:
+    - [ !id spawn/ball ]
+
+- id: spawn/ball
+  components:
+  - spawn:
+      entity: !id obj/junk/ball
+      min: 2
+      max: 5
+
