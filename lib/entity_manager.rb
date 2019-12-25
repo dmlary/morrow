@@ -236,14 +236,21 @@ class EntityManager
             seen.include?(klass)
         seen << klass
         [ index, klass ]
-      end.sort_by { |i,k| k.to_s }
+      end
       o
     end
 
     args[:excl] << add_component_type(ViewExemptComponent) unless
         seen.include?(ViewExemptComponent)
 
-    @views[args] ||= View.new(args)
+    if view = @views[args]
+      return view
+    end
+
+    # New view, let's update it for every known entity in the system
+    view = View.new(args)
+    entities.each { |entity,comps| view.update!(entity, comps) }
+    @views[args] = view
   end
 
   # flush_updates

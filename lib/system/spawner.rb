@@ -2,6 +2,10 @@ module System::Spawner
   extend System::Base
   extend World::Helpers
 
+  def self.view
+    @view ||= World.get_view(all: SpawnPointComponent)
+  end
+
   def self.update(dest, point)
     point.list.each do |spawn_entity|
       spawn = get_component(spawn_entity, SpawnComponent) or next
@@ -28,7 +32,4 @@ module System::Spawner
       end
     end
   end
-
-  World.register_system(:spawner, all: [ SpawnPointComponent ],
-      method: method(:update))
 end

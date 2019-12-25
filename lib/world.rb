@@ -14,9 +14,7 @@ module World
   extend Helpers::Logging
 
   @entity_manager = EntityManager.new
-  @systems = {}
-  @views = []
-  @entities_updated = []
+  @systems = []
 
   @exceptions = []
 
@@ -30,13 +28,13 @@ module World
     attr_reader :entity_manager
     alias em entity_manager   # shortcut for my sanity
     def_delegators :@entity_manager, :entities, :create_entity, :destroy_entity,
-        :add_component, :remove_component, :get_component, :get_components
+        :add_component, :remove_component, :get_component, :get_components,
+        :get_view
 
     # reset the internal state of the World
     def reset!
       @entity_manager = EntityManager.new
       @systems.clear
-      @views.clear
     end
 
     # get_component!
@@ -74,50 +72,27 @@ module World
       info "completed loading world from #{base}"
     end
 
-    # register_system - register a system to run during update
+    # register_systems
     #
-    # Arguments:
-    #   ++name++  identifier for the system
-    #   ++block++ block to run on entities with component types
-    #
-    # Parameters:
-    #   ++:all++ entities must have all ++types++
-    #   ++:any++ entities must have at least one of ++types++
-    #   ++:none++ entities must not have any of ++types++
-    #   method: system handler method (instead of block)
-    def register_system(name, all: [], any: [], excl: [], method: nil, &block)
-
-      # XXX need to try re-using EntityViews in the future
-      view = @entity_manager.get_view(all: all, any: any, excl: excl)
-      @views << view
-
-      @systems[name] = [ view, block || method ]
-      info "Registered #{name} system"
-    end
-
-    # update_views
-    #
-    # Used by the Entity class, notifies World of changes to an Entity for
-    # propigation to the various views.
-    #
-    # Note: this is an asynchronous call; updates are processed at the start of
-    # the World.update method.
-    def update_views(entity)
-      @entities_updated << entity
+    # Register the systems to be run
+    def register_systems
+      @systems << System::Connections
+      @systems << System::CommandQueue
+      @systems << System::Spawner
     end
 
     # update
     def update
       bm = Benchmark.measure do
-        @systems.each do |system,(view, block)|
-          view.each do |id,*comps|
+        @systems.each do |handler|
+          handler.view.each do |id, *comps|
             begin
-              block.call(id, *comps)
+              handler.update(id, *comps)
             rescue Fault => ex
-              error "Fault in system #{system}: #{ex}"
+              error "Fault in system #{handler}: #{ex}"
               @exceptions << ex
             rescue Exception => ex
-              error "Exception in system #{system}: #{ex}"
+              error "Exception in system #{handler}: #{ex}"
               @exceptions << ex
             end
           end
