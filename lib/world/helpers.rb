@@ -4,9 +4,8 @@ require 'facets/string/indent'
 module World::Helpers
   include Helpers::Logging
   extend Forwardable
-  def_delegators :World, :create_entity, :destroy_entity,
-      :add_component, :remove_component, :get_component, :get_components,
-      :get_component!
+  def_delegators :World, :create_entity, :add_component, :remove_component,
+      :get_component, :get_components, :get_component!
 
   # raise an exception with a message, and all manner of extra data
   #
@@ -20,6 +19,20 @@ module World::Helpers
     ex = World::Fault.new(msg, *data)
     ex.set_backtrace(caller)
     raise(ex)
+  end
+
+  # destroy_entity
+  #
+  # Destroy an entity, and update whatever SpawnComponent it may have come
+  # from.
+  def destroy_entity(entity)
+    if spawned = get_component(entity, SpawnedComponent) and
+        spawn = get_component(spawned.source, SpawnComponent)
+      spawn.active -= 1
+      spawn.next_spawn ||= Time.now + spawn.frequency
+    end
+
+    em.destroy_entity(entity)
   end
 
   # Get the cardinal direction from the passage, or the first keyword
