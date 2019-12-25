@@ -8,11 +8,12 @@
         You are floating in a formless void, detached from all sensation of physical
         matter, surrounded by swirling glowing light, which fades into the relative
         darkness around you without any trace of edges or shadow.
+
            There is a "No Tipping" notice pinned to the darkness.
   - spawn_point:
-      entity: !id mob/puff
-  - spawn_point:
-      entity: !id obj/limbo-chest
+      list:
+      - !id spawn/mob/puff
+      - !id spawn/obj/limbo-chest
 
 - base: !id base:exit
   link: !id base:room/void.exits.list
@@ -40,7 +41,20 @@
 - id: obj/limbo-chest
   base: !id base:obj/chest/wooden
   components:
+  - container:
+      contents:
+      - !id base:obj/junk/ball
   - spawn_point:
+      - [ !id spawn/obj/limbo-chest/ball ]
+
+- id: spawn/obj/limbo-chest
+  components:
+  - spawn:
+      entity: !id obj/limbo-chest
+
+- id: spawn/obj/limbo-chest/ball
+  components:
+  - spawn:
       entity: !id base:obj/junk/ball
       max: 100
 
@@ -54,3 +68,8 @@
       desc: |-
         Is that some type of differential curve involving some strange, and
         unknown calculus that she seems to be made out of?
+
+- id: spawn/mob/puff
+  components:
+  - spawn:
+      entity: !id mob/puff

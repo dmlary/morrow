@@ -6,11 +6,12 @@ class TelnetServer::Handler::Character < TelnetServer::Handler::Base
     @cmd_queue = Queue.new
 
     # Create a new player in the world (stick them in the void)
-    void = World.by_virtual('base:room/void')
-    @char = World.spawn(void, 'base:player')
-    @char.set(:connection, conn: conn)
-    @char.set(:command_queue, queue: @cmd_queue)
-    @char.set(:player_config, color: true)
+    @char = World.create_entity(base: 'base:player')
+    World.get_component!(@char, :connection).conn = conn
+    World.get_component!(@char, :command_queue).queue = @cmd_queue
+    World.get_component!(@char, :player_config).color = true
+    World.move_entity(@char, 'base:room/void')
+    World.remove_component(@char, ViewExemptComponent)
 
     # Add the 'look' command to the queue
     @cmd_queue.push('look')
@@ -22,6 +23,6 @@ class TelnetServer::Handler::Character < TelnetServer::Handler::Base
   end
 
   def color?
-    @char.get(:player_config, :color)
+    World.get_component!(@char, :player_config).color
   end
 end

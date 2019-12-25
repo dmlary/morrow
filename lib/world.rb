@@ -1,6 +1,7 @@
 require 'yaml'
 require 'find'
 require 'forwardable'
+require 'benchmark'
 require_relative 'helpers'
 require_relative 'component'
 require_relative 'components'
@@ -107,34 +108,26 @@ module World
 
     # update
     def update
-      start = Time.now
-
-      # apply the updates
-      @entities_updated.uniq!
-      @entities_updated.each { |e| @views.each { |v| v.update!(e) } }
-      updates = @entities_updated.size
-      @entities_updated.clear
-
-      @systems.each do |system,(view, block)|
-        view.each do |id,*comps|
-          begin
-            block.call(id, *comps)
-          rescue Fault => ex
-            error "Fault in system #{system}: #{ex}"
-            @exceptions << ex
-          rescue Exception => ex
-            error "Exception in system #{system}: #{ex}"
-            @exceptions << ex
+      bm = Benchmark.measure do
+        @systems.each do |system,(view, block)|
+          view.each do |id,*comps|
+            begin
+              block.call(id, *comps)
+            rescue Fault => ex
+              error "Fault in system #{system}: #{ex}"
+              @exceptions << ex
+            rescue Exception => ex
+              error "Exception in system #{system}: #{ex}"
+              @exceptions << ex
+            end
           end
         end
+        em.flush_updates
       end
-      delta = Time.now - start
-      warn 'update exceeded time-slice; delta=%.04f > limit=%.04f' %
-          [ delta, @update_frequency ] if delta > @update_frequency
-      @update_time[@update_index] = {
-        time: Time.now - start,
-        entities_updated: updates
-      }
+
+      warn "update exceeded timeslice #{bm}" if bm.real > 0.25
+
+      @update_time[@update_index] = bm
       @update_index += 1
       @update_index = 0 if @update_index == @update_time.size
       true

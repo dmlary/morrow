@@ -3,11 +3,9 @@ module System::CommandQueue
   extend World::Helpers
 
   World.register_system(:command_queue,
-      all: [ CommandQueueComponent ]) do |id, comp|
+      all: [ CommandQueueComponent ]) do |actor, comp|
     queue = comp.queue or next
     next if queue.empty?
-
-    actor = World.by_id(id)
 
     # run the command, which returns output
     cmd = queue.shift
@@ -22,21 +20,21 @@ module System::CommandQueue
       "error in command; logged to admin\n"
     end
 
-    coder, compact, send_ga = actor.get(PlayerConfigComponent,
-        :coder, :compact, :send_go_ahead)
+    config = get_component(actor, PlayerConfigComponent)
 
     unless buf.is_a?(String)
       error "command returned non-String; actor=%s command='%s'" %
-          [ actor.get(:keywords, :words).inspect, cmd ]
-            
-      buf = (coder ? buf.inspect : "error in command; logged to admin")
+          [ entity_keywords(actor), cmd ]
+
+      buf = (player_config(actor, :coder) ? buf.inspect :
+          "error in command; logged to admin")
     end
 
     buf << "\n" unless buf[-1] == "\n"
-    buf << "\n" unless compact
+    buf << "\n" unless player_config(actor, :compact)
     # append the prompt
     buf << "> "
-    buf << "\xff\xf9" if send_ga
+    buf << "\xff\xf9" if player_config(actor, :send_go_ahead)
 
     # send the actor the output
     send_data(buf, entity: actor)
