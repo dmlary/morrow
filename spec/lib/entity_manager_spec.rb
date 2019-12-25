@@ -885,7 +885,6 @@ describe EntityManager do
         expect(EntityManager::View).to receive(:new).with(args)
         em.get_view(all: all, any: any, excl: excl)
       end
-
     end
 
     context 'new view' do
@@ -922,6 +921,14 @@ describe EntityManager do
         let(:excl) { Class.new(Component) }
         include_examples 'gets a view'
       end
+
+      context 'when entities are already defined' do
+        it 'will call view.update!() for defined entities' do
+          entity = em.create_entity(components: :unique_test)
+          view = em.get_view(all: :unique_test)
+          expect(view.each.to_a.first[0]).to eq(entity)
+        end
+      end
     end
 
     context 'existing view' do
@@ -933,10 +940,12 @@ describe EntityManager do
         end
       end
       context 'with different ordered arguments' do
-        it 'will return the existing view' do
+        # This is important because when a System creates a view, its update
+        # method expects the arguments to be in a specific order.
+        it 'will return a different view' do
           view = em.get_view(all: [:unique_test, :non_unique_test])
           expect(em.get_view(all: [:non_unique_test, :unique_test]))
-              .to be(view)
+              .to_not be(view)
         end
       end
     end

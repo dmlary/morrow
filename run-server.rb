@@ -22,6 +22,7 @@ begin
     begin
       # Load all the things we need
       World.load('./data/world')
+      World.register_systems
 
       EventMachine::PeriodicTimer.new(World::PULSE) { World.update }
 

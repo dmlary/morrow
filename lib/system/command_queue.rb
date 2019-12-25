@@ -1,6 +1,9 @@
 module System::CommandQueue
-  extend System::Base
   extend World::Helpers
+
+  def self.view
+    @view ||= World.get_view(all: CommandQueueComponent)
+  end
 
   def self.update(actor, queue_comp)
     queue = queue_comp.queue or return
@@ -32,7 +35,4 @@ module System::CommandQueue
 
     send_to_char(char: actor, buf: buf)
   end
-
-  World.register_system(:command_queue,
-      all: [ CommandQueueComponent ], method: method(:update))
 end
