@@ -37,6 +37,11 @@ context System::Connections do
         run_update
         expect(conn_comp.conn).to be(nil)
       end
+      it 'will not destroy the client entity' do
+        run_update
+        expect(World.entities[player]).to_not be(nil)
+      end
+      it 'will set the player as link-dead'
     end
 
     context 'client is idle' do
@@ -63,6 +68,10 @@ context System::Connections do
         run_update
         expect(conn_comp.conn).to be(nil)
       end
+      it 'will destroy the client entity' do
+        run_update
+        expect(World.entities[player]).to be(nil)
+      end
     end
 
     context 'with no data queued for output' do
@@ -81,11 +90,20 @@ context System::Connections do
       end
       it 'will send the data to the client' do
         expect(conn_comp.conn).to receive(:send_data).with('passed')
+        allow(conn_comp.conn).to receive(:send_data)
         run_update
       end
       it 'will clear the queued data' do
         run_update
         expect(conn_comp.buf).to be_empty
+      end
+      it 'will send a prompt to the client' do
+        buf = ''
+        expect(conn_comp.conn).to receive(:send_data) do |arg|
+          buf << arg
+        end.at_least(:twice)
+        run_update
+        expect(buf).to match(player_prompt(player) + '$')
       end
     end
   end

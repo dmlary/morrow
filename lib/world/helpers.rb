@@ -143,6 +143,16 @@ module World::Helpers
     entity
   end
 
+  # send_to_char
+  #
+  # Send output to entity if they have a connected ConnectionComponent
+  def send_to_char(char: nil, buf: nil)
+    conn_comp = get_component(char, ConnectionComponent) or return
+    return unless conn_comp.conn
+    conn_comp.buf << buf.to_s
+    nil
+  end
+
   # visible_contents
   #
   # Return the array of Entities within a Container Entity that are visibile to
@@ -250,5 +260,18 @@ module World::Helpers
   def entity_short(entity)
     view = get_component(entity, ViewableComponent) or return nil
     view.short
+  end
+
+  # player_prompt
+  #
+  # Generate a player prompt
+  def player_prompt(entity)
+    config = get_component(entity, PlayerConfigComponent)
+
+    buf = ''
+    buf << "\n" unless config && config.compact
+    buf << '> '
+    buf << "\xff\xf9" if config && config.send_go_ahead
+    buf
   end
 end
