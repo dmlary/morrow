@@ -96,8 +96,8 @@ end
 
 # Connection for players
 class ConnectionComponent < Component
-  field :conn     # TelnetServer::Connection instance
-  field :buf      # pending output?
+  field :conn               # TelnetServer::Connection instance
+  field :buf, default: ''   # String of pending output
 end
 
 ### QUESTIONABLE COMPONENTS ###

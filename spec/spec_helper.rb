@@ -20,6 +20,7 @@ module Helpers
 
   def load_test_world
     World.reset!
+    World.load(File.join(File.dirname(__FILE__), '../data/world/base.yml'))
     World.load(File.join(File.dirname(__FILE__), 'test-world.yml'))
   end
 
@@ -33,6 +34,15 @@ end
 
 RSpec.configure do |config|
   config.include(Helpers)
+
+  config.mock_with :rspec do |mocks|
+    # This option should be set when all dependencies are being loaded
+    # before a spec run, as is the case in a typical spec helper. It will
+    # cause any verifying double instantiation for a class that does not
+    # exist to raise, protecting against incorrectly spelt names.
+    mocks.verify_doubled_constant_names = true
+  end
+
   config.before(:suite) do
     Helpers::Logging.logger.level = Logger::ERROR
   end
