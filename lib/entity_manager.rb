@@ -91,6 +91,21 @@ class EntityManager
     end
   end
 
+  # destroy_entity
+  #
+  # Destroy an entity.
+  #
+  # XXX likely this is gonna cause all sorts of madness.  Imagine running
+  # through all the systems (A & B).  A destroys entity X, but views aren't
+  # updated until after systems run, so B tries to do something with X, still
+  # in their view.  The view components are still there, but if they try to
+  # access something else in the entity, it won't be present.
+  def destroy_entity(entity)
+
+    # going with the naive solution for the time being
+    @entities.delete(entity)
+  end
+
   # add_component
   #
   # Add components to an entity

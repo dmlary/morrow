@@ -833,6 +833,14 @@ describe EntityManager do
     end
   end
 
+  describe '#destroy_entity(entity)' do
+    it 'will destroy the entity' do
+      entity = em.create_entity
+      em.destroy_entity(entity)
+      expect(em.entities[entity]).to be(nil)
+    end
+  end
+
   describe '#get_view' do
     # 'gets a view'
     #
