@@ -28,7 +28,9 @@ module Command::Look
     next "You do not see that here." unless target and
         viewable = get_component(target, ViewableComponent)
 
-    return target.pretty_inspect if player_config(actor, :coder)
+    next { entity: target,
+        components: World.entities[target].compact }.pretty_inspect if
+        player_config(actor, :coder)
 
     case viewable.format
     when "room"
@@ -59,7 +61,9 @@ module Command::Look
       title = view.short
       desc = view.desc
 
-      buf = "&W%s&0\n" % title
+      buf = '&W%s&0' % title
+      buf << ' [&c%s&0]' % room
+      buf << "\n"
       buf << desc
       buf << "\n"
       buf << "&WExits: &0%s&0" % exits.join(" ")
@@ -88,6 +92,7 @@ module Command::Look
       # XXX short is a <RACE>
       # XXX He/She/They/It is in <CONDITION>
       buf << view.short
+      buf << ' [&c%s&0]' % target
       buf << " may be referred to as '&C%s&0'.\n" % entity_keywords(target)
 
       # XXX equipment
@@ -102,6 +107,7 @@ module Command::Look
       end
 
       buf << view.short
+      buf << ' [&c%s&0]' % target
       buf << " may be referred to as '&C%s&0'.\n" % entity_keywords(target)
     end
 
@@ -109,6 +115,7 @@ module Command::Look
       view = get_component(target, ViewableComponent)
       buf = ""
       buf << view.short
+      buf << ' [&c%s&0]' % target
 
       container = get_component(target, ContainerComponent) or
           return "#{buf} is not a container."
@@ -125,6 +132,7 @@ module Command::Look
         if short = entity_short(entity)
           buf << "  "
           buf << short
+          buf << ' [&c%s&0]' % entity
           buf << "\n"
         end
       end

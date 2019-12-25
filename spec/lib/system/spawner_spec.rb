@@ -9,7 +9,12 @@ describe System::Spawner do
 
   describe '.update(dest, point)' do
     context 'with an empty SpawnPointComponent' do
-      it 'will not spawn any entities'
+      it 'will not spawn any entities' do
+        spawn_point.list.clear
+        before = World.entities.keys
+        System::Spawner.update(bag, spawn_point)
+        expect(World.entities.keys).to eq(before)
+      end
     end
     context 'with an invalid entity id in the spawn point' do
       it 'will log an error'

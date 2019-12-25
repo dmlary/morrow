@@ -62,7 +62,7 @@ module World::Helpers
   #
   # Arguments:
   #   ++buf++ String; "sword", "sharp-sword", "3.sword", "all.sword"
-  #   ++pool++ Entity instances
+  #   ++pool++ Entity ids
   #
   # Parameters:
   #   ++multiple++ set to true if more than one match permitted
@@ -97,7 +97,8 @@ module World::Helpers
 
     # Anything else requires us to have the full matches list
     matches = pool.select do |entity|
-      ((entity.get(:keywords) || []) & keywords).size == keywords.size
+      comp = get_component(entity, :keywords) or next false
+      (comp.words & keywords).size == keywords.size
     end
 
     return matches if index.nil? or index == 'all'
@@ -142,14 +143,6 @@ module World::Helpers
     entity
   end
 
-  # entity_location(entity)
-  #
-  # Get the location for a given entity
-  def entity_location(entity)
-    loc = get_component(entity, LocationComponent) or return nil
-    loc.entity
-  end
-
   # visible_contents
   #
   # Return the array of Entities within a Container Entity that are visibile to
@@ -173,6 +166,14 @@ module World::Helpers
     # XXX handle visibility checks at some point
     exits = get_component(room, ExitsComponent) or return []
     exits.list.clone
+  end
+
+  # entity_location(entity)
+  #
+  # Get the location for a given entity
+  def entity_location(entity)
+    loc = get_component(entity, LocationComponent) or return nil
+    loc.entity
   end
 
   # entity_desc
@@ -249,13 +250,5 @@ module World::Helpers
   def entity_short(entity)
     view = get_component(entity, ViewableComponent) or return nil
     view.short
-  end
-
-  # entity_location
-  #
-  # Get the entity this entity resides in
-  def entity_location(entity)
-    loc = get_component(entity, LocationComponent) or return nil
-    loc.entity
   end
 end
