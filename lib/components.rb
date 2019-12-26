@@ -54,10 +54,11 @@ class PlayerConfigComponent < Component
 end
 
 # Loader hints used by EntityManager::Loader::* for use when saving
-class LoadedComponent < Component
-  not_merged
-  field :src, freeze: true
+class MetadataComponent < Component
+  field :source, freeze: true
   field :area, freeze: true
+  field :spawned_by, freeze: true
+  field :base
 end
 
 # Denote an Entity is closable/lockable and their current state
@@ -82,10 +83,6 @@ class SpawnComponent < Component
   field :max, default: 1      # maximum number that can be active at one time
   field :frequency, default: 300  # seconds between spawn events
   field :next_spawn               # next spawn event; Time instance
-end
-
-class SpawnedComponent < Component
-  field :source               # entity this entity was spawned from
 end
 
 # Command queue for characters

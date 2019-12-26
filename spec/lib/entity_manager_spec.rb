@@ -3,9 +3,14 @@ require 'entity_manager'
 describe EntityManager do
   # Create some constant test components for use in our tests
   before(:all) do
-    class UniqueTestComponent < Component; end
+    class UniqueTestComponent < Component;
+      field :a, default: :default_a
+      field :b, default: :default_b
+    end
     class NonUniqueTestComponent < Component
       not_unique
+      field :x
+      field :y
     end
   end
 
@@ -89,14 +94,13 @@ describe EntityManager do
     end
 
     context 'with a single base' do
-      before(:each) { em.create_entity(id: 'test:base') }
+      before(:each) do
+        comp = UniqueTestComponent.new(a: :failed)
+        em.create_entity(id: 'test:base', components: comp)
+      end
       let(:id) { em.create_entity(base: 'test:base') }
 
       include_examples 'will create an entity'
-
-      it 'will include base in the entity id' do
-        expect(id).to include(':base-')
-      end
 
       it 'will call EntityManager#merge_entity(id, "test:base")' do
         expect(em).to receive(:merge_entity) do |dest, base|
@@ -104,24 +108,23 @@ describe EntityManager do
         end
         id
       end
+
+      it 'will clear modification flags on all components' do
+        mods = em.entities[id].compact.map { |c| c.get_modified_fields }
+        expect(mods).to all(be_empty)
+      end
     end
 
     context 'with multiple bases' do
       before(:each) do
-        em.create_entity(id: 'test:base_a')
-        em.create_entity(id: 'test:base_b')
+        comp_a = UniqueTestComponent.new(a: :failed)
+        comp_b = UniqueTestComponent.new(b: :failed)
+        em.create_entity(id: 'test:base_a', components: comp_a)
+        em.create_entity(id: 'test:base_b', components: comp_b)
       end
       let(:id) { em.create_entity(base: [ 'test:base_a', 'test:base_b' ]) }
 
       include_examples 'will create an entity'
-
-      it 'will include "base_b" in the entity id' do
-        expect(id).to include(':base_b-')
-      end
-
-      it 'will not include "base_a" in the entity id' do
-        expect(id).to_not include(':base_a')
-      end
 
       it 'will call EntityManager#merge_entity() for each base in order' do
         expect(em).to receive(:merge_entity).ordered do |dest, base|
@@ -131,6 +134,11 @@ describe EntityManager do
           expect(base).to eq('test:base_b')
         end
         id
+      end
+
+      it 'will clear modification flags on all components' do
+        mods = em.entities[id].compact.map { |c| c.get_modified_fields }
+        expect(mods).to all(be_empty)
       end
     end
 

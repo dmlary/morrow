@@ -73,7 +73,8 @@
 - id: door/closed
   base: !id exit
   components:
-  - keywords: door
+  - keywords:
+    - [ door ]
   - viewable:
       format: object
       short: a door

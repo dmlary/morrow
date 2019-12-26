@@ -166,6 +166,20 @@ class Component
     self.class.new(values)
   end
 
+  # clear_modified!
+  #
+  # Clear all modified flags on this instance.  Used in EntityManager after
+  # merging all the base entities into a class.
+  def clear_modified!
+    self.class.defaults.each do |k,_|
+      begin
+        remove_instance_variable("@__modified_#{k}")
+      rescue NameError
+      end
+    end
+    self
+  end
+
   # get_modified_fields
   #
   # Obscenely long name to try to not conflict with a possible field value, but

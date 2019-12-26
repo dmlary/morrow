@@ -27,14 +27,42 @@ module World
     attr_reader :exceptions
     attr_reader :entity_manager
     alias em entity_manager   # shortcut for my sanity
-    def_delegators :@entity_manager, :entities, :create_entity, :destroy_entity,
+    def_delegators :@entity_manager, :entities,
         :add_component, :remove_component, :get_component, :get_components,
         :get_view
 
-    # reset the internal state of the World
-    def reset!
-      @entity_manager = EntityManager.new
-      @systems.clear
+    # create_entity
+    #
+    # Create an entity
+    def create_entity(id: nil, base: [], components: [])
+      base = [ base ] unless base.is_a?(Array)
+      entity = em.create_entity(id: id, base: base, components: components)
+      get_component!(entity, :metadata).base = base
+      entity
+    end
+
+    # destroy_entity
+    #
+    # Destroy an entity, and update whatever SpawnComponent it may have come
+    # from.
+    def destroy_entity(entity)
+      debug("destroying entity #{entity}")
+
+      # update any spawn point that this entity is going away
+      if meta = get_component(entity, :metadata) and
+          meta.spawned_by and
+          spawn = get_component(meta.spawned_by, :spawn)
+        spawn.active -= 1
+        spawn.next_spawn ||= Time.now + spawn.frequency
+      end
+
+      # remove the entity from whatever location it was in
+      if location = entity_location(entity) and
+          cont = get_component(location, :container)
+        cont.contents.delete(entity)
+      end
+
+      em.destroy_entity(entity)
     end
 
     # get_component!
@@ -43,6 +71,12 @@ module World
     # will create the component.
     def get_component!(entity, type)
       em.get_component(entity, type) or em.add_component(entity, type)
+    end
+
+    # reset the internal state of the World
+    def reset!
+      @entity_manager = EntityManager.new
+      @systems.clear
     end
 
     # load the world
@@ -67,7 +101,6 @@ module World
 
         @loader.load(path: path, area: area)
       end
-      @loading_dir = nil
       @loader.finish
       info "completed loading world from #{base}"
     end

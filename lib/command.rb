@@ -28,7 +28,7 @@ module Command
 
     def lookup_handler(name)
       @commands[name] || begin
-        pattern = /^#{name}/
+        pattern = /^#{Regexp.escape(name)}/
         @commands.values.select { |h| h.name =~ pattern }
             .sort_by { |h| h.priority }
             .last

@@ -1,4 +1,4 @@
-require 'set'
+require 'securerandom'
 require 'facets/string/snakecase'
 require_relative 'helpers'
 
@@ -13,7 +13,6 @@ class EntityManager
 
   def initialize()
     @entities = {}          # hash containing all the entities
-    @entity_index = 0       # used for assigning entity ids
     @comp_map = {}          # mapping Component -> [ index, klass ]
     @comp_index_max = -1    # maximum index in the Entity Array
     @views = {}             # any active views
@@ -41,15 +40,7 @@ class EntityManager
     components = [ components ] unless components.is_a?(Array)
 
     # create an id if one wasn't provided
-    if id.nil? || id[-1] == ':'
-      area = id ? id : 'none:'
-      type = base.empty? ? 'empty' : base.last.to_s.sub(/^[^:]+:/, '')
-      loop do
-        id = '%s%s-%d' % [ area, type, @entity_index ]
-        @entity_index += 1
-        break unless @entities[id]
-      end
-    end
+    id ||= SecureRandom.uuid
 
     # make sure the id isn't a duplicate
     raise DuplicateId, id if @entities.has_key?(id)
@@ -59,6 +50,10 @@ class EntityManager
 
       # merge any requested bases into the new entity
       base.each { |b| merge_entity(id, b) }
+
+      # clear the modified flags on all of our components; they came from the
+      # base entities.
+      entity.each { |c| c.clear_modified! if c }
 
       # then add our components
       add_component(id, *components) unless components.empty?

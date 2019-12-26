@@ -74,16 +74,17 @@ class World::Loader::Yaml < World::Loader::Base
         end
       end
 
-      components << LoadedComponent.new(src: "#{path}:#{map.start_line}",
-                                        area: area)
+      components << MetadataComponent
+          .new(source: "#{path}:#{map.start_line}", area: area, base: base)
 
       # common arguments for creating an entity
       args = { base: base, components: components, link: links }
 
       # if there is an ID assigned to this entity, update the area to report
       # where it really came from, and add it to our args
-      id = definition['id'] || ''
-      args[:id] = id.sub(/^([^:]+:)?/, "#{area}:")
+      if id = definition['id']
+        args[:id] = id.sub(/^([^:]+:)?/, "#{area}:")
+      end
 
       @loader.schedule(:create_entity, args)
     end

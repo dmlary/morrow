@@ -342,4 +342,19 @@ describe Component do
       end
     end
   end
+
+  describe '#clear_modified!' do
+    let(:comp) do
+      Class.new(Component) do
+        field :a
+        field :b
+      end
+    end
+    it 'will clear all modified flags' do
+      c = comp.new
+      c.a = :failed
+      c.clear_modified!
+      expect(c.get_modified_fields).to eq({})
+    end
+  end
 end

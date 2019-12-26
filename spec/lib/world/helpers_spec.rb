@@ -39,7 +39,11 @@ describe World::Helpers do
     end
   end
 
-  describe '.spawn(dest, base)' do
+  describe '.spawn(base: nil, area: nil)' do
+    it 'will set Metadata.area to the area provided' do
+      entity = spawn(area: :passed)
+      expect(get_component(entity, :metadata).area).to eq(:passed)
+    end
   end
 
   describe '.visibile_contents(actor: nil, cont: nil)' do

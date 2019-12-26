@@ -19,7 +19,7 @@ module System::Spawner
       next if next_spawn && next_spawn > Time.now && active >= spawn.min
 
       entity = spawn_at(dest: dest, base: spawn.entity)
-      add_component(entity, SpawnedComponent.new(source: spawn_entity))
+      get_component!(entity, :metadata).spawned_by = spawn_entity
       spawn.active = active += 1
 
       if active < spawn.max
