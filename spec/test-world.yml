@@ -61,7 +61,8 @@
   base: base:obj/bag/small
   components:
   - spawn_point:
-    - [ test-world:spawn/ball ]
+      list:
+      - 'test-world:spawn/ball'
 
 - id: test-world:spawn/ball
   components:
