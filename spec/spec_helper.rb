@@ -30,6 +30,13 @@ module Helpers
   def spawn_entities
     World.update
   end
+
+  # generate a temporary filename
+  def tmppath
+    ts = Time.now.strftime('%Y%m%d')
+    File.join(Dir.tmpdir,
+        "rspec-morrow-#{$$}-#{ts}-#{rand(0xffffffff).to_s(16)}")
+  end
 end
 
 RSpec.configure do |config|
@@ -44,7 +51,7 @@ RSpec.configure do |config|
   end
 
   config.before(:suite) do
-    Helpers::Logging.logger.level = Logger::ERROR
+    Helpers::Logging.logger.level = Logger::WARN
   end
 end
 

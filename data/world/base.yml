@@ -1,7 +1,7 @@
 ---
 # Base Entities used throughout the system.  Any Entity may be used as the base
 # for another Entity, these are just the most generic among them.
-- id: room
+- id: base:room
   components:
   - viewable:
       format: room
@@ -9,12 +9,12 @@
       long: |-
         There is space here.
 
-- id: !id template
+- id: base:template
   components:
   - view_exempt
 
-- id: char
-  base: !id template
+- id: base:char
+  base: base:template
   components:
   - keywords:
     - [ char ]
@@ -24,8 +24,8 @@
       long: |-
         You see nothing special about them.
 
-- id: obj
-  base: !id template
+- id: base:obj
+  base: base:template
   components:
   - keywords:
     - [ obj ]
@@ -34,28 +34,28 @@
       short: an object
       long: You see nothing special...
 
-- id: room/void
-  base: !id room
+- id: base:room/void
+  base: base:room
   components:
   - viewable:
       short: The Void
       desc: You are floating in nothing
 
-- id: player
-  base: !id char
+- id: base:player
+  base: base:char
   components:
   - player_config
   - connection
   - command_queue
 
-- id: race/human
-  base: !id char
+- id: base:race/human
+  base: base:char
   components:
   - viewable:
       short: a human
 
-- id: race/elf
-  base: !id char
+- id: base:race/elf
+  base: base:char
   components:
   - viewable:
       short: an elf
@@ -63,24 +63,25 @@
   - affect: [ attributes, dexterity, modify, 1 ]
   - affect: [ attributes, wisdon, modify, 1 ]
 
-- id: exit
+- id: base:exit
   components:
   - viewable:
       format: exit
       long: You see nothing special...
   - destination:
 
-- id: door/closed
-  base: !id exit
+- id: base:door/closed
+  base: base:exit
   components:
-  - keywords: door
+  - keywords:
+    - [ door ]
   - viewable:
       format: object
       short: a door
       desc: A wooden door bars your way.
 
-- id: obj/bag/small
-  base: !id obj
+- id: base:obj/bag/small
+  base: base:obj
   components:
   - keywords:
     - [ small, bag ]
@@ -91,8 +92,8 @@
       max_volume: 10
   - closable
 
-- id: obj/chest/wooden
-  base: !id obj
+- id: base:obj/chest/wooden
+  base: base:obj
   components:
   - keywords:
     - [ wooden, chest ]
@@ -103,8 +104,8 @@
       max_volume: 100
   - closable
 
-- id: obj/junk/ball
-  base: !id obj
+- id: base:obj/junk/ball
+  base: base:obj
   components:
   - keywords:
     - [red, rubber, ball]

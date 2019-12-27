@@ -4,8 +4,8 @@ require 'facets/string/indent'
 module World::Helpers
   include Helpers::Logging
   extend Forwardable
-  def_delegators :World, :create_entity, :add_component, :remove_component,
-      :get_component, :get_components, :get_component!
+  def_delegators :World, :create_entity, :destroy_entity, :add_component,
+      :remove_component, :get_component, :get_components, :get_component!
 
   # raise an exception with a message, and all manner of extra data
   #
@@ -21,20 +21,6 @@ module World::Helpers
     raise(ex)
   end
 
-  # destroy_entity
-  #
-  # Destroy an entity, and update whatever SpawnComponent it may have come
-  # from.
-  def destroy_entity(entity)
-    if spawned = get_component(entity, SpawnedComponent) and
-        spawn = get_component(spawned.source, SpawnComponent)
-      spawn.active -= 1
-      spawn.next_spawn ||= Time.now + spawn.frequency
-    end
-
-    em.destroy_entity(entity)
-  end
-
   # Get the cardinal direction from the passage, or the first keyword
   def exit_name(passage)
     keywords = [ passage.get(:keywords, :words) ].flatten
@@ -42,7 +28,7 @@ module World::Helpers
   end
 
   # place one entity inside another entity's contents
-  def move_entity(entity, dest)
+  def move_entity(dest: nil, entity: nil)
     container = get_component!(dest, :container)
     location = get_component!(entity, :location)
 
@@ -119,17 +105,18 @@ module World::Helpers
     raise ArgumentError, 'no base' unless base
 
     entity = spawn(base: base, area: entity_area(dest))
-    move_entity(entity, dest)
+    move_entity(entity: entity, dest: dest)
     entity
   end
 
   # spawn
   #
   # Create a new instance of an entity from a base entity
-  def spawn(base: nil, area: nil)
-    entity = create_entity(base: base, id: area ? "#{area}:" : nil)
+  def spawn(base: [], area: nil)
+    entity = create_entity(base: base)
     debug("spawning #{entity} from #{base}")
     remove_component(entity, ViewExemptComponent)
+    get_component!(entity, MetadataComponent).area = area
 
     if container = get_component(entity, ContainerComponent)
       bases = container.contents.clone
@@ -151,6 +138,14 @@ module World::Helpers
     return unless conn_comp.conn
     conn_comp.buf << buf.to_s
     nil
+  end
+
+  # entity_contents
+  #
+  # Array of entities within an entity's ContainerComponent
+  def entity_contents(entity)
+    comp = get_component(entity, ContainerComponent) or return []
+    comp.contents
   end
 
   # visible_contents
@@ -176,6 +171,23 @@ module World::Helpers
     # XXX handle visibility checks at some point
     exits = get_component(room, ExitsComponent) or return []
     exits.list.clone
+  end
+
+  # entity_exists?(entity)
+  #
+  # Returns true if entity exists
+  def entity_exists?(entity)
+    !!World.entities[entity]
+  end
+
+  # entity_components(entity)
+  #
+  # Returns array of Components for an entity.
+  #
+  # Note: Most likely you don't need this, and should be using get_view() or
+  # get_component() which are both faster.
+  def entity_components(entity)
+    World.entities[entity].compact
   end
 
   # entity_location(entity)
@@ -235,7 +247,8 @@ module World::Helpers
   #
   # Get the area name from an entity id
   def entity_area(entity)
-    entity.split(':',2).first
+    meta = get_component(entity, :metadata) or return nil
+    meta.area
   end
 
   # entity_closed?
@@ -273,5 +286,77 @@ module World::Helpers
     buf << '> '
     buf << "\xff\xf9" if config && config.send_go_ahead
     buf
+  end
+
+  # save_entities
+  #
+  # Save the supplied entities to a given file
+  def save_entities(dest, *entities)
+    out = entities.flatten.uniq.map do |entity|
+      record = {}
+      record[:id] = entity
+
+      meta = get_component(entity, :metadata)
+      if base = meta.base
+        record[:base] = base
+      end
+      base ||= []
+
+      record[:remove] = []
+      record[:components] = []
+
+      base_entity = World.entity_manager.create_entity(base: base)
+      begin
+        base_comps = World.entity_manager.entities[base_entity]
+        comps = World.entity_manager.entities[entity]
+        comps.zip(base_comps) do |mine, other|
+          if other && !mine
+            record[:remove] << component_name(other).to_s
+          end
+
+          next unless mine
+
+          if mine.is_a?(Array)
+            (mine - other).each do |comp|
+              record[:components] <<
+                  { component_name(comp).to_s => comp.get_modified_fields }
+            end
+          else
+            next unless mine.save?
+            other ||= mine.class.new
+            diff = mine - other
+            next if diff.empty?
+            record[:components] <<
+                { component_name(mine).to_s => diff.rekey { |k| k.to_s } }
+          end
+        end
+      ensure
+        World.entity_manager.destroy_entity(base_entity)
+        base_entity = nil
+      end
+
+      record.deep_rekey { |k| k.to_s }
+    end
+
+    tmp = dest + '.tmp'
+    bak = dest + '.bak'
+    begin
+      File.open(tmp, 'w+') { |f| f.write(out.to_yaml) }
+      File.rename(dest, bak) if File.exists?(dest)
+      File.rename(tmp, dest)
+    ensure
+      File.unlink(bak) if File.exists?(bak)
+      File.unlink(tmp) if File.exists?(tmp)
+    end
+  end
+
+  # load_entities
+  #
+  # Load entities from a given file
+  def load_entities(path, area: nil)
+    info "loading entities from #{path}"
+    loader = World::Loader.new(World.entity_manager)
+    loader.load(path: path, area: area)
+    loader.finish
   end
 end

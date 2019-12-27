@@ -154,9 +154,10 @@ class World::Loader
   # try_create_entity
   #
   # Try to create an entity; if it fails due to UnknownId, return false
-  def try_create_entity(id: nil, base: [], components: [], link: [])
+  def try_create_entity(id: nil, base: [], components: [], link: [], remove: [])
     begin
       id = @em.create_entity(id: id, base: base, components: components)
+      remove.each { |c| @em.remove_component(id, c) }
       link.each do |dest|
         schedule(:link, entity: id, dest: dest)
       end

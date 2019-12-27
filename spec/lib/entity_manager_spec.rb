@@ -3,9 +3,14 @@ require 'entity_manager'
 describe EntityManager do
   # Create some constant test components for use in our tests
   before(:all) do
-    class UniqueTestComponent < Component; end
+    class UniqueTestComponent < Component;
+      field :a, default: :default_a
+      field :b, default: :default_b
+    end
     class NonUniqueTestComponent < Component
       not_unique
+      field :x
+      field :y
     end
   end
 
@@ -89,14 +94,16 @@ describe EntityManager do
     end
 
     context 'with a single base' do
-      before(:each) { em.create_entity(id: 'test:base') }
+      before(:each) do
+        comps = []
+        comps << UniqueTestComponent.new(a: :failed)
+        comps << NonUniqueTestComponent.new(x: :failed)
+        comps << NonUniqueTestComponent.new(y: :failed)
+        em.create_entity(id: 'test:base', components: comps)
+      end
       let(:id) { em.create_entity(base: 'test:base') }
 
       include_examples 'will create an entity'
-
-      it 'will include base in the entity id' do
-        expect(id).to include(':base-')
-      end
 
       it 'will call EntityManager#merge_entity(id, "test:base")' do
         expect(em).to receive(:merge_entity) do |dest, base|
@@ -104,24 +111,24 @@ describe EntityManager do
         end
         id
       end
+
+      it 'will clear modification flags on all components' do
+        mods = em.entities[id].compact.flatten
+            .map { |c| c.get_modified_fields }
+        expect(mods).to all(be_empty)
+      end
     end
 
     context 'with multiple bases' do
       before(:each) do
-        em.create_entity(id: 'test:base_a')
-        em.create_entity(id: 'test:base_b')
+        comp_a = UniqueTestComponent.new(a: :failed)
+        comp_b = NonUniqueTestComponent.new(x: :failed)
+        em.create_entity(id: 'test:base_a', components: comp_a)
+        em.create_entity(id: 'test:base_b', components: comp_b)
       end
       let(:id) { em.create_entity(base: [ 'test:base_a', 'test:base_b' ]) }
 
       include_examples 'will create an entity'
-
-      it 'will include "base_b" in the entity id' do
-        expect(id).to include(':base_b-')
-      end
-
-      it 'will not include "base_a" in the entity id' do
-        expect(id).to_not include(':base_a')
-      end
 
       it 'will call EntityManager#merge_entity() for each base in order' do
         expect(em).to receive(:merge_entity).ordered do |dest, base|
@@ -131,6 +138,12 @@ describe EntityManager do
           expect(base).to eq('test:base_b')
         end
         id
+      end
+
+      it 'will clear modification flags on all components' do
+        mods = em.entities[id].compact.flatten
+            .map { |c| c.get_modified_fields }
+        expect(mods).to all(be_empty)
       end
     end
 
@@ -781,6 +794,22 @@ describe EntityManager do
         em.merge_entity(dest, other)
         expect(em.get_component(dest, comp))
             .to_not be(em.get_component(other, comp))
+      end
+    end
+
+    context 'regression: base has component, other has nil' do
+      it 'will not error' do
+        comp_a = Class.new(Component)
+        comp_b = Class.new(Component)
+        dest = em.create_entity(components: comp_a)
+        other = em.create_entity(components: comp_b)
+
+        # This should result in the following internal state:
+        #   dest:  [ #<CompA ...>, nil ]
+        #   other: [ nil, #<CompB ...> ]
+        #
+        # We were seeing an error in merge_entities with this state
+        expect { em.merge_entity(dest, other) }.to_not raise_error
       end
     end
 

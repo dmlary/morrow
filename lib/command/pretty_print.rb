@@ -6,7 +6,21 @@ module Command::PrettyPrint
 
     Pretty-print a given entity, or the current room.
   HELP
-    target ||= entity_location(actor)
+    location = entity_location(actor)
+    target ||= location
+
+    unless entity_exists?(target)
+      entities = []
+
+      if cont = get_component(location, :container)
+        entities.push(*cont.contents)
+      end
+      if cont = get_component(actor, :container)
+        entities.push(*cont.contents)
+      end
+      entities.push(*World.entities.keys)
+      target = match_keyword(target, entities)
+    end
 
     comps = World.entities[target] or next "Entity not found: #{target}"
 

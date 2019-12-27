@@ -9,7 +9,7 @@ describe Command::Look do
   let(:room) { 'test-world:room/testing' }
   let(:leo) { 'test-world:mob/leonidas' }
   let(:chest_closed) { 'test-world:obj/chest_closed' }
-  before(:each) { move_entity(leo, room) }
+  before(:each) { move_entity(entity: leo, dest: room) }
 
   describe 'command parsing' do
     context '"look"' do

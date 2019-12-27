@@ -5,14 +5,19 @@ describe System::Spawner do
   let(:bag) { 'test-world:obj/spawn-bag' }
   let(:spawn_point) { get_component(bag, :spawn_point) }
   let(:ball) { 'test-world:obj/junk/ball' }
-  let(:spawn) { get_component('test-world:spawn/ball', :spawn) }
+  let(:spawn_id) { 'test-world:spawn/ball' }
+  let(:spawn) { get_component(spawn_id, :spawn) }
+
+  def run_update
+    System::Spawner.update(bag, spawn_point)
+  end
 
   describe '.update(dest, point)' do
     context 'with an empty SpawnPointComponent' do
       it 'will not spawn any entities' do
         spawn_point.list.clear
         before = World.entities.keys
-        System::Spawner.update(bag, spawn_point)
+        run_update
         expect(World.entities.keys).to eq(before)
       end
     end
@@ -21,6 +26,17 @@ describe System::Spawner do
       it 'will remove the entity from the spawn point'
     end
     context 'with a valid entity in the spawn point' do
+      shared_examples 'spawned entity' do
+        it 'will set MetadataComponent.spawned_by in spawned entities' do
+          before = World.entities.keys
+          run_update
+          spawned = World.entities.keys - before
+          spawned.each do |id|
+            expect(get_component(id, :metadata).spawned_by).to eq(spawn_id)
+          end
+        end
+      end
+
       context 'with less than minimum active' do
         before(:each) do
           spawn.min = 2
@@ -31,15 +47,17 @@ describe System::Spawner do
 
         it 'will spawn an entity at each call until minimum active' do
           before = World.entities.keys
-          10.times { System::Spawner.update(bag, spawn_point) }
+          10.times { run_update }
           after = World.entities.keys
           expect((after - before).size).to eq(2)
         end
 
         it 'will set spawn.active to 2' do
-          10.times { System::Spawner.update(bag, spawn_point) }
+          10.times { run_update }
           expect(spawn.active).to eq(2)
         end
+
+        include_examples 'spawned entity'
       end
 
       context 'with more than minimum, less than max active' do
@@ -56,13 +74,13 @@ describe System::Spawner do
 
         it 'will spawn one entity each frequency' do
           before = World.entities.keys
-          6.times { System::Spawner.update(bag, spawn_point); sleep 0.25 }
+          6.times { run_update; sleep 0.25 }
           after = World.entities.keys
           expect((after - before).size).to eq(2)
         end
 
         it 'will set spawn.active to 4' do
-          6.times { System::Spawner.update(bag, spawn_point); sleep 0.25 }
+          6.times { run_update; sleep 0.25 }
           expect(spawn.active).to eq(4)
         end
       end
@@ -80,14 +98,14 @@ describe System::Spawner do
             # spawn time was 55 seconds ago; the extra 5 seconds are to avoid
             # falling right on an extra spawn interval.
             spawn.next_spawn = Time.now - (5 * spawn.frequency) + 5
-            10.times { System::Spawner.update(bag, spawn_point) }
+            10.times { run_update }
             expect(spawn.active).to eq(5)
           end
         end
         context 'next_spawn greater than max * frequency in the past' do
           it 'will spawn at most max entities' do
             spawn.next_spawn = Time.now - (100 * spawn.frequency)
-            20.times { System::Spawner.update(bag, spawn_point) }
+            20.times { run_update }
             expect(spawn.active).to eq(10)
           end
         end
@@ -99,7 +117,7 @@ describe System::Spawner do
           spawn.active = 9
           spawn.max = 10
           spawn.next_spawn = Time.now
-          System::Spawner.update(bag, spawn_point)
+          run_update
         end
 
         it 'will set active to max' do
@@ -121,7 +139,7 @@ describe System::Spawner do
 
         it 'will not spawn an entity' do
           before = World.entities.keys
-          System::Spawner.update(bag, spawn_point)
+          run_update
           expect(World.entities.keys).to eq(before)
         end
       end
