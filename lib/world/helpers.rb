@@ -335,6 +335,8 @@ module World::Helpers
         base_entity = nil
       end
 
+      record.delete_if { |k,v| v.respond_to?(:empty?) and v.empty? }
+
       record.deep_rekey { |k| k.to_s }
     end
 
