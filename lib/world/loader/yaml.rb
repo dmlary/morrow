@@ -83,7 +83,7 @@ class World::Loader::Yaml < World::Loader::Base
       # if there is an ID assigned to this entity, update the area to report
       # where it really came from, and add it to our args
       if id = definition['id']
-        args[:id] = id.sub(/^([^:]+:)?/, "#{area}:")
+        args[:id] = area ? id.sub(/^([^:]+:)?/, "#{area}:") : id
       end
 
       @loader.schedule(:create_entity, args)

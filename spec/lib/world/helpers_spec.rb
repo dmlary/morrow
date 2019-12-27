@@ -60,4 +60,49 @@ describe World::Helpers do
       it 'will not be included in the results'
     end
   end
+
+  describe '.save_entities(dest, *entities' do
+    let(:player) { create_entity(base: [ 'base:player', 'base:race/elf' ]) }
+    let(:inventory) do
+      10.times.map do
+        item = create_entity(base: 'base:obj/junk/ball')
+        move_entity(dest: player, entity: item)
+        item
+      end
+    end
+    let(:entities) { [ player ] + inventory }
+    let(:path) { tmppath << '.yml' }
+    after(:each) { File.unlink(path) if File.exist?(path) }
+
+    def entity_snapshot(entity)
+      entity_components(entity).flatten.map do |comp|
+        next unless comp and comp.save?
+        comp.to_h
+      end.compact
+    end
+
+    context 'dest does not exist' do
+      it 'will creade dest' do
+        save_entities(path, entities)
+        expect(File.exist?(path)).to be(true)
+      end
+
+      it 'will write all entities to dest' do
+        snapshot = entities.inject({}) { |o,e| o[e] = entity_snapshot(e); o }
+
+        save_entities(path, entities)
+        World.entity_manager.destroy_entity(*entities)
+        load_entities(path)
+
+        entities.each do |entity|
+          expect(entity_snapshot(entity)).to eq(snapshot[entity])
+        end
+      end
+    end
+    context 'dest exists' do
+      context 'an error occurs' do
+        it 'will not modify original dest file'
+      end
+    end
+  end
 end

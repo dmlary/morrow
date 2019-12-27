@@ -28,7 +28,7 @@ module World::Helpers
   end
 
   # place one entity inside another entity's contents
-  def move_entity(entity, dest)
+  def move_entity(dest: nil, entity: nil)
     container = get_component!(dest, :container)
     location = get_component!(entity, :location)
 
@@ -105,7 +105,7 @@ module World::Helpers
     raise ArgumentError, 'no base' unless base
 
     entity = spawn(base: base, area: entity_area(dest))
-    move_entity(entity, dest)
+    move_entity(entity: entity, dest: dest)
     entity
   end
 
@@ -178,6 +178,16 @@ module World::Helpers
   # Returns true if entity exists
   def entity_exists?(entity)
     !!World.entities[entity]
+  end
+
+  # entity_components(entity)
+  #
+  # Returns array of Components for an entity.
+  #
+  # Note: Most likely you don't need this, and should be using get_view() or
+  # get_component() which are both faster.
+  def entity_components(entity)
+    World.entities[entity].compact
   end
 
   # entity_location(entity)
@@ -276,5 +286,62 @@ module World::Helpers
     buf << '> '
     buf << "\xff\xf9" if config && config.send_go_ahead
     buf
+  end
+
+  # save_entities
+  #
+  # Save the supplied entities to a given file
+  def save_entities(dest, *entities)
+    out = entities.flatten.uniq.map do |entity|
+      record = {}
+      record[:id] = entity
+
+      meta = get_component(entity, :metadata)
+      if base = meta.base
+        record[:base] = base
+      end
+      base ||= []
+
+      record[:components] = []
+
+      base_entity = World.entity_manager.create_entity(base: base)
+      begin
+        base_comps = entity_components(base_entity)
+        comps = entity_components(entity)
+        comps.zip(base_comps) do |mine, other|
+          next unless mine
+          if mine.is_a?(Array)
+            # XXX need to figure out how to handle arrays
+          else
+            next unless mine.save?
+            other ||= mine.class.new
+            diff = mine - other
+            next if diff.empty?
+            record[:components] <<
+                { component_name(mine).to_s => diff.rekey { |k| k.to_s } }
+          end
+        end
+      ensure
+        World.entity_manager.destroy_entity(base_entity)
+        base_entity = nil
+      end
+
+      record.deep_rekey { |k| k.to_s }
+    end
+
+    # XXX need to find a way to remove ViewExemptComponent from the entity
+    # during loading.  It comes from the base.
+
+    File.open(dest, 'w') { |f| f.write(out.to_yaml) }
+  end
+
+  # load_entities
+  #
+  # Load entities from a given file
+  def load_entities(path, area: nil)
+    info "loading entities from #{path}"
+    loader = World::Loader.new(World.entity_manager)
+    loader.load(path: path, area: area)
+    loader.finish
   end
 end

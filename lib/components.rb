@@ -5,6 +5,7 @@ require_relative 'component'
 # entities loaded from disk, and used as templates to spawn other Entity
 # instances into the world.
 class ViewExemptComponent < Component
+  no_save
 end
 
 # Set of keywords a player may use to reference this Entity
@@ -55,6 +56,7 @@ end
 
 # Loader hints used by EntityManager::Loader::* for use when saving
 class MetadataComponent < Component
+  no_save
   field :source, freeze: true
   field :area, freeze: true
   field :spawned_by, freeze: true
@@ -87,12 +89,14 @@ end
 
 # Command queue for characters
 class CommandQueueComponent < Component
+  no_save
   field :queue, clone: false  # Queue instance
   field :blocked_until    # Time that next command can be processed
 end
 
 # Connection for players
 class ConnectionComponent < Component
+  no_save
   field :conn               # TelnetServer::Connection instance
   field :buf, default: ''   # String of pending output
 end

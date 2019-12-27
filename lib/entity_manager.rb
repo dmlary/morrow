@@ -53,7 +53,7 @@ class EntityManager
 
       # clear the modified flags on all of our components; they came from the
       # base entities.
-      entity.each { |c| c.clear_modified! if c }
+      entity.flatten.each { |c| c.clear_modified! if c }
 
       # then add our components
       add_component(id, *components) unless components.empty?
@@ -78,7 +78,7 @@ class EntityManager
       if other.is_a?(Array)
         mine = (dest[i] ||= [])
         other.each { |o| mine << o.clone }
-      elsif mine = dest[i]
+      elsif other && mine = dest[i]
         mine.merge!(other)
       else
         dest[i] = other.clone
@@ -95,10 +95,8 @@ class EntityManager
   # updated until after systems run, so B tries to do something with X, still
   # in their view.  The view components are still there, but if they try to
   # access something else in the entity, it won't be present.
-  def destroy_entity(entity)
-
-    # going with the naive solution for the time being
-    @entities.delete(entity)
+  def destroy_entity(*entity)
+    entity.flatten.each { |e| @entities.delete(e) }
   end
 
   # add_component

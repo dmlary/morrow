@@ -31,7 +31,7 @@ describe World do
 
     it 'will remove the entity from the location' do
       room = create_entity
-      move_entity(entity, room)
+      move_entity(entity: entity, dest: room)
       World.destroy_entity(entity)
       expect(entity_contents(room)).to_not include(entity)
     end

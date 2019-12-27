@@ -45,6 +45,11 @@ class Component
       define_method(:merge?) { false }
     end
 
+    # This component should not be saved
+    def no_save
+      define_method(:save?) { false }
+    end
+
     # Define a field in the Component
     #
     # Arguments:
@@ -58,6 +63,8 @@ class Component
       name = name.to_sym
       variable = "@#{name}".to_sym
       modified = "@__modified_#{name}".to_sym
+
+      raise ArgumentError, 'the field "hash" is reserved' if name == :hash
 
       # set our default value in the class
       @defaults[name] = default
@@ -136,6 +143,13 @@ class Component
     true
   end
 
+  # save?
+  #
+  # Check if this Component should be saved
+  def save?
+    true  # replaced by Component.no_save()
+  end
+
   # to_h
   #
   # Return a Hash of field/value pairs
@@ -204,4 +218,19 @@ class Component
         other.is_a?(Hash)
     other.each { |k,v| send("#{k}=", v) }
   end
+
+  # hash
+  #
+  # Hash this component instance for use in ruby eql? method
+  def hash
+    to_h.hash
+  end
+
+  # ==
+  #
+  # This instance equals another instance
+  def ==(other)
+    self.class == other.class && to_h == other.to_h
+  end
+  alias eql? ==
 end

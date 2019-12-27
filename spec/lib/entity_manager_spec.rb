@@ -95,8 +95,11 @@ describe EntityManager do
 
     context 'with a single base' do
       before(:each) do
-        comp = UniqueTestComponent.new(a: :failed)
-        em.create_entity(id: 'test:base', components: comp)
+        comps = []
+        comps << UniqueTestComponent.new(a: :failed)
+        comps << NonUniqueTestComponent.new(x: :failed)
+        comps << NonUniqueTestComponent.new(y: :failed)
+        em.create_entity(id: 'test:base', components: comps)
       end
       let(:id) { em.create_entity(base: 'test:base') }
 
@@ -110,7 +113,8 @@ describe EntityManager do
       end
 
       it 'will clear modification flags on all components' do
-        mods = em.entities[id].compact.map { |c| c.get_modified_fields }
+        mods = em.entities[id].compact.flatten
+            .map { |c| c.get_modified_fields }
         expect(mods).to all(be_empty)
       end
     end
@@ -118,7 +122,7 @@ describe EntityManager do
     context 'with multiple bases' do
       before(:each) do
         comp_a = UniqueTestComponent.new(a: :failed)
-        comp_b = UniqueTestComponent.new(b: :failed)
+        comp_b = NonUniqueTestComponent.new(x: :failed)
         em.create_entity(id: 'test:base_a', components: comp_a)
         em.create_entity(id: 'test:base_b', components: comp_b)
       end
@@ -137,7 +141,8 @@ describe EntityManager do
       end
 
       it 'will clear modification flags on all components' do
-        mods = em.entities[id].compact.map { |c| c.get_modified_fields }
+        mods = em.entities[id].compact.flatten
+            .map { |c| c.get_modified_fields }
         expect(mods).to all(be_empty)
       end
     end
@@ -789,6 +794,22 @@ describe EntityManager do
         em.merge_entity(dest, other)
         expect(em.get_component(dest, comp))
             .to_not be(em.get_component(other, comp))
+      end
+    end
+
+    context 'regression: base has component, other has nil' do
+      it 'will not error' do
+        comp_a = Class.new(Component)
+        comp_b = Class.new(Component)
+        dest = em.create_entity(components: comp_a)
+        other = em.create_entity(components: comp_b)
+
+        # This should result in the following internal state:
+        #   dest:  [ #<CompA ...>, nil ]
+        #   other: [ nil, #<CompB ...> ]
+        #
+        # We were seeing an error in merge_entities with this state
+        expect { em.merge_entity(dest, other) }.to_not raise_error
       end
     end
 
