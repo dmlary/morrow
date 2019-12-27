@@ -61,13 +61,17 @@ describe World::Helpers do
     end
   end
 
-  describe '.save_entities(dest, *entities' do
-    let(:player) { create_entity(base: [ 'base:player', 'base:race/elf' ]) }
+  describe '.save_entities(dest, *entities)' do
+    let(:player) do
+      player = create_entity(base: [ 'test-world:save/base', 'base:race/elf' ])
+      remove_component(player, :spawn_point)
+      add_component(player, AffectComponent.new(field: :wolf))
+      add_component(player, AffectComponent.new(field: :bear))
+      player
+    end
     let(:inventory) do
       10.times.map do
-        item = create_entity(base: 'base:obj/junk/ball')
-        move_entity(dest: player, entity: item)
-        item
+        spawn_at(dest: player, base: 'base:obj/junk/ball')
       end
     end
     let(:entities) { [ player ] + inventory }
@@ -77,21 +81,43 @@ describe World::Helpers do
     def entity_snapshot(entity)
       entity_components(entity).flatten.map do |comp|
         next unless comp and comp.save?
-        comp.to_h
+        { component_name(comp) => comp.to_h }
       end.compact
     end
 
     context 'dest does not exist' do
-      it 'will creade dest' do
+      it 'will create dest' do
         save_entities(path, entities)
         expect(File.exist?(path)).to be(true)
       end
+    end
 
+    context 'dest exists' do
+      context 'an error occurs white writing' do
+        it 'will not modify original dest file' do
+          File.open(path, 'w') { |f| f.write('passed') }
+          file = instance_double('File')
+          allow(file).to receive(:write).and_raise('oops')
+          expect(File).to receive(:open).and_yield(file)
+
+          expect { save_entities(path, entities) }.to raise_error(RuntimeError)
+          expect(File.read(path)).to eq('passed')
+        end
+      end
+    end
+
+    context 'written once' do
       it 'will write all entities to dest' do
+        # snapshot each of the entities before we save them
         snapshot = entities.inject({}) { |o,e| o[e] = entity_snapshot(e); o }
 
         save_entities(path, entities)
+
+        # Just be very sure this destroy works
         World.entity_manager.destroy_entity(*entities)
+        entities.each { |e| expect(entity_exists?(e)).to be(false) }
+
+        # And load the entities back up
         load_entities(path)
 
         entities.each do |entity|
@@ -99,9 +125,26 @@ describe World::Helpers do
         end
       end
     end
-    context 'dest exists' do
-      context 'an error occurs' do
-        it 'will not modify original dest file'
+
+    context 'written twice' do
+      it 'will write all entities to dest' do
+        # snapshot each of the entities before we save them
+        snapshot = entities.inject({}) { |o,e| o[e] = entity_snapshot(e); o }
+
+        2.times do
+          save_entities(path, entities)
+
+          # Just be very sure this destroy works
+          World.entity_manager.destroy_entity(*entities)
+          entities.each { |e| expect(entity_exists?(e)).to be(false) }
+
+          # And load the entities back up
+          load_entities(path)
+        end
+
+        entities.each do |entity|
+          expect(entity_snapshot(entity)).to eq(snapshot[entity])
+        end
       end
     end
   end

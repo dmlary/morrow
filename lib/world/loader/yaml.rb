@@ -3,25 +3,14 @@ class World::Loader::Yaml < World::Loader::Base
     !!(path =~ /\.ya?ml$/)
   end
 
-  SUPPORTED_KEYS = %w{ id base components link }
+  SUPPORTED_KEYS = %w{ id base components remove link }
 
   def load(path: nil, area: 'unknown')
     buf = File.read(path)
 
-    # parse the document into a Psych tree.  Add a custom tag handler for !id
-    # to prepend the local area if one has not been supplied.
-    doc = begin
-
-      # Add our !id parser
-      type,_ = YAML.add_domain_type('', 'id') do |_,id|
-        id =~ /^\w+:/ ? id : "#{area}:#{id}"
-      end
-
-      # parse the document
-      YAML.parse(buf)
-    ensure
-      YAML.remove_type(type)
-    end
+    # parse the document into a Psych tree; we don't load here because we want
+    # the file/line info while creating our entities.
+    doc = YAML.parse(buf)
 
     unless seq = doc.children[0] and seq.sequence?
       raise "expected #{path} does not contain the expected YAML sequence"
@@ -77,14 +66,17 @@ class World::Loader::Yaml < World::Loader::Base
       components << MetadataComponent
           .new(source: "#{path}:#{map.start_line}", area: area, base: base)
 
+      remove = (definition['remove'] || []).map(&:to_sym)
+
       # common arguments for creating an entity
-      args = { base: base, components: components, link: links }
+      args = {
+          base: base, components: components, link: links,
+          remove: remove
+      }
 
       # if there is an ID assigned to this entity, update the area to report
       # where it really came from, and add it to our args
-      if id = definition['id']
-        args[:id] = area ? id.sub(/^([^:]+:)?/, "#{area}:") : id
-      end
+      args[:id] = definition['id'] if definition.has_key?('id')
 
       @loader.schedule(:create_entity, args)
     end

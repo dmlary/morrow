@@ -1,6 +1,6 @@
 ---
-- id: room/limbo
-  base: !id base:room
+- id: limbo:room/limbo
+  base: base:room
   components:
   - viewable:
       short: Limbo
@@ -12,54 +12,54 @@
            There is a "No Tipping" notice pinned to the darkness.
   - spawn_point:
       list:
-      - !id spawn/mob/puff
-      - !id spawn/obj/limbo-chest
+      - limbo:spawn/mob/puff
+      - limbo:spawn/obj/limbo-chest
 
-- base: !id base:exit
-  link: !id base:room/void.exits.list
+- base: base:exit
+  link: base:room/void.exits.list
   components:
   - keywords:
     - [ up ]
-  - destination: !id room/limbo
+  - destination: limbo:room/limbo
 
-- base: !id base:exit
-  link: !id room/limbo.exits.list
+- base: base:exit
+  link: limbo:room/limbo.exits.list
   components:
   - keywords:
     - [ down ]
-  - destination: !id base:room/void
+  - destination: base:room/void
 
-- base: !id base:door/closed
-  link: !id room/limbo.exits.list
+- base: base:door/closed
+  link: limbo:room/limbo.exits.list
   components:
   - keywords:
     - [ east ]
   - closable:
       closed: true
-  - destination: !id base:room/void
+  - destination: base:room/void
 
-- id: obj/limbo-chest
-  base: !id base:obj/chest/wooden
+- id: limbo:obj/limbo-chest
+  base: base:obj/chest/wooden
   components:
   - container:
       contents:
-      - !id base:obj/junk/ball
+      - base:obj/junk/ball
   - spawn_point:
-      - [ !id spawn/obj/limbo-chest/ball ]
+      - [ limbo:spawn/obj/limbo-chest/ball ]
 
-- id: spawn/obj/limbo-chest
+- id: limbo:spawn/obj/limbo-chest
   components:
   - spawn:
-      entity: !id obj/limbo-chest
+      entity: limbo:obj/limbo-chest
 
-- id: spawn/obj/limbo-chest/ball
+- id: limbo:spawn/obj/limbo-chest/ball
   components:
   - spawn:
-      entity: !id base:obj/junk/ball
+      entity: base:obj/junk/ball
       max: 100
 
-- id: mob/puff
-  base: !id base:char
+- id: limbo:mob/puff
+  base: base:char
   components:
   - keywords: [[ puff, dragon, fractal ]]
   - viewable:
@@ -69,7 +69,7 @@
         Is that some type of differential curve involving some strange, and
         unknown calculus that she seems to be made out of?
 
-- id: spawn/mob/puff
+- id: limbo:spawn/mob/puff
   components:
   - spawn:
-      entity: !id mob/puff
+      entity: limbo:mob/puff

@@ -302,16 +302,25 @@ module World::Helpers
       end
       base ||= []
 
+      record[:remove] = []
       record[:components] = []
 
       base_entity = World.entity_manager.create_entity(base: base)
       begin
-        base_comps = entity_components(base_entity)
-        comps = entity_components(entity)
+        base_comps = World.entity_manager.entities[base_entity]
+        comps = World.entity_manager.entities[entity]
         comps.zip(base_comps) do |mine, other|
+          if other && !mine
+            record[:remove] << component_name(other).to_s
+          end
+
           next unless mine
+
           if mine.is_a?(Array)
-            # XXX need to figure out how to handle arrays
+            (mine - other).each do |comp|
+              record[:components] <<
+                  { component_name(comp).to_s => comp.get_modified_fields }
+            end
           else
             next unless mine.save?
             other ||= mine.class.new
@@ -329,10 +338,16 @@ module World::Helpers
       record.deep_rekey { |k| k.to_s }
     end
 
-    # XXX need to find a way to remove ViewExemptComponent from the entity
-    # during loading.  It comes from the base.
-
-    File.open(dest, 'w') { |f| f.write(out.to_yaml) }
+    tmp = dest + '.tmp'
+    bak = dest + '.bak'
+    begin
+      File.open(tmp, 'w+') { |f| f.write(out.to_yaml) }
+      File.rename(dest, bak) if File.exists?(dest)
+      File.rename(tmp, dest)
+    ensure
+      File.unlink(bak) if File.exists?(bak)
+      File.unlink(tmp) if File.exists?(tmp)
+    end
   end
 
   # load_entities

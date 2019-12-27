@@ -1,13 +1,13 @@
 ---
-- id: obj/chest_closed
-  base: !id base:obj/chest/wooden
+- id: test-world:obj/chest_closed
+  base: base:obj/chest/wooden
   components:
   - keywords:
     - [ wooden, chest, closed ]
   - closable
 
-- id: obj/chest_open_empty
-  base: !id obj/chest_closed
+- id: test-world:obj/chest_open_empty
+  base: test-world:obj/chest_closed
   components:
   - keywords:
     - [ wooden, chest, open, empty ]
@@ -17,8 +17,8 @@
   - closable:
       closed: false
 
-- id: obj/junk/ball
-  base: !id base:obj
+- id: test-world:obj/junk/ball
+  base: base:obj
   components:
   - keywords:
     - [red, rubber, ball]
@@ -26,8 +26,8 @@
       short: a red rubber ball
       long: a red rubber ball is on the floor
 
-- id: mob/leonidas
-  base: !id base:char
+- id: test-world:mob/leonidas
+  base: base:char
   components:
   - keywords:
     - [ leonidas ]
@@ -40,8 +40,8 @@
         blow.  His eyes, downcast and lined with concern, dart about the
         room, never lighting on anything for more than a moment.
 
-- id: room/testing
-  base: !id base:room
+- id: test-world:room/testing
+  base: base:room
   components:
   - viewable:
       short: The Testing Room
@@ -50,23 +50,50 @@
         against hapless, helpess, and hopeless victims.  Oddly, this room is
         not yet covered in blood.
 
-- base: !id base:exit
-  link: !id room/testing.exits.list
+- base: base:exit
+  link: test-world:room/testing.exits.list
   components:
   - keywords: up
-  - destination: !id room/void
+  - destination: test-world:room/void
 
 # Spawn testing
-- id: obj/spawn-bag
-  base: !id base:obj/bag/small
+- id: test-world:obj/spawn-bag
+  base: base:obj/bag/small
   components:
   - spawn_point:
-    - [ !id spawn/ball ]
+    - [ test-world:spawn/ball ]
 
-- id: spawn/ball
+- id: test-world:spawn/ball
   components:
   - spawn:
-      entity: !id obj/junk/ball
+      entity: test-world:obj/junk/ball
       min: 2
       max: 5
+
+# Specially crafted base used in the .save_entities() test
+- id: test-world:save/base
+  components:
+
+  # unique component that is savable
+  - closable:
+      closed: false
+
+  # unique component that is not saved
+  - command_queue:
+      blocked_until: deleted
+
+  # unique, saved component that will be removed
+  - spawn_point
+
+  # a couple of non-unique components
+  - affect:
+      component: attributes
+      field: strength
+      type: delta
+      value: -1
+  - affect:
+      component: attributes
+      field: strength
+      type: delta
+      value: -1
 
