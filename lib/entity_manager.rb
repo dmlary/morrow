@@ -198,7 +198,7 @@ class EntityManager
     # the entity, return an empty array
     return [] unless index and components = entity[index]
 
-    out = if instance.nil? || components == instance
+    out = if instance.nil? || components.__id__ == instance.__id__
       entity[index] = nil
       components
     elsif components.is_a?(Array)
