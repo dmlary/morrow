@@ -41,6 +41,19 @@ class ExitsComponent < Component
                               # DestinationComponent
 end
 
+# Environmental details for a room/container.  These things impact the entities
+# within the ContainerComponent.contents
+class EnvironmentComponent < Component
+
+  # The type of terrain within a room; we default to the forest because TREES!
+  field :terrain, valid: %i{ inside city field forest hills mountains
+                             water_swim water_noswim air underwater
+                             desert }, default: :forest
+
+  # Light level within the room, as a percent
+  field :light, valid: proc { |v| (0..100).include?(v.to_i) }, default: 100
+end
+
 # Where this Entity leads to, be it a room, or a portal
 class DestinationComponent < Component
   field :entity     # entity with a ContainerComponent

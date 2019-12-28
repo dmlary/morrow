@@ -3,6 +3,7 @@
 # for another Entity, these are just the most generic among them.
 - id: base:room
   components:
+  - environment
   - viewable:
       format: room
       short: An indescribable room

@@ -137,6 +137,52 @@ describe Component do
         expect(component.value).to_not be_frozen
       end
     end
+
+    context 'when the field is declared with valid: Array' do
+      let(:comp) do
+        Class.new(Component) do
+          field :value, valid: [ :pass ]
+        end
+      end
+
+      context 'with a value from the valid array is set' do
+        it 'will set the value' do
+          c = comp.new
+          c.value = :pass
+          expect(c.value).to eq(:pass)
+        end
+      end
+
+      context 'with a value not in the valid array' do
+        it 'will raise an error' do
+          c = comp.new
+          expect { c.value = :fail }.to raise_error(Component::InvalidValue)
+        end
+      end
+    end
+
+    context 'when the field is declared with valid: Proc' do
+      let(:comp) do
+        Class.new(Component) do
+          field :value, valid: proc { |v| v.nil? or v == :pass }
+        end
+      end
+
+      context 'with a value from the valid array is set' do
+        it 'will set the value' do
+          c = comp.new
+          c.value = :pass
+          expect(c.value).to eq(:pass)
+        end
+      end
+
+      context 'with a value not in the valid array' do
+        it 'will raise an error' do
+          c = comp.new
+          expect { c.value = :fail }.to raise_error(Component::InvalidValue)
+        end
+      end
+    end
   end
 
   describe 'field getters' do
