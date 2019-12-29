@@ -8,10 +8,13 @@ require_relative 'components'
 require_relative 'entity_manager'
 
 module World
-  class Fault < Helpers::Error; end
+  class Fault < ::Helpers::Error; end
   class UnknownVirtual < Fault; end
 
-  extend Helpers::Logging
+  module Importer; end
+
+  extend ::Helpers::Logging
+
 
   @entity_manager = EntityManager.new
   @systems = []
@@ -49,17 +52,25 @@ module World
       debug("destroying entity #{entity}")
 
       # update any spawn point that this entity is going away
-      if meta = get_component(entity, :metadata) and
-          meta.spawned_by and
-          spawn = get_component(meta.spawned_by, :spawn)
-        spawn.active -= 1
-        spawn.next_spawn ||= Time.now + spawn.frequency
+      begin
+        if meta = get_component(entity, :metadata) and
+            meta.spawned_by and
+            spawn = get_component(meta.spawned_by, :spawn)
+          spawn.active -= 1
+          spawn.next_spawn ||= Time.now + spawn.frequency
+        end
+      rescue EntityManager::UnknownId
+        # spawn entity has already been destroyed; continue
       end
 
       # remove the entity from whatever location it was in
-      if location = entity_location(entity) and
-          cont = get_component(location, :container)
-        cont.contents.delete(entity)
+      begin
+        if location = entity_location(entity) and
+            cont = get_component(location, :container)
+          cont.contents.delete(entity)
+        end
+      rescue EntityManager::UnknownId
+        # container entity has already been destroyed; continue
       end
 
       em.destroy_entity(entity)

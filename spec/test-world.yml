@@ -1,13 +1,13 @@
 ---
-- id: test-world:obj/chest_closed
+- id: spec:obj/chest_closed
   base: base:obj/chest/wooden
   components:
   - keywords:
     - [ wooden, chest, closed ]
   - closable
 
-- id: test-world:obj/chest_open_empty
-  base: test-world:obj/chest_closed
+- id: spec:obj/chest_open_empty
+  base: spec:obj/chest_closed
   components:
   - keywords:
     - [ wooden, chest, open, empty ]
@@ -17,7 +17,7 @@
   - closable:
       closed: false
 
-- id: test-world:obj/junk/ball
+- id: spec:obj/junk/ball
   base: base:obj
   components:
   - keywords:
@@ -26,7 +26,7 @@
       short: a red rubber ball
       long: a red rubber ball is on the floor
 
-- id: test-world:mob/leonidas
+- id: spec:mob/leonidas
   base: base:char
   components:
   - keywords:
@@ -40,7 +40,7 @@
         blow.  His eyes, downcast and lined with concern, dart about the
         room, never lighting on anything for more than a moment.
 
-- id: test-world:room/testing
+- id: spec:room/1
   base: base:room
   components:
   - viewable:
@@ -49,30 +49,94 @@
         A horrific room where all manner of gruesome experiments are conducted
         against hapless, helpess, and hopeless victims.  Oddly, this room is
         not yet covered in blood.
+  - exits:
+      up: spec:room/1/exit/up-to-void
+      east: spec:room/1/exit/east-to-2
+      west: spec:room/1/exit/west-to-cupboard
 
-- base: base:exit
-  link: test-world:room/testing.exits.list
+- id: spec:room/2
+  base: base:room
   components:
-  - keywords: up
-  - destination: test-world:room/void
+  - viewable:
+      short: The Eastern Room
+      desc: |
+        This room is oddly serene, despite the bits of gore that have been
+        tracked in from the west.  Oh look, there's a ficus!
+  - exits:
+      west: spec:room/2/exit/west-to-1
+
+- id: spec:room/cupboard
+  base: base:room
+  components:
+  - viewable:
+      short: In the cupboard
+      desc: |
+        Darkness, shelves, no cobwebs though.
+  - exits:
+      east: spec:room/cupboard/exit/east-to-1
+
+# Used in testing for regular exits
+- id: spec:room/1/exit/up-to-void
+  base: base:exit
+  components:
+  - destination: base:room/void
+
+# Used in testing for open/close exit
+- id: spec:room/1/exit/east-to-2
+  base: base:exit
+  components:
+  - destination: spec:room/2
+  - keywords:
+    - [ east ]
+  - closable:
+      closed: true
+
+# Used in testing for concealed exits
+- id: spec:room/1/exit/west-to-cupboard
+  base: base:exit
+  components:
+  - destination: spec:room/cupboard
+  - closable:
+      closed: true
+  - keywords:
+    - [ hidden, cupboard ]
+  - concealed
+
+- id: spec:room/2/exit/west-to-1
+  base: base:exit
+  components:
+  - destination: spec:room/1
+  - closable:
+      closed: true
+  - keywords:
+    - [ west, door ]
+
+- id: spec:room/cupboard/exit/east-to-1
+  base: base:exit
+  components:
+  - destination: spec:room/1
+  - keywords:
+    - [ east, door ]
+  - closable:
+      closed: true
 
 # Spawn testing
-- id: test-world:obj/spawn-bag
+- id: spec:obj/spawn-bag
   base: base:obj/bag/small
   components:
   - spawn_point:
       list:
-      - 'test-world:spawn/ball'
+      - 'spec:spawn/ball'
 
-- id: test-world:spawn/ball
+- id: spec:spawn/ball
   components:
   - spawn:
-      entity: test-world:obj/junk/ball
+      entity: spec:obj/junk/ball
       min: 2
       max: 5
 
 # Specially crafted base used in the .save_entities() test
-- id: test-world:save/base
+- id: spec:save/base
   components:
 
   # unique component that is savable
@@ -98,3 +162,50 @@
       type: delta
       value: -1
 
+# Entities for use in movement tests
+- id: spec:room/movement
+  base: base:room
+  components:
+  - exits:
+      # explicitly bad entity ids here
+      north: fail
+      south: fail
+      east:  fail
+      west:  fail
+      up:    fail
+      down:  fail
+
+- id: spec:exit/open
+  base: base:exit
+  components:
+  - destination: base:room/void
+
+- id: spec:exit/door/open
+  base: base:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: false
+
+- id: spec:exit/door/closed
+  base: base:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: true
+
+- id: spec:exit/door/open/hidden
+  base: base:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: false
+  - concealed
+
+- id: spec:exit/door/closed/hidden
+  base: base:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: true
+  - concealed

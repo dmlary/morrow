@@ -16,7 +16,7 @@ module Command::ActObj
 
       # XXX need to do the same to the door on the other side; both should be
       # closable
-      return "You open #{entity_short(target)}"
+      return "You open #{entity_short(target) || arg}"
     end
 
     def close_entity(actor, arg=nil)
@@ -29,12 +29,12 @@ module Command::ActObj
       return "It is already closed." if comp.closed
 
       comp.closed = true
-      return "You close #{entity_short(target)}"
+      return "You close #{entity_short(target) || arg}"
     end
 
     def closable_entities(actor)
       room = entity_location(actor)  or fault "actor has no location", actor
-      [ visible_exits(actor: actor, room: room),
+      [ entity_exits(room),
         visible_contents(actor: actor, cont: room),
         visible_contents(actor: actor, cont: actor) ]
           .flatten

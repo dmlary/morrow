@@ -29,16 +29,25 @@ end
 
 # This Entity is viewable in the world
 class ViewableComponent < Component
-  field :format, freeze: true   # formatting hint, :room, :object, :character
+  field :format, freeze: true,
+      valid: %w{ room object character extra_desc exit }
   field :short, freeze: true  # name, room title
   field :long, freeze: true   # object resting on the ground; mob standing
   field :desc, freeze: true   # character, item description; room desc
 end
 
-# List of exits from the current Entity (room)
+# Entity has been concealed.  Used for hidden/secret doors.  Could also work
+# for items and characters (hide).
+#
+# XXX Some time after being revealed, doors should reset.  Maybe in area reset
+# code, or at reveal time, a timer is set to restore the concealed state.
+class ConcealedComponent < Component
+  field :revealed, default: false, valid: [ true, false ]
+end
+
+# exits from a room, one per-cardinal direction
 class ExitsComponent < Component
-  field :list, default: []    # Array of Refs to Entities with
-                              # DestinationComponent
+  %w{ north south east west up down }.each { |dir| field dir }
 end
 
 # Environmental details for a room/container.  These things impact the entities
@@ -52,6 +61,9 @@ class EnvironmentComponent < Component
 
   # Light level within the room, as a percent
   field :light, valid: proc { |v| (0..100).include?(v.to_i) }, default: 100
+
+  # XXX unsupported flags imported from WBR
+  field :flags, default: []
 end
 
 # Where this Entity leads to, be it a room, or a portal
@@ -82,6 +94,7 @@ class ClosableComponent < Component
   field :closed, default: true
   field :lockable, default: false
   field :locked, default: false
+  field :pickable, default: true
   field :key    # ref to key Entity
 end
 

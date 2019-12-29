@@ -2,10 +2,10 @@ describe System::Spawner do
   include World::Helpers
 
   before(:each) { load_test_world }
-  let(:bag) { 'test-world:obj/spawn-bag' }
+  let(:bag) { 'spec:obj/spawn-bag' }
   let(:spawn_point) { get_component(bag, :spawn_point) }
-  let(:ball) { 'test-world:obj/junk/ball' }
-  let(:spawn_id) { 'test-world:spawn/ball' }
+  let(:ball) { 'spec:obj/junk/ball' }
+  let(:spawn_id) { 'spec:spawn/ball' }
   let(:spawn) { get_component(spawn_id, :spawn) }
 
   def run_update

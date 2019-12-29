@@ -20,8 +20,8 @@ module Command::Look
             visible_contents(actor: actor, cont: actor))
       else
         match_keyword(arg,
-            visible_exits(actor: actor, room: room),
             visible_contents(actor: actor, cont: room),
+            visible_exits(actor: actor, room: room),
             visible_contents(actor: actor, cont: actor))
       end
 
@@ -43,20 +43,19 @@ module Command::Look
       else
         show_obj(actor, target)
       end
+    when 'extra_desc'
+      viewable.desc
+    when 'exit'
+      viewable.desc
     else
-      fault "look #{arg}", format, target
+      fault "look #{arg}", actor, viewable, target
       "not implemented; look <thing>"
     end
   end
 
   class << self
     def show_room(actor, room)
-      exits = visible_exits(actor: actor, room: room).map do |passage|
-        name = entity_keywords(passage)
-        desc = (entity_closed?(passage) ? '[ &K%s&0 ]' : '%s') % name
-        [ name, desc ]
-      end.sort_by { |n,d| d }.map(&:last)
-
+      exits = get_autoexits(room)
       view = get_component(room, ViewableComponent)
       title = view.short
       desc = view.desc
@@ -66,7 +65,7 @@ module Command::Look
       buf << "\n"
       buf << desc
       buf << "\n"
-      buf << "&WExits: &0%s&0" % exits.join(" ")
+      buf << "&WExits: &0%s&0" % exits
       buf << "\n"
 
       visible_contents(actor: actor, cont: room).each do |entity|
@@ -139,5 +138,20 @@ module Command::Look
       buf
     end
 
+    # get_autoexits
+    #
+    # construct the string shown by autoexit when looking at a room
+    def get_autoexits(room)
+      return 'none!' unless exits_comp = get_component(room, :exits)
+
+      buf = exits_comp.to_h.inject('') do |out,(dir, entity)|
+        next out if entity.nil?
+        closed = entity_closed?(entity)
+        next out if closed and entity_concealed?(entity)
+        out << (closed ? '[ &K%s&0 ] ' : '%s ') % dir
+      end
+
+      buf.empty? ? 'none!' : buf
+    end
   end
 end

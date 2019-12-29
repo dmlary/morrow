@@ -7,7 +7,7 @@
   - viewable:
       format: room
       short: An indescribable room
-      long: |-
+      desc: |-
         There is space here.
 
 - id: base:template
@@ -68,7 +68,7 @@
   components:
   - viewable:
       format: exit
-      long: You see nothing special...
+      desc: You see nothing special...
   - destination:
 
 - id: base:door/closed

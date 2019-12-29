@@ -161,6 +161,15 @@ module World::Helpers
     comp.contents.select { |c| get_component(c, ViewableComponent) }
   end
 
+  # entity_exits
+  #
+  # Get all the exits in a room; most likely you want to use visible_exits
+  # instead.
+  def entity_exits(room)
+    exits = get_component(room, ExitsComponent) or return []
+    exits.get_modified_fields.values
+  end
+
   # visible_exits
   #
   # Return the array of exits visible to actor in room.
@@ -169,8 +178,13 @@ module World::Helpers
     raise ArgumentError, 'no room' unless room
 
     # XXX handle visibility checks at some point
+
     exits = get_component(room, ExitsComponent) or return []
-    exits.list.clone
+    World::CARDINAL_DIRECTIONS.map do |dir|
+      ex = exits.send(dir) or next
+      next if entity_closed?(ex) and entity_concealed?(ex)
+      ex
+    end.compact
   end
 
   # entity_exists?(entity)
@@ -265,6 +279,14 @@ module World::Helpers
   def entity_locked?(entity)
     closable = get_component(entity, ClosableComponent) or return false
     !!closable.locked
+  end
+
+  # entity_concealed?
+  #
+  # Check if an entity has a ConcealedComponent and it has not been revealed
+  def entity_concealed?(entity)
+    concealed = get_component(entity, :concealed) or return false
+    !concealed.revealed
   end
 
   # entity_short

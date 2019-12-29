@@ -6,9 +6,9 @@ describe Command::Look do
   include World::Helpers
 
   before(:all) { load_test_world; spawn_entities }
-  let(:room) { 'test-world:room/testing' }
-  let(:leo) { 'test-world:mob/leonidas' }
-  let(:chest_closed) { 'test-world:obj/chest_closed' }
+  let(:room) { 'spec:room/1' }
+  let(:leo) { 'spec:mob/leonidas' }
+  let(:chest_closed) { 'spec:obj/chest_closed' }
   before(:each) { move_entity(entity: leo, dest: room) }
 
   describe 'command parsing' do
@@ -36,8 +36,8 @@ describe Command::Look do
     context '"look keyword"' do
       it 'will call match_keyword("keyword", visible exits, ' +
           'visible room and actor contents)' do
-        visible = visible_exits(actor: leo, room: room) +
-            visible_contents(actor: leo, cont: room) +
+        visible = visible_contents(actor: leo, cont: room) +
+            visible_exits(actor: leo, room: room) +
             visible_contents(actor: leo, cont: leo)
         expect(Command::Look).to receive(:match_keyword) do |key,*entities|
           expect(key).to eq('keyword')
@@ -107,6 +107,29 @@ describe Command::Look do
 
     context '"look in leonidas"' do
       it 'will not call show_contents(leo, leo)'
+    end
+  end
+
+  describe 'show_room' do
+    context 'autoexits enabled' do
+      context 'concealed passage present' do
+        let(:passage) { 'spec:room/1/exit/west-to-cupboard' }
+        context 'closed' do
+          before(:each) { get_component(passage, :closable).closed = true }
+          it 'will be in the exits list' do
+            expect(Command::Look.show_room(leo, room))
+                .to_not match(/Exits: .*\swest\s/)
+          end
+        end
+
+        context 'open' do
+          before(:each) { get_component(passage, :closable).closed = false }
+          it 'will be in the exits list' do
+            expect(Command::Look.show_room(leo, room))
+                .to match(/Exits: .*\swest\s/)
+          end
+        end
+      end
     end
   end
 end

@@ -83,9 +83,13 @@ class Component
 
         case valid
         when Array
-          raise InvalidValue unless valid.include?(value)
+          raise InvalidValue,
+              "invalid value #{value} for #{self.class}.#{name}" unless
+                  valid.include?(value)
         when Proc
-          raise InvalidValue unless valid.call(value)
+          raise InvalidValue,
+              "invalid value #{value} for #{self.class}.#{name}" unless
+                  valid.call(value)
         end
 
         # We don't need to do anything to a frozen variable, but if it's not
@@ -103,6 +107,13 @@ class Component
         # This exception is used by the initializer to set the defaults.
         instance_variable_set(modified, true) if set_modified
       end
+    end
+
+    # fields
+    #
+    # Return the list of fields defined in this component
+    def fields
+      @defaults.keys
     end
   end
 

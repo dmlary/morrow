@@ -10,7 +10,8 @@ class TelnetServer::Handler::Character < TelnetServer::Handler::Base
     World.get_component!(@char, :connection).conn = conn
     World.get_component!(@char, :command_queue).queue = @cmd_queue
     World.get_component!(@char, :player_config).color = true
-    World.move_entity(entity: @char, dest: 'wbr:room/3001')
+    #World.move_entity(entity: @char, dest: 'wbr:room/3001')
+    World.move_entity(entity: @char, dest: 'base:room/void')
     World.remove_component(@char, ViewExemptComponent)
 
     # Add the 'look' command to the queue

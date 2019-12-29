@@ -16,21 +16,21 @@
       - limbo:spawn/obj/limbo-chest
 
 - base: base:exit
-  link: base:room/void.exits.list
+  link: base:room/void.exits.up
   components:
   - keywords:
     - [ up ]
   - destination: limbo:room/limbo
 
 - base: base:exit
-  link: limbo:room/limbo.exits.list
+  link: limbo:room/limbo.exits.down
   components:
   - keywords:
     - [ down ]
   - destination: base:room/void
 
 - base: base:door/closed
-  link: limbo:room/limbo.exits.list
+  link: limbo:room/limbo.exits.east
   components:
   - keywords:
     - [ east ]
