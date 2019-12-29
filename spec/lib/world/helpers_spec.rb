@@ -63,7 +63,7 @@ describe World::Helpers do
 
   describe '.save_entities(dest, *entities)' do
     let(:player) do
-      player = create_entity(base: [ 'test-world:save/base', 'base:race/elf' ])
+      player = create_entity(base: [ 'spec:save/base', 'base:race/elf' ])
       remove_component(player, :spawn_point)
       add_component(player, AffectComponent.new(field: :wolf))
       add_component(player, AffectComponent.new(field: :bear))

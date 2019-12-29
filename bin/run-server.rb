@@ -4,9 +4,8 @@ require 'yaml'
 require 'pp'
 require 'eventmachine'
 require 'pry'
-require_relative 'lib/world'
-require_relative 'lib/telnet_server'
-require_relative 'lib/helpers/logging'
+require_relative '../lib/world'
+require_relative '../lib/telnet_server'
 
 Pry.enable_rescuing!
 
@@ -21,7 +20,8 @@ begin
 
     begin
       # Load all the things we need
-      World.load('./data/world')
+      ARGV << File.join(File.dirname(__FILE__), '../data/world') if ARGV.empty?
+      ARGV.each { |path| World.load(path) }
       World.register_systems
 
       EventMachine::PeriodicTimer.new(World::PULSE) { World.update }

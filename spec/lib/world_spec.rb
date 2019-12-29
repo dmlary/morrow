@@ -46,6 +46,25 @@ describe World do
       World.destroy_entity(entity)
       expect(entity_exists?(entity)).to be(false)
     end
+
+    context 'when the location is destroyed first' do
+      it 'will not error' do
+        room = create_entity()
+        char = create_entity()
+        move_entity(entity: char, dest: room)
+        destroy_entity(room)
+        expect { destroy_entity(char) }.to_not raise_error
+      end
+    end
+    context 'when the spawn source is destroyed first' do
+      it 'will not error' do
+        spawn = create_entity()
+        char = create_entity()
+        get_component!(char, :metadata).spawned_by = spawn
+        destroy_entity(spawn)
+        expect { destroy_entity(char) }.to_not raise_error
+      end
+    end
   end
 
   describe '.get_component!(entity, type)' do

@@ -8,5 +8,5 @@ module World
   MONTH = DAY * 35        # 17.5 hours; one mud month
   YEAR = MONTH * 17       # 12.375 days; one mud year
 
-  CARDINAL_DIRECTIONS = %w{ north south east west up down }
+  CARDINAL_DIRECTIONS = ExitsComponent.fields.map(&:to_s)
 end

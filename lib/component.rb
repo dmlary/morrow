@@ -7,6 +7,7 @@ require 'facets/string/modulize'
 require 'facets/kernel/constant'
 
 class Component
+  class InvalidValue < ArgumentError; end
 
   # class methods
   class << self
@@ -59,12 +60,17 @@ class Component
     #   default: default value; defaults to nil
     #   freeze: if the setter should clone & freeze the value; default false
     #   clone: if the value should be cloned when set; default true
-    def field(name, default: nil, freeze: false, clone: true)
+    #   valid: Array or Proc to check validity of values
+    def field(name, default: nil, freeze: false, clone: true, valid: nil)
       name = name.to_sym
       variable = "@#{name}".to_sym
       modified = "@__modified_#{name}".to_sym
 
       raise ArgumentError, 'the field "hash" is reserved' if name == :hash
+
+      # Permitting them to be lazy here; the default value will automatically
+      # be added to a valid Array.
+      valid << default if valid.is_a?(Array) and !valid.include?(default)
 
       # set our default value in the class
       @defaults[name] = default
@@ -74,6 +80,17 @@ class Component
 
       # the setter is a little more complicated
       define_method('%s=' % name) do |value, set_modified: true|
+
+        case valid
+        when Array
+          raise InvalidValue,
+              "invalid value #{value} for #{self.class}.#{name}" unless
+                  valid.include?(value)
+        when Proc
+          raise InvalidValue,
+              "invalid value #{value} for #{self.class}.#{name}" unless
+                  valid.call(value)
+        end
 
         # We don't need to do anything to a frozen variable, but if it's not
         # frozen, if we're supposed to clone it, do so, and if we're supposed
@@ -90,6 +107,13 @@ class Component
         # This exception is used by the initializer to set the defaults.
         instance_variable_set(modified, true) if set_modified
       end
+    end
+
+    # fields
+    #
+    # Return the list of fields defined in this component
+    def fields
+      @defaults.keys
     end
   end
 

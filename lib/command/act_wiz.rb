@@ -14,4 +14,18 @@ module Command::ActWiz
     end
 
   end
+
+  Command.register('goto', help: <<~HELP) do |actor, arg=nil|
+    Usage: goto <entity|keyword>
+
+    Go to something
+  HELP
+    next "goto <entity>" if arg.empty?
+    next "entity not found: #{arg}" unless entity_exists?(arg)
+
+    loc = get_component(arg, :location) and dest = loc.entity
+    dest ||= arg
+    move_entity(entity: actor, dest: dest)
+    Command.run(actor, 'look')
+  end
 end

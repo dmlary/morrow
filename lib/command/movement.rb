@@ -9,16 +9,21 @@ module Command::Movement
 
   class << self
     def traverse_passage(actor, name)
-      location = get_component(actor, LocationComponent) or
+      room = entity_location(actor) or
           fault "no current location", actor
 
-      passage = match_keyword(name,
-          visible_exits(actor: actor, room: location.entity))
+      exits = get_component(room, :exits) or
+          return "Alas, you cannot go that way...\n"
+      passage = exits.send(name)
 
       if passage.nil?
         "Alas, you cannot go that way...\n"
       elsif entity_closed?(passage)
-        "The path #{name} seems to be closed.\n"
+        if entity_concealed?(passage)
+          "Alas, you cannot go that way...\n"
+        else
+          "The path #{name} seems to be closed.\n"
+        end
       else
         dest = get_component(passage, :destination) or
             fault "passage #{passage} has no destination!"
