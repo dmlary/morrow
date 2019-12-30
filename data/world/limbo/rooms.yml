@@ -14,6 +14,7 @@
       list:
       - limbo:spawn/mob/puff
       - limbo:spawn/obj/limbo-chest
+  - on_enter: limbo:script/balls
 
 - base: base:exit
   link: base:room/void.exits.up
@@ -73,3 +74,10 @@
   components:
   - spawn:
       entity: limbo:mob/puff
+
+- id: limbo:script/balls
+  components:
+  - script: !script |
+      send_to_char(char: actor,
+          buf: "A small &Rred&0 ball appears in your hand!")
+      spawn_at(dest: actor, base: 'base:obj/junk/ball')

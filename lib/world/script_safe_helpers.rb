@@ -41,7 +41,7 @@ module World::ScriptSafeHelpers
 
     if old = location.entity and src = get_component(old, :container)
       debug "moving #{entity} from #{old} to #{dest}"
-      call_on_exit_scripts(actor: entity, location: old)
+      World.call_on_exit_scripts(actor: entity, location: old)
       src.contents.delete(entity)
     else
       debug "moving #{entity} to #{dest}"
@@ -49,7 +49,7 @@ module World::ScriptSafeHelpers
 
     location.entity = dest
     container.contents << entity
-    call_on_enter_scripts(actor: entity, location: dest)
+    World.call_on_enter_scripts(actor: entity, location: dest)
   end
 
   # get a/all entities from ++pool++ that have keywords that match our
