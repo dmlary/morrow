@@ -14,86 +14,90 @@ describe Script do
 
     [
         # base types
-        { desc: 'nil', code: 'nil', include: 'no error' },
-        { desc: 'true', code: 'true', include: 'no error' },
-        { desc: 'false', code: 'false', include: 'no error' },
-        { desc: 'Symbol', code: ':symbol', include: 'no error' },
-        { desc: 'Integer', code: '47', include: 'no error' },
-        { desc: 'Float', code: '47.0', include: 'no error' },
-        { desc: 'String', code: '"wolf"', include: 'no error' },
-        { desc: 'Array', code: '[]', include: 'no error' },
-        { desc: 'Hash', code: '{}', include: 'no error' },
-        { desc: 'inclusive Range', code: '1..10', include: 'no error' },
-        { desc: 'exclusive Range', code: '1...10', include: 'no error' },
+        { desc: 'nil', code: 'nil', expect: 'no error' },
+        { desc: 'true', code: 'true', expect: 'no error' },
+        { desc: 'false', code: 'false', expect: 'no error' },
+        { desc: 'Symbol', code: ':symbol', expect: 'no error' },
+        { desc: 'Integer', code: '47', expect: 'no error' },
+        { desc: 'Float', code: '47.0', expect: 'no error' },
+        { desc: 'String', code: '"wolf"', expect: 'no error' },
+        { desc: 'Array', code: '[]', expect: 'no error' },
+        { desc: 'Hash', code: '{}', expect: 'no error' },
+        { desc: 'inclusive Range', code: '1..10', expect: 'no error' },
+        { desc: 'exclusive Range', code: '1...10', expect: 'no error' },
+        { desc: 'interpolated String', expect: 'no error',
+          code: 'x = 3; "wolf #{x}"' },
+        { desc: 'format String', expect: 'no error',
+          code: 'x = 3; "wolf %d" % x' },
 
         # constants are not permitted; makes everything much easier to
         # implement scripting safely.
-        { desc: 'constant World', code: 'World', include: 'raise error' },
+        { desc: 'constant World', code: 'World', expect: 'raise error' },
         { desc: 'constant World::Helpers',
           code: 'World::Helpers',
-          include: 'raise error' },
-        { desc: 'constant File', code: 'File', include: 'raise error' },
-        { desc: 'constant Kernel', code: 'Kernel', include: 'raise error' },
-        { desc: 'constant Object', code: 'Object', include: 'raise error' },
-        { desc: 'constant Script', code: 'Script', include: 'raise error' },
+          expect: 'raise error' },
+        { desc: 'constant File', code: 'File', expect: 'raise error' },
+        { desc: 'constant Kernel', code: 'Kernel', expect: 'raise error' },
+        { desc: 'constant Object', code: 'Object', expect: 'raise error' },
+        { desc: 'constant Script', code: 'Script', expect: 'raise error' },
 
         # assignment
         { desc: 'assign local var',
           code: 'local = true',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'assign instance var',
           code: '@instance_var = true',
-          include: 'raise error' },
+          expect: 'raise error' },
         { desc: 'assign class var',
           code: '@@class_var = true',
-          include: 'raise error' },
+          expect: 'raise error' },
         { desc: 'assign constant',
           code: 'Constant = true',
-          include: 'raise error' },
+          expect: 'raise error' },
         { desc: 'assign global variable',
           code: '$global_var = true',
-          include: 'raise error' },
+          expect: 'raise error' },
 
         { desc: 'multiple assignment to local variables',
           code: 'a,b = [1,2]',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'operation assignment to local var',
           code: 'a += 1',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'logical-and operator assignment on local var',
           code: 'a &&= 1',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'logical-or operator assignment on local var',
           code: 'a ||= 1',
-          include: 'no error' },
+          expect: 'no error' },
 
         { desc: 'assign array index',
           code: '[][5] = true',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'access array index',
           code: '[][5]',
-          include: 'no error' },
+          expect: 'no error' },
 
         { desc: 'assign hash index',
           code: '{}[5] = true',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'access hash index',
           code: '{}[5]',
-          include: 'no error' },
+          expect: 'no error' },
 
         { desc: 'accessing local variable',
           code: 'a = true; a',
-          include: 'no error' },
+          expect: 'no error' },
 
         # module & class creation/modification
         { desc: 'module creation/modification',
           code: 'module Meep; end',
-          include: 'raise error' },
+          expect: 'raise error' },
         { desc: 'class creation/modification',
           code: 'class Meep; end',
-          include: 'raise error' },
+          expect: 'raise error' },
         { desc: 'singleton class',
-          include: 'raise error',
+          expect: 'raise error',
           code: <<~CODE
             class << self
               def breakout
@@ -105,49 +109,49 @@ describe Script do
 
         # method (un)definition
         { desc: 'define instance method',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'def xxx; end' },
         { desc: 'undefine instance method',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'undef :xxx' },
         { desc: 'define singleton method',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'def self.xxx; end' },
 
         # aliasing
         { desc: 'method aliasing',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'alias xxx yyy' },
 
         ## flow control
         # if
         { desc: 'if statement',
           code: 'if true; true; end',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'tail if statement',
           code: 'true if true',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'if-else statement',
           code: 'if true; true; else; false; end',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'if-elsif statement',
           code: 'if true; true; elsif true; false; end',
-          include: 'no error' },
+          expect: 'no error' },
 
         # unless
         { desc: 'unless statement',
           code: 'unless true; true; end',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'tail unless statement',
           code: 'true unless true',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'unless-else statement',
           code: 'unless true; true; else; false; end',
-          include: 'no error' },
+          expect: 'no error' },
 
         # case
         { desc: 'case statement',
-          include: 'no error',
+          expect: 'no error',
           code: <<~CODE
             case true
             when true
@@ -162,7 +166,7 @@ describe Script do
 
         # while/until
         { desc: 'tail while statement',
-          include: 'no error',
+          expect: 'no error',
           code: <<~CODE
             while true
               3
@@ -170,10 +174,10 @@ describe Script do
           CODE
         },
         { desc: 'tail while statement',
-          include: 'no error',
+          expect: 'no error',
           code: '3 while true' },
         { desc: 'tail until statement',
-          include: 'no error',
+          expect: 'no error',
           code: <<~CODE
             until true
               3
@@ -181,73 +185,73 @@ describe Script do
           CODE
         },
         { desc: 'tail until statement',
-          include: 'no error',
+          expect: 'no error',
           code: '3 until true' },
 
         # next, break, and continue
-        { desc: 'next', code: 'next', include: 'no error' },
-        { desc: 'break', code: 'break', include: 'no error' },
-        { desc: 'return', code: 'return', include: 'no error' },
+        { desc: 'next', code: 'next', expect: 'no error' },
+        { desc: 'break', code: 'break', expect: 'no error' },
+        { desc: 'return', code: 'return', expect: 'no error' },
 
         # or, and, not
-        { desc: 'or', code: 'true or false', include: 'no error' },
-        { desc: 'and', code: 'true and false', include: 'no error' },
-        { desc: 'not', code: 'not false', include: 'no error' },
+        { desc: 'or', code: 'true or false', expect: 'no error' },
+        { desc: 'and', code: 'true and false', expect: 'no error' },
+        { desc: 'not', code: 'not false', expect: 'no error' },
 
         # sending
         #
         { desc: 'send whitelist command to receiver',
-          include: 'no error',
+          expect: 'no error',
           code: '[1,2,3].map' },
         { desc: 'sending whitelist command with no receiver',
           code: 'get_component("wolf", :damage)',
-          include: 'no error' },
+          expect: 'no error' },
         { desc: 'sending whitelisted command a block',
-          include: 'no error',
+          expect: 'no error',
           code: '[].map { |v| v + 1 }'},
 
         { desc: 'send non-whitelist command to receiver',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'a.eval("File")' },
         { desc: 'sending non-whitelist command with no receiver',
           code: 'eval("File")',
-          include: 'raise error' },
+          expect: 'raise error' },
 
         # regression prevention
         { desc: 'Symbol#to_proc',
-          include: 'raise error',
+          expect: 'raise error',
           code: ':send.to_proc.call(:eval, :puts, "hello world")' },
         { desc: 'back-tick shell command',
-          include: 'raise error',
+          expect: 'raise error',
           code: '`ls`' },
         { desc: '%x{} shell command',
-          include: 'raise error',
+          expect: 'raise error',
           code: '%x{ls}' },
         { desc: 'system() command',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'system("ls")' },
         { desc: 'exec() command',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'exec("ls")' },
         { desc: 'File.open()',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'File.open("/etc/passwd")' },
         { desc: 'eval',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'eval("File")' },
         { desc: 'instance_eval',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'instance_eval("File")' },
         { desc: 'send()',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'send(:eval, "File")' },
         { desc: 'require()',
-          include: 'raise error',
+          expect: 'raise error',
           code: 'require("pry")' },
 
-        # complex examples
+        # teleporter examples
         { desc: 'teleporter enter',
-          include: 'no error',
+          expect: 'no error',
           code: <<~CODE
             porter = get_component(entity, :teleporter) or return
             port = get_component!(actor, :teleport)
@@ -256,15 +260,12 @@ describe Script do
           CODE
         },
         { desc: 'teleporter exit',
-          include: 'no error',
-          code: <<~CODE
-            remove_component(actor, :teleport)
-          CODE
-        },
-    ].each do |desc: nil, code: nil, include: nil|
+          expect: 'no error',
+          code: 'remove_component(actor, :teleport)' },
+    ].each do |desc: nil, code: nil, expect: nil|
       context(desc) do
         let(:script) { Script.new(code) }
-        include_examples(include)
+        include_examples(expect)
       end
     end
   end

@@ -5,6 +5,7 @@ require 'command'
 describe World::Helpers do
   include World::Helpers
   before(:all) { load_test_world }
+  let(:leo) { 'spec:mob/leonidas' }
 
   describe '.send_to_char(char: nil, buf: nil)' do
     context 'char has no ConnectionComponent' do
@@ -145,6 +146,36 @@ describe World::Helpers do
         entities.each do |entity|
           expect(entity_snapshot(entity)).to eq(snapshot[entity])
         end
+      end
+    end
+  end
+
+  context '.move_entity' do
+    let(:script) { Script.new('true') }
+    let(:script_entity) do
+      create_entity(components: ScriptComponent.new(script: script))
+    end
+    let(:dest) { create_entity(base: 'base:room') }
+
+    context 'when dest has on_enter script' do
+      before(:each) do
+        add_component(dest, OnEnterComponent.new(script: script_entity))
+      end
+
+      it 'will call on_enter script' do
+        expect(script).to receive(:call).with(entity: dest, actor: leo)
+        move_entity(entity: leo, dest: dest)
+      end
+    end
+    context 'when entity location has on_exit script' do
+      before(:each) do
+        add_component(dest, OnExitComponent.new(script: script_entity))
+      end
+
+      it 'will call on_exit script' do
+        move_entity(entity: leo, dest: dest)
+        expect(script).to receive(:call).with(entity: dest, actor: leo)
+        move_entity(entity: leo, dest: create_entity)
       end
     end
   end

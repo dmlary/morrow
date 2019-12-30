@@ -155,6 +155,7 @@ module World
 end
 
 require_relative 'world/constants'
+require_relative 'world/script_safe_helpers'
 require_relative 'world/helpers'
 require_relative 'world/loader'
 require_relative 'system'

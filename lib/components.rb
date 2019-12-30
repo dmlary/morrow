@@ -127,6 +127,54 @@ class ConnectionComponent < Component
   field :buf, default: ''   # String of pending output
 end
 
+# Used to specify a script to run when an entity is moved into a
+# ContainerComponent.  Think walking into a room, or putting an item in a bag.
+# Technically it could even be when a mob picks up an item.
+class OnEnterComponent < Component
+  # due to compositing architecture, we're going to permit multiple triggers
+  not_unique
+
+  # This points at the entity id for the script that should be run when this
+  # entity is entered.
+  field :script
+end
+
+class OnExitComponent < Component
+  # due to compositing architecture, we're going to permit multiple triggers
+  not_unique
+
+  # This points at the entity id for the script that should be run when this
+  # entity is exited.
+  field :script
+end
+
+# This component holds configuration for a teleporter.  It is used by the
+# teleporter script.
+class TeleporterComponent < Component
+
+  # destination entity
+  field :dest
+
+  # delay before entity should be moved
+  field :delay, valid: proc { |v| v.is_a?(Integer) }, default: 10
+end
+
+# This component is added to an entity that will be teleported at a later time.
+# It is added by the teleporter script
+class TeleportComponent < Component
+  # destination entity
+  field :dest, valid: proc { |v| World.entity_exists?(v) }
+
+  # Time at which they should be teleported
+  field :at
+end
+
+# Component that holds a script
+class ScriptComponent < Component
+  # Script instance
+  field :script, clone: false
+end
+
 ### QUESTIONABLE COMPONENTS ###
 class AffectComponent < Component
   not_unique
