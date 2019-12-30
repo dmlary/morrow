@@ -159,4 +159,5 @@ require_relative 'world/helpers'
 require_relative 'world/loader'
 require_relative 'system'
 require_relative 'command'
+require_relative 'script'
 World.extend(World::Helpers)
