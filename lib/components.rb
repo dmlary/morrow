@@ -198,6 +198,10 @@ class TeleportComponent < Component
   # Time at which they should be teleported
   field :time
 
+  # message displayed to the character when they're teleported.  Message is
+  # displayed before 'look' output.
+  field :message
+
   # should character look after teleport
   field :look, default: true, valid: [ true, false ]
 end
