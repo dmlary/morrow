@@ -123,6 +123,7 @@ module World
       @systems << System::Connections
       @systems << System::CommandQueue
       @systems << System::Spawner
+      @systems << System::Teleport
     end
 
     # update

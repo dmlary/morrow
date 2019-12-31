@@ -192,7 +192,7 @@ class TeleportComponent < Component
   field :dest, valid: proc { |v| v.nil? or World.entity_exists?(v) }
 
   # Time at which they should be teleported
-  field :at
+  field :time
 end
 
 # Component that holds a script

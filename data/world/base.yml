@@ -135,7 +135,7 @@
       entity = args[:entity]
       port = get_component!(entity, :teleport)
       port[:dest] = porter[:dest]
-      port[:at] = now + porter[:delay]
+      port[:time] = now + porter[:delay]
 
 - id: base:script/teleporter/exit
   components:

@@ -22,7 +22,7 @@ describe 'teleporter script' do
     end
 
     it 'will set the teleport delay' do
-      expect(get_component(leo, :teleport).at.to_f)
+      expect(get_component(leo, :teleport).time.to_f)
           .to be_within(1).of(Time.now.to_f + teleporter.delay)
     end
   end
