@@ -148,7 +148,6 @@ class Script
     raise RuntimeError, "invalid script: %s " %
         [ coder.send(coder.type).inspect ] unless coder.type == :scalar
     @source = coder.scalar.to_s.freeze
-    @safe = false   # trust nothing
     safe!
   end
 
@@ -161,15 +160,11 @@ class Script
   #
   # Call the script with provided arguments.
   def call(config: {}, args: {})
-    raise "refusing to run unsafe script: #{self}" unless @safe
+    raise "refusing to run unsafe script: #{self}" unless @proc
 
     # eval the code within the Sandbox, but first set the entity & actor
     # provided.
-    Sandbox.instance_exec(@source) do |source|
-      config = config
-      args = args
-      eval(source)
-    end
+    Sandbox.instance_exec(config: config, args: args, &@proc)
   end
 
   private
@@ -185,7 +180,9 @@ class Script
     begin
       ast = parse(@source)
       node_safe!(ast)
-      @safe = true
+      @proc = Sandbox.instance_exec(@source) do |source|
+        eval "lambda { |args: {}, config: {}| #{source} }"
+      end
     ensure
       # After verifying the script is safe, we freeze the instance so that it
       # cannot easily be modified later to run unsafe code.
