@@ -183,7 +183,7 @@ class TeleporterComponent < Component
 
   # delay before entity should be moved
   field :delay, default: 10,
-      valid: proc { |v| v.is_a?(Integer) or v.is_a?(Range) }
+      valid: proc { |v| [ Integer, Range, Float ].include?(v.class) }
 
   # should character look after teleport
   field :look, default: true, valid: [ true, false ]
