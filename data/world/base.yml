@@ -124,18 +124,34 @@
       script: base:script/teleporter/exit
   - teleporter
 
+- id: base:act/river
+  components:
+  - hook:
+      event: :on_enter
+      script: base:script/teleporter/enter
+      script_config:
+        exclude_fliers: true
+  - hook:
+      event: :on_exit
+      script: base:script/teleporter/exit
+  - teleporter
+
 - id: base:script/teleporter/enter
   components:
   - script: !script |
+      entity = args[:entity]
+      return if config[:skip_if_flying] and
+          entity_flying?(entity)
+
       here = args[:here]
       unless porter = get_component(here, :teleporter)
         error "#{here} missing teleporter component"
         return
       end
 
-      entity = args[:entity]
       port = get_component!(entity, :teleport)
       port[:dest] = porter[:dest]
+      port[:message] = config[:message]
       port[:look] = porter[:look]
       delay = porter[:delay]
       delay = rand(delay) if is_range?(delay)

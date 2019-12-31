@@ -86,14 +86,14 @@ describe System::Teleport do
     context 'when message is set' do
       before(:each) do
         teleport.look = false
-        teleport.message = '*tardis sounds*'
+        teleport.message = '*TARDIS sounds*'
       end
 
       include_examples 'move entity'
 
       it 'will call send_to_char' do
         expect(System::Teleport).to receive(:send_to_char)
-            .with(char: leo, buf: teleport.message)
+            .with(char: leo, buf: teleport.message + "\n")
         run_update
       end
 

@@ -160,12 +160,13 @@ class Script
   # call
   #
   # Call the script with provided arguments.
-  def call(args={})
+  def call(config: {}, args: {})
     raise "refusing to run unsafe script: #{self}" unless @safe
 
     # eval the code within the Sandbox, but first set the entity & actor
     # provided.
     Sandbox.instance_exec(@source) do |source|
+      config = config
       args = args
       eval(source)
     end

@@ -324,12 +324,13 @@ describe Script do
     include_examples 'various scripts'
   end
 
-  describe '#call(args={})' do
-    it 'will execute the script & pass the arguments' do
-      script = Script.new('args[0] = :passed')
-      arg = [:failed]
-      script.call(arg)
-      expect(arg).to eq([:passed])
+  describe '#call(config: {}, args: {})' do
+    it 'will execute the script & pass config & arguments' do
+      script = Script.new('args[:out] = config[:in]')
+      conf = { in: :passed }
+      arg = { out: :failed }
+      script.call(config: conf, args: arg)
+      expect(arg[:out]).to eq(:passed)
     end
   end
 end

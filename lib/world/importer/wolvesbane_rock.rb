@@ -74,11 +74,11 @@ class World::Importer::WolvesbaneRock
     end
 
     flags = EX.decode(data['exit_info'])
-    key = "wbr:item/#{data['key']}" if data['key'] != -1
+    key = "wbr:item/#{data['key']}" if data['key'] > 0
     if flags.include?(:isdoor)
       closable = get_component!(id, :closable)
       closable.closed = flags.include?(:closed)
-      closable.lockable = key != nil
+      closable.lockable = data['key'] != 0
       closable.locked = flags.include?(:locked)
       closable.key = key
       closable.pickable = !flags.include?(:pickproof)
@@ -119,7 +119,8 @@ class World::Importer::WolvesbaneRock
   def import_room(data)
     room = room_entity(data['number'])
     base = ['base:room']
-    base << 'base:act/teleporter' if data['tele_targ'] != 0
+    base << 'base:act/teleporter' if data['tele_targ'] != 0 or
+        data['river_speed'] != 0
 
     create_entity(base: base, id: room)
 
@@ -148,7 +149,7 @@ class World::Importer::WolvesbaneRock
       get_component!(room, :container).contents << id if id
     end
 
-    if data['tele_targ']
+    if data['tele_targ'] != 0
       tele = get_component!(room, :teleporter)
       tele.dest = room_entity(data['tele_targ'])
 
@@ -163,6 +164,19 @@ class World::Importer::WolvesbaneRock
           data['tele_time'] * World::PULSE
         end
       tele.delay = delay
+    elsif data['river_speed'] != 0
+      tele = get_component!(room, :teleporter)
+      passage = exits[DIRS[data['river_dir']]]
+      if passage.nil?
+        error "#{room}: invalid river direction; no room there"
+      else
+        tele.dest = get_component(passage, :destination).entity
+        tele.delay = data['river_speed'] * World::PULSE
+        message = "You drift #{DIRS[data['river_dir']]} ..."
+
+        hook = get_components(room, :hook).find { |h| h.event == :on_enter }
+        hook.script_config = { skip_if_flying: true, message: message }
+      end
     end
   end
 
