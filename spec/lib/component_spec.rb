@@ -403,4 +403,46 @@ describe Component do
       expect(c.get_modified_fields).to eq({})
     end
   end
+
+  describe '#[](field)' do
+    let(:comp) do
+      Class.new(Component) { field :a }.new
+    end
+    context 'valid field name' do
+      it 'will call #field()' do
+        expect(comp).to receive(:a)
+        comp[:a]
+      end
+    end
+    context 'invalid field name' do
+      it 'will raise KeyError' do
+        expect { comp[:bad] }.to raise_error(KeyError)
+      end
+      it 'will not call #field()' do
+        expect(comp).to_not receive(:bad)
+        expect { comp[:bad] }.to raise_error(KeyError)
+      end
+    end
+  end
+
+  describe '#[]=(field, value)' do
+    let(:comp) do
+      Class.new(Component) { field :a }.new
+    end
+    context 'valid field name' do
+      it 'will call #field=(value)' do
+        expect(comp).to receive(:a=).with(:passed)
+        comp[:a] = :passed
+      end
+    end
+    context 'invalid field name' do
+      it 'will raise KeyError' do
+        expect { comp[:bad] = :failed }.to raise_error(KeyError)
+      end
+      it 'will not call #field=(value)' do
+        expect(comp).to_not receive(:bad=)
+        expect { comp[:bad] = :failed }.to raise_error(KeyError)
+      end
+    end
+  end
 end

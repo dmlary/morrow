@@ -257,4 +257,25 @@ class Component
     self.class == other.class && to_h == other.to_h
   end
   alias eql? ==
+
+  # []
+  #
+  # Get the value for a field.  Slower method created to support Script.
+  def [](key)
+    key = key.to_sym unless key.is_a?(Symbol)
+    raise KeyError, "key not found: #{key}" unless
+        self.class.fields.include?(key)
+    send(key)
+  end
+
+  # []=
+  #
+  # Set the value for a field.  Slower than calling the setter directly.
+  # Implemented to support Script.
+  def []=(key, value)
+    key = key.to_sym unless key.is_a?(Symbol)
+    raise KeyError, "key not found: #{key}" unless
+        self.class.fields.include?(key)
+    send("#{key}=", value)
+  end
 end

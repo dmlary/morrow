@@ -113,3 +113,31 @@
   - viewable:
       short: a red rubber ball
       long: a red rubber ball is on the floor
+
+- id: base:act/teleporter
+  components:
+  - hook:
+      event: :on_enter
+      script: base:script/teleporter/enter
+  - hook:
+      event: :on_exit
+      script: base:script/teleporter/exit
+  - teleporter
+
+- id: base:script/teleporter/enter
+  components:
+  - script: !script |
+      here = args[:here]
+      unless porter = get_component(here, :teleporter)
+        error "#{here} missing teleporter component"
+        return
+      end
+      entity = args[:entity]
+      port = get_component!(entity, :teleport)
+      port[:dest] = porter[:dest]
+      port[:time] = now + porter[:delay]
+
+- id: base:script/teleporter/exit
+  components:
+  - script: !script |
+      remove_component(args[:entity], :teleport)

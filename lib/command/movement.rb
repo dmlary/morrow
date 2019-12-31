@@ -27,8 +27,7 @@ module Command::Movement
       else
         dest = get_component(passage, :destination) or
             fault "passage #{passage} has no destination!"
-        move_entity(entity: actor, dest: dest.entity)
-        Command::Look.show_room(actor, dest.entity)
+        move_entity(entity: actor, dest: dest.entity, look: true)
       end
     end
   end

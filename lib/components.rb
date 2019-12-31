@@ -127,6 +127,80 @@ class ConnectionComponent < Component
   field :buf, default: ''   # String of pending output
 end
 
+# Used to run scripts when specific events occur in the world.
+#
+class HookComponent < Component
+  # due to compositing architecture, we're going to permit multiple hooks
+  not_unique
+
+  # Event when this script should be run
+  #
+  # will_enter: Entity (entity) will be added to (dest) entity's
+  #             ContainerComponent.  May be blocked by returning :deny.
+  #             This hook will be called before the character performs 'look'
+  #             in the dest room.
+  #
+  #             Script arguments:
+  #               entity: Entity being moved
+  #               src:    entity's current location; may be nil
+  #               dest:   destination entity
+  #
+  # on_enter:   Entity (entity) has been added to (here) entity's
+  #             ContainerComponent.
+  #             This hook will be caled after the character performs 'look' in
+  #             here.
+  #
+  #             Script arguments:
+  #               entity: Entity that was added
+  #               here:   entity's current location
+  #
+  # will_exit:  Entity (entity) will removed from (src) entity's
+  #             ContainerComponent.  May be blocked by returning :deny.
+  #             Script arguments:
+  #
+  #               entity: Entity being moved
+  #               src:    entity's current location; may be nil
+  #               dest:   destination entity
+  #
+  # on_exit:    Entity (entity) has been removed from (here) entity's
+  #             ContainerComponent.
+  #
+  #             Script arguments:
+  #               entity: Entity that was removed
+  #               here:   entity's current location
+  field :event, valid: %i{ will_enter on_enter will_exit on_exit }
+
+  # This points at the entity id for the script that should be run
+  field :script
+end
+
+# This component holds configuration for a teleporter.  It is used by the
+# teleporter script.
+class TeleporterComponent < Component
+
+  # destination entity
+  field :dest
+
+  # delay before entity should be moved
+  field :delay, valid: proc { |v| v.is_a?(Integer) }, default: 10
+end
+
+# This component is added to an entity that will be teleported at a later time.
+# It is added by the teleporter script
+class TeleportComponent < Component
+  # destination entity
+  field :dest, valid: proc { |v| v.nil? or World.entity_exists?(v) }
+
+  # Time at which they should be teleported
+  field :time
+end
+
+# Component that holds a script
+class ScriptComponent < Component
+  # Script instance
+  field :script, clone: false
+end
+
 ### QUESTIONABLE COMPONENTS ###
 class AffectComponent < Component
   not_unique

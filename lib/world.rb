@@ -123,6 +123,7 @@ module World
       @systems << System::Connections
       @systems << System::CommandQueue
       @systems << System::Spawner
+      @systems << System::Teleport
     end
 
     # update
@@ -155,8 +156,10 @@ module World
 end
 
 require_relative 'world/constants'
+require_relative 'world/script_safe_helpers'
 require_relative 'world/helpers'
 require_relative 'world/loader'
 require_relative 'system'
 require_relative 'command'
+require_relative 'script'
 World.extend(World::Helpers)

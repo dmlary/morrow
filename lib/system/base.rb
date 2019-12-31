@@ -2,5 +2,5 @@ require_relative '../helpers'
 
 module System::Base
   include ::Helpers::Logging
-  extend ::World::Helpers
+  include ::World::Helpers
 end
