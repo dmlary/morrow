@@ -797,19 +797,39 @@ describe EntityManager do
       end
     end
 
-    context 'regression: base has component, other has nil' do
-      it 'will not error' do
-        comp_a = Class.new(Component)
-        comp_b = Class.new(Component)
-        dest = em.create_entity(components: comp_a)
-        other = em.create_entity(components: comp_b)
+    context 'when base has a unique component missing in other' do
+      let(:comp) { Class.new(Component) { field :value } }
+      let(:dest) { em.create_entity(components: comp.new(value: :pass)) }
+      let(:other) { em.create_entity }
 
-        # This should result in the following internal state:
-        #   dest:  [ #<CompA ...>, nil ]
-        #   other: [ nil, #<CompB ...> ]
-        #
-        # We were seeing an error in merge_entities with this state
+      it 'will not remove component from dest' do
+        em.merge_entity(dest, other)
+        expect(em.get_component(dest, comp).value).to eq(:pass)
+      end
+    end
+
+    context 'regression: base has component, other has nil' do
+      let(:comp_a) { Class.new(Component) }
+      let(:comp_b) { Class.new(Component) }
+      let(:dest) { em.create_entity }
+      let(:other) { em.create_entity }
+
+      # This should result in the following internal state:
+      #   dest:  [ #<CompA ...>, nil ]
+      #   other: [ nil, #<CompB ...> ]
+      #
+      # We were seeing an error in merge_entities with this state
+      before(:each) do
+        em.add_component(dest, comp_a)
+        em.add_component(other, comp_b)
+      end
+      it 'will not error' do
         expect { em.merge_entity(dest, other) }.to_not raise_error
+      end
+
+      it 'will not remove base component' do
+        em.merge_entity(dest, other)
+        expect(em.get_component(dest, comp_a)).to_not be(nil)
       end
     end
 
