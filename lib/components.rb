@@ -184,6 +184,9 @@ class TeleporterComponent < Component
   # delay before entity should be moved
   field :delay, default: 10,
       valid: proc { |v| v.is_a?(Integer) or v.is_a?(Range) }
+
+  # should character look after teleport
+  field :look, default: true, valid: [ true, false ]
 end
 
 # This component is added to an entity that will be teleported at a later time.
@@ -194,6 +197,9 @@ class TeleportComponent < Component
 
   # Time at which they should be teleported
   field :time
+
+  # should character look after teleport
+  field :look, default: true, valid: [ true, false ]
 end
 
 # Component that holds a script

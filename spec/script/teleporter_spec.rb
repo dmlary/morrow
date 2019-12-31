@@ -22,6 +22,11 @@ describe 'teleporter script' do
       expect(teleport.dest).to eq(teleporter.dest)
     end
 
+    it 'will set the look field' do
+      move_entity(entity: leo, dest: troom)
+      expect(teleport.look).to eq(teleporter.look)
+    end
+
     context 'when delay is not a range' do
       it 'will set the teleport delay' do
         move_entity(entity: leo, dest: troom)
