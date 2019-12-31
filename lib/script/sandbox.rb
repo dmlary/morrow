@@ -40,6 +40,10 @@ module Script::Sandbox
     extend Forwardable
     def_delegators :Time, :now
     def_delegators :Kernel, :rand
+
+    def is_range?(var)
+      var.is_a?(Range)
+    end
   end
   ScriptMethods.push(*singleton_class.public_instance_methods(false))
 end

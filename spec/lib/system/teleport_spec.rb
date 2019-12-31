@@ -48,12 +48,39 @@ describe System::Teleport do
     before(:each) do
       teleport.dest = dest
       teleport.time = Time.now - 1
-      run_update
     end
 
-    it 'will move the entity' do
-      expect(entity_location(leo)).to eq(dest)
+    shared_examples 'move entity' do
+      it 'will move the entity' do
+        run_update
+        expect(entity_location(leo)).to eq(dest)
+      end
+    end
+
+    context 'when look is false' do
+      before(:each) do
+        teleport.look = false
+      end
+
+      include_examples 'move entity'
+
+      it 'will not send the "look" command' do
+        expect(Command).to_not receive(:run)
+        run_update
+      end
+    end
+
+    context 'when look is true' do
+      before(:each) do
+        teleport.look = true
+      end
+
+      include_examples 'move entity'
+
+      it 'will send the "look" command' do
+        expect(Command).to receive(:run)
+        run_update
+      end
     end
   end
 end
-

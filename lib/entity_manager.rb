@@ -80,10 +80,11 @@ class EntityManager
         other.each { |o| mine << o.clone }
       elsif other && mine = dest[i]
         mine.merge!(other)
-      else
+      elsif other != nil
         dest[i] = other.clone
       end
     end
+    dest
   end
 
   # destroy_entity

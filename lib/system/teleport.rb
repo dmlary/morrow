@@ -15,7 +15,7 @@ module System::Teleport
 
       return if teleport.time > Time.now
 
-      move_entity(entity: entity, dest: teleport.dest, look: true)
+      move_entity(entity: entity, dest: teleport.dest, look: teleport.look)
     end
   end
 end

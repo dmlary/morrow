@@ -58,6 +58,10 @@ class World::Importer::WolvesbaneRock
         .each { |e| World.destroy_entity(e) }
   end
 
+  def room_entity(vnum)
+    "wbr:room/#{vnum}"
+  end
+
   def import_passage(data, dir: nil, from: nil)
     dest = data['to_room']
     id = "#{from}/passage/#{dir}-to-#{dest}"
@@ -113,8 +117,11 @@ class World::Importer::WolvesbaneRock
   end
 
   def import_room(data)
-    room = "wbr:room/#{data['number']}"
-    create_entity(base: 'base:room', id: room)
+    room = room_entity(data['number'])
+    base = ['base:room']
+    base << 'base:act/teleporter' if data['tele_targ'] != 0
+
+    create_entity(base: base, id: room)
 
     if data['description'].nil?
       warn "#{room} has no description; making one up"
@@ -138,7 +145,24 @@ class World::Importer::WolvesbaneRock
 
     data['ex_description'].each do |extra|
       id = import_extra_desc(extra, room: room)
-      move_entity(entity: id, dest: room) if id
+      get_component!(room, :container).contents << id if id
+    end
+
+    if data['tele_targ']
+      tele = get_component!(room, :teleporter)
+      tele.dest = room_entity(data['tele_targ'])
+
+      flags = TELE.decode(data['tele_mask'])
+      tele.look = flags.include?(:look)
+
+      delay = if flags.include?(:random)
+          25..250
+        elsif flags.include?(:count)
+          data['tele_cnt'] * World::PULSE
+        else
+          data['tele_time'] * World::PULSE
+        end
+      tele.delay = delay
     end
   end
 
