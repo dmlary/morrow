@@ -132,10 +132,13 @@
         error "#{here} missing teleporter component"
         return
       end
+
       entity = args[:entity]
       port = get_component!(entity, :teleport)
       port[:dest] = porter[:dest]
-      port[:time] = now + porter[:delay]
+      delay = porter[:delay]
+      delay = rand(delay) if is_range?(delay)
+      port[:time] = now + delay
 
 - id: base:script/teleporter/exit
   components:

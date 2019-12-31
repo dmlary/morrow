@@ -182,7 +182,8 @@ class TeleporterComponent < Component
   field :dest
 
   # delay before entity should be moved
-  field :delay, valid: proc { |v| v.is_a?(Integer) }, default: 10
+  field :delay, default: 10,
+      valid: proc { |v| v.is_a?(Integer) or v.is_a?(Range) }
 end
 
 # This component is added to an entity that will be teleported at a later time.
