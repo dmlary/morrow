@@ -5,6 +5,10 @@ module System::Connections
   IDLE_TIMEOUT = 5 * 60           # XXX not implemented
   DISCONNECT_TIMEOUT = 30 * 60
 
+  def self.view
+    @view ||= World.get_view(all: ConnectionComponent)
+  end
+
   def self.update(entity, conn_comp)
     conn = conn_comp.conn or return
 
