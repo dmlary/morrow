@@ -200,12 +200,18 @@ describe EntityManager do
   end
 
   describe '#destroy_entity()' do
-    it 'will call update_views'
-    it 'will remove the entity'
+    let(:entity) { em.create_entity }
+    it 'will remove the entity' do
+      em.destroy_entity(entity)
+      expect(em.entities).to_not have_key(entity)
+    end
+    it 'will call update_views' do
+      expect(em).to receive(:update_views).with(entity, [])
+      em.destroy_entity(entity)
+    end
   end
 
   describe '#add_component_type(type)' do
-
     # 'add component'
     #
     # Lets:
@@ -765,6 +771,18 @@ describe EntityManager do
   end
 
   describe '#merge_entity(dest, other)' do
+    shared_examples 'will merge' do
+      it 'will call update_views()' do
+        # make sure both of these let()s are evaluated before we do anything.
+        dest
+        other
+        expect(em).to receive(:update_views) do |entity,_|
+          expect(entity).to eq(dest)
+        end
+        em.merge_entity(dest, other)
+      end
+    end
+
     context 'dest does not exist' do
       it 'will raise EntityManager::UnknownId' do
         other = em.create_entity
@@ -772,6 +790,7 @@ describe EntityManager do
             .to raise_error(EntityManager::UnknownId)
       end
     end
+
     context 'other does not exist' do
       it 'will raise EntityManager::UnknownId' do
         base = em.create_entity
@@ -784,6 +803,8 @@ describe EntityManager do
       let(:comp) { Class.new(Component) { field :value } }
       let(:dest) { em.create_entity }
       let(:other) { em.create_entity(components: comp.new(value: :pass)) }
+
+      include_examples 'will merge'
 
       it 'will add the component to dest' do
         em.merge_entity(dest, other)
@@ -801,6 +822,8 @@ describe EntityManager do
       let(:comp) { Class.new(Component) { field :value } }
       let(:dest) { em.create_entity(components: comp.new(value: :pass)) }
       let(:other) { em.create_entity }
+
+      include_examples 'will merge'
 
       it 'will not remove component from dest' do
         em.merge_entity(dest, other)
@@ -823,6 +846,9 @@ describe EntityManager do
         em.add_component(dest, comp_a)
         em.add_component(other, comp_b)
       end
+
+      include_examples 'will merge'
+
       it 'will not error' do
         expect { em.merge_entity(dest, other) }.to_not raise_error
       end
@@ -838,6 +864,9 @@ describe EntityManager do
       let(:dest) { em.create_entity(components: dest_comp) }
       let(:other_comp) { comp.new }
       let(:other) { em.create_entity(components: other_comp) }
+
+      include_examples 'will merge'
+
       it 'will call dest_comp.merge!(other_comp)' do
         expect(dest_comp).to receive(:merge!).with(other_comp)
         em.merge_entity(dest, other)
@@ -849,6 +878,8 @@ describe EntityManager do
       let(:dest) { em.create_entity(id: 'dest') }
       let(:other_comp) { comp.new }
       let(:other) { em.create_entity(id: 'other', components: other_comp) }
+
+      include_examples 'will merge'
 
       it 'will clone the other component and add it to dest' do
         expect(other_comp).to receive(:clone).and_return(:pass)
@@ -863,6 +894,8 @@ describe EntityManager do
       let(:dest) { em.create_entity(id: 'dest', components: dest_comp) }
       let(:other_comp) { comp.new }
       let(:other) { em.create_entity(id: 'other', components: other_comp) }
+
+      include_examples 'will merge'
 
       it 'will not call dest_comp.merge!' do
         expect(dest_comp).to_not receive(:merge!)
@@ -1001,20 +1034,27 @@ describe EntityManager do
   end
 
   describe '#update_view(entity, components)' do
-    context 'when no views exist' do
-      it 'will not error' do
-        expect { em.send(:update_views, 'test', 'components') }.to_not raise_error
-      end
+    it 'will queue the update to the view' do
+      view = em.get_view(all: UniqueTestComponent)
+      expect(view).to_not receive(:update!)
+      em.send(:update_views, :entity, :components)
+    end
+  end
+
+  describe '#flush_updates()' do
+    let(:views) do
+      [ em.get_view(all: UniqueTestComponent),
+        em.get_view(any: UniqueTestComponent),
+        em.get_view(excl: UniqueTestComponent) ]
     end
 
-    context 'when views exist' do
-      xit 'will queue the update to the view' do
-        view_1 = em.get_view(all: UniqueTestComponent)
-        view_2 = em.get_view(any: UniqueTestComponent)
-        expect(view_1).to receive(:update!).with(:entity, :components)
-        expect(view_2).to receive(:update!).with(:entity, :components)
-        em.send(:update_views, :entity, :components)
+    it 'will call EntityManager::View#update! any views' do
+      entity = em.create_entity
+      views.each do |view|
+        expect(view).to receive(:update!).with(entity, :passed)
       end
+      em.send(:update_views, entity, :passed)
+      em.flush_updates
     end
   end
 end

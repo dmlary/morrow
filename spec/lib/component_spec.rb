@@ -343,7 +343,10 @@ describe Component do
       end
     end
     context 'on a Component that a setter has been called' do
-      it 'will return a Hash with the field and value'
+      it 'will return a Hash with the field and value' do
+        comp.a = :passed
+        expect(comp.get_modified_fields).to eq({a: :passed})
+      end
     end
   end
 

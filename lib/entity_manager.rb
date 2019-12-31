@@ -71,7 +71,8 @@ class EntityManager
   # Merge one entity into another.  If both entities have a common unique
   # Component, the Component will be merged into dest.
   def merge_entity(dest_id, other_id)
-    raise UnknownId, dest_id unless dest = @entities[dest_id.to_s]
+    dest_id = dest_id.to_s unless dest_id.is_a?(String)
+    raise UnknownId, dest_id unless dest = @entities[dest_id]
     raise UnknownId, other_id unless others = @entities[other_id.to_s]
 
     others.each_with_index do |other,i|
@@ -84,6 +85,9 @@ class EntityManager
         dest[i] = other.clone
       end
     end
+
+    update_views(dest_id, dest)
+
     dest
   end
 
@@ -96,8 +100,11 @@ class EntityManager
   # updated until after systems run, so B tries to do something with X, still
   # in their view.  The view components are still there, but if they try to
   # access something else in the entity, it won't be present.
-  def destroy_entity(*entity)
-    entity.flatten.each { |e| @entities.delete(e) }
+  def destroy_entity(*entities)
+    entities.flatten.each do |entity|
+      @entities.delete(entity)
+      update_views(entity, [])
+    end
   end
 
   # add_component
