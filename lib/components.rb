@@ -172,6 +172,9 @@ class HookComponent < Component
 
   # This points at the entity id for the script that should be run
   field :script
+
+  # Optional configuration for :script
+  field :script_config
 end
 
 # This component holds configuration for a teleporter.  It is used by the
@@ -197,6 +200,10 @@ class TeleportComponent < Component
 
   # Time at which they should be teleported
   field :time
+
+  # message displayed to the character when they're teleported.  Message is
+  # displayed before 'look' output.
+  field :message
 
   # should character look after teleport
   field :look, default: true, valid: [ true, false ]

@@ -5,13 +5,16 @@ describe 'teleporter script' do
   let(:troom) do
     create_entity(base: [ 'base:room', 'base:act/teleporter' ])
   end
+  let(:on_enter_hook) do
+    get_components(troom, :hook).find { |h| h.event == :on_enter }
+  end
   let(:teleporter) { get_component!(troom, :teleporter) }
   let(:dest) { create_entity(base: 'base:room') }
   let(:leo) { 'spec:mob/leonidas' }
+  let(:teleport) { get_component(leo, :teleport) }
   before(:each) { teleporter.dest = dest; teleporter.delay = 60 }
 
   context 'entity enters teleporter' do
-    let(:teleport) { get_component(leo, :teleport) }
     it 'will add the teleport component to entity' do
       move_entity(entity: leo, dest: troom)
       expect(get_component(leo, :teleport)).to_not be_nil
@@ -41,6 +44,33 @@ describe 'teleporter script' do
         move_entity(entity: leo, dest: troom)
         expect(teleport.time - Time.now)
             .to be_between(9,20)
+      end
+    end
+
+    context 'config[:skip_if_flying] is set' do
+      before(:each) do
+        on_enter_hook.script_config = { skip_if_flying: true }
+      end
+
+      it 'will not teleport an entity that is flying' do
+        allow(Script::Sandbox).to receive(:entity_flying?).and_return(true)
+        move_entity(entity: leo, dest: troom)
+        expect(teleport).to be(nil)
+      end
+      it 'will teleport an entity that is not flying' do
+        move_entity(entity: leo, dest: troom)
+        expect(teleport).to_not be(nil)
+      end
+    end
+
+    context 'config[:message] is set' do
+      before(:each) do
+        on_enter_hook.script_config = { message: :passed }
+      end
+
+      it 'will set teleport message' do
+        move_entity(entity: leo, dest: troom)
+        expect(teleport.message).to be(:passed)
       end
     end
   end

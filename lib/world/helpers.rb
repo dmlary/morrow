@@ -113,7 +113,7 @@ module World::Helpers
   def fire_hooks(entity, event, args={})
     get_components(entity, :hook).each do |hook|
       next unless hook.event == event
-      result = call_script(hook.script, args)
+      result = call_script(hook.script, hook.script_config, args)
       return true if result == :deny
     end
     false   # not denied
@@ -122,10 +122,10 @@ module World::Helpers
   # call_script
   #
   # Call the script on the supplied entity
-  def call_script(script_id, p={})
+  def call_script(script_id, config={}, args={})
     script = get_component(script_id, :script) or
         fault "no script component in #{script_id}"
     fault "#{script_id} script component is empty" unless script.script
-    script.script.call(p)
+    script.script.call(config: config || {}, args: args)
   end
 end

@@ -309,6 +309,12 @@ module World::ScriptSafeHelpers
     !concealed.revealed
   end
 
+  # entity_flying?
+  def entity_flying?(entity)
+    # XXX fixup once we have affects
+    false
+  end
+
   # entity_short
   #
   # Get the short description for an entity
@@ -316,4 +322,5 @@ module World::ScriptSafeHelpers
     view = get_component(entity, ViewableComponent) or return nil
     view.short
   end
+
 end

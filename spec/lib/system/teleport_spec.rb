@@ -82,5 +82,40 @@ describe System::Teleport do
         run_update
       end
     end
+
+    context 'when message is set' do
+      before(:each) do
+        teleport.look = false
+        teleport.message = '*TARDIS sounds*'
+      end
+
+      include_examples 'move entity'
+
+      it 'will call send_to_char' do
+        expect(System::Teleport).to receive(:send_to_char)
+            .with(char: leo, buf: teleport.message + "\n")
+        run_update
+      end
+
+      it 'will not send the "look" command' do
+        expect(Command).to_not receive(:run)
+        run_update
+      end
+    end
+
+    context 'when message is not set' do
+      before(:each) do
+        teleport.look = false
+        teleport.message = nil
+      end
+
+      include_examples 'move entity'
+
+      it 'will not call send_to_char' do
+        expect(System::Teleport).to_not receive(:send_to_char)
+        run_update
+      end
+    end
+
   end
 end

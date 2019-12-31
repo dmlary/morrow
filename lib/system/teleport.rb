@@ -15,6 +15,9 @@ module System::Teleport
 
       return if teleport.time > Time.now
 
+      send_to_char(char: entity, buf: teleport.message + "\n") if
+          teleport.message
+
       move_entity(entity: entity, dest: teleport.dest, look: teleport.look)
     end
   end

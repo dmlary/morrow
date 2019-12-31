@@ -173,7 +173,8 @@ describe World::Helpers do
       end
 
       it 'will call on_enter script after moving entity' do
-        expect(script).to receive(:call) do |here: nil, entity: nil|
+        expect(script).to receive(:call) do |args: {}, config: {}|
+          here = args[:here]; entity = args[:entity]
           expect(here).to eq(dest)
           expect(entity).to eq(leo)
           expect(entity_contents(here)).to include(leo)
@@ -191,10 +192,10 @@ describe World::Helpers do
       end
 
       it 'will call will_exit script before moving entity' do
-        expect(script).to receive(:call) do |p|
-          expect(p[:entity]).to eq(leo)
-          expect(p[:src]).to eq(src)
-          expect(p[:dest]).to eq(dest)
+        expect(script).to receive(:call) do |args: {}, config: {}|
+          expect(args[:entity]).to eq(leo)
+          expect(args[:src]).to eq(src)
+          expect(args[:dest]).to eq(dest)
           expect(entity_location(leo)).to eq(src)
         end
         move_entity(entity: leo, dest: dest)
@@ -203,7 +204,6 @@ describe World::Helpers do
       context 'script returns :deny' do
         it 'will not move the entity' do
           expect(script).to receive(:call)
-              .with(entity: leo, src: src, dest: dest)
               .and_return(:deny)
           move_entity(entity: leo, dest: dest)
           expect(entity_location(leo)).to eq(src)
@@ -220,7 +220,8 @@ describe World::Helpers do
       end
 
       it 'will call on_exit script after moving entity' do
-        expect(script).to receive(:call) do |here: nil, entity: nil|
+        expect(script).to receive(:call) do |args: {}, config: {}|
+          here = args[:here]; entity = args[:entity]
           expect(here).to eq(src)
           expect(entity).to eq(leo)
           expect(entity_contents(here)).to_not include(leo)
@@ -238,10 +239,10 @@ describe World::Helpers do
       end
 
       it 'will call on_exit script before moving entity' do
-        expect(script).to receive(:call) do |p|
-          expect(p[:entity]).to eq(leo)
-          expect(p[:src]).to eq(src)
-          expect(p[:dest]).to eq(dest)
+        expect(script).to receive(:call) do |args: {}, config: {}|
+          expect(args[:entity]).to eq(leo)
+          expect(args[:src]).to eq(src)
+          expect(args[:dest]).to eq(dest)
           expect(entity_location(leo)).to eq(src)
         end
         move_entity(entity: leo, dest: dest)
@@ -250,9 +251,7 @@ describe World::Helpers do
 
       context 'script returns :deny' do
         it 'will not move the entity' do
-          expect(script).to receive(:call)
-              .with(entity: leo, src: src, dest: dest)
-              .and_return(:deny)
+          expect(script).to receive(:call).and_return(:deny)
           move_entity(entity: leo, dest: dest)
           expect(entity_location(leo)).to eq(src)
         end
