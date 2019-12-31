@@ -151,31 +151,111 @@ describe World::Helpers do
   end
 
   context '.move_entity' do
-    let(:script) { Script.new('true') }
+    let(:script) { Script.new('true', freeze: false) }
     let(:script_entity) do
       create_entity(components: ScriptComponent.new(script: script))
     end
     let(:dest) { create_entity(base: 'base:room') }
+    let(:src) { create_entity(base: 'base:room') }
+    before(:each) { move_entity(entity: leo, dest: src) }
 
-    context 'when dest has on_enter script' do
-      before(:each) do
-        add_component(dest, OnEnterComponent.new(script: script_entity))
+    def add_hook(entity, event)
+      add_component(entity,
+          HookComponent.new(event: event, script: script_entity))
+    end
+
+    context 'when dest has on_enter hook' do
+      before(:each) { add_hook(dest, :on_enter) }
+
+      it 'will move the entity' do
+        move_entity(entity: leo, dest: dest)
+        expect(entity_location(leo)).to eq(dest)
       end
 
-      it 'will call on_enter script' do
-        expect(script).to receive(:call).with(entity: dest, actor: leo)
+      it 'will call on_enter script after moving entity' do
+        expect(script).to receive(:call) do |here: nil, entity: nil|
+          expect(here).to eq(dest)
+          expect(entity).to eq(leo)
+          expect(entity_contents(here)).to include(leo)
+        end
         move_entity(entity: leo, dest: dest)
       end
     end
-    context 'when entity location has on_exit script' do
-      before(:each) do
-        add_component(dest, OnExitComponent.new(script: script_entity))
+
+    context 'when dest has will_enter script' do
+      before(:each) { add_hook(src, :will_exit) }
+
+      it 'will move the entity' do
+        move_entity(entity: leo, dest: dest)
+        expect(entity_location(leo)).to eq(dest)
       end
 
-      it 'will call on_exit script' do
+      it 'will call will_exit script before moving entity' do
+        expect(script).to receive(:call) do |p|
+          expect(p[:entity]).to eq(leo)
+          expect(p[:src]).to eq(src)
+          expect(p[:dest]).to eq(dest)
+          expect(entity_location(leo)).to eq(src)
+        end
         move_entity(entity: leo, dest: dest)
-        expect(script).to receive(:call).with(entity: dest, actor: leo)
-        move_entity(entity: leo, dest: create_entity)
+      end
+
+      context 'script returns :deny' do
+        it 'will not move the entity' do
+          expect(script).to receive(:call)
+              .with(entity: leo, src: src, dest: dest)
+              .and_return(:deny)
+          move_entity(entity: leo, dest: dest)
+          expect(entity_location(leo)).to eq(src)
+        end
+      end
+    end
+
+    context 'when dest has on_exit hook' do
+      before(:each) { add_hook(src, :on_exit) }
+
+      it 'will move the entity' do
+        move_entity(entity: leo, dest: dest)
+        expect(entity_location(leo)).to eq(dest)
+      end
+
+      it 'will call on_exit script after moving entity' do
+        expect(script).to receive(:call) do |here: nil, entity: nil|
+          expect(here).to eq(src)
+          expect(entity).to eq(leo)
+          expect(entity_contents(here)).to_not include(leo)
+        end
+        move_entity(entity: leo, dest: dest)
+      end
+    end
+
+    context 'when entity location has will_exit script' do
+      before(:each) { add_hook(src, :will_exit) }
+
+      it 'will move the entity' do
+        move_entity(entity: leo, dest: dest)
+        expect(entity_location(leo)).to eq(dest)
+      end
+
+      it 'will call on_exit script before moving entity' do
+        expect(script).to receive(:call) do |p|
+          expect(p[:entity]).to eq(leo)
+          expect(p[:src]).to eq(src)
+          expect(p[:dest]).to eq(dest)
+          expect(entity_location(leo)).to eq(src)
+        end
+        move_entity(entity: leo, dest: dest)
+      end
+
+
+      context 'script returns :deny' do
+        it 'will not move the entity' do
+          expect(script).to receive(:call)
+              .with(entity: leo, src: src, dest: dest)
+              .and_return(:deny)
+          move_entity(entity: leo, dest: dest)
+          expect(entity_location(leo)).to eq(src)
+        end
       end
     end
   end

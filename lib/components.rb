@@ -127,24 +127,50 @@ class ConnectionComponent < Component
   field :buf, default: ''   # String of pending output
 end
 
-# Used to specify a script to run when an entity is moved into a
-# ContainerComponent.  Think walking into a room, or putting an item in a bag.
-# Technically it could even be when a mob picks up an item.
-class OnEnterComponent < Component
-  # due to compositing architecture, we're going to permit multiple triggers
+# Used to run scripts when specific events occur in the world.
+#
+class HookComponent < Component
+  # due to compositing architecture, we're going to permit multiple hooks
   not_unique
 
-  # This points at the entity id for the script that should be run when this
-  # entity is entered.
-  field :script
-end
+  # Event when this script should be run
+  #
+  # will_enter: Entity (entity) will be added to (dest) entity's
+  #             ContainerComponent.  May be blocked by returning :deny.
+  #             This hook will be called before the character performs 'look'
+  #             in the dest room.
+  #
+  #             Script arguments:
+  #               entity: Entity being moved
+  #               src:    entity's current location; may be nil
+  #               dest:   destination entity
+  #
+  # on_enter:   Entity (entity) has been added to (here) entity's
+  #             ContainerComponent.
+  #             This hook will be caled after the character performs 'look' in
+  #             here.
+  #
+  #             Script arguments:
+  #               entity: Entity that was added
+  #               here:   entity's current location
+  #
+  # will_exit:  Entity (entity) will removed from (src) entity's
+  #             ContainerComponent.  May be blocked by returning :deny.
+  #             Script arguments:
+  #
+  #               entity: Entity being moved
+  #               src:    entity's current location; may be nil
+  #               dest:   destination entity
+  #
+  # on_exit:    Entity (entity) has been removed from (here) entity's
+  #             ContainerComponent.
+  #
+  #             Script arguments:
+  #               entity: Entity that was removed
+  #               here:   entity's current location
+  field :event, valid: %i{ will_enter on_enter will_exit on_exit }
 
-class OnExitComponent < Component
-  # due to compositing architecture, we're going to permit multiple triggers
-  not_unique
-
-  # This points at the entity id for the script that should be run when this
-  # entity is exited.
+  # This points at the entity id for the script that should be run
   field :script
 end
 
@@ -163,7 +189,7 @@ end
 # It is added by the teleporter script
 class TeleportComponent < Component
   # destination entity
-  field :dest, valid: proc { |v| World.entity_exists?(v) }
+  field :dest, valid: proc { |v| v.nil? or World.entity_exists?(v) }
 
   # Time at which they should be teleported
   field :at

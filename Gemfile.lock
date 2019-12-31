@@ -14,7 +14,6 @@ GEM
     get_process_mem (0.2.5)
       ffi (~> 1.0)
     interception (0.5)
-    malloc_trim (0.1.0)
     memory_profiler (0.9.14)
     method_source (0.9.2)
     parser (2.7.0.0)
@@ -54,7 +53,6 @@ DEPENDENCIES
   eventmachine
   facets
   get_process_mem
-  malloc_trim
   memory_profiler
   parser
   pry

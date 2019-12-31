@@ -22,7 +22,7 @@ module Script::Sandbox
   # First things in this list are actually variables we get when the script is
   # run.  We act like they're methods so that Script#safe! doesn't think
   # they're unauthorized methods.
-  ScriptMethods = [ :entity, :actor ]
+  ScriptMethods = [ :args ]
 
   # Pull in the standard logging functions
   extend Helpers::Logging

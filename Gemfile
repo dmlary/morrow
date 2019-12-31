@@ -2,14 +2,19 @@ source 'https://rubygems.org'
 
 gem 'eventmachine'
 gem 'colorize'
-gem 'rspec'
-gem 'rspec-mocks'
 gem 'facets'
-gem 'pry'
-gem 'pry-remote'
-gem 'pry-rescue'
-gem 'pry-stack_explorer'
-gem 'malloc_trim' # may be useful on linux
-gem 'memory_profiler'
-gem 'get_process_mem'
-gem 'parser'
+gem 'parser'    # needed for lib/script.rb
+
+group :test do
+  gem 'rspec'
+  gem 'rspec-mocks'
+end
+
+group :test, :development do
+  gem 'pry'
+  gem 'pry-remote'
+  gem 'pry-rescue'
+  gem 'pry-stack_explorer'
+  gem 'memory_profiler'
+  gem 'get_process_mem'
+end

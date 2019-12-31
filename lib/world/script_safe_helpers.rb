@@ -34,22 +34,52 @@ module World::ScriptSafeHelpers
     (keywords & World::CARDINAL_DIRECTIONS).first or keywords.first
   end
 
-  # place one entity inside another entity's contents
-  def move_entity(dest: nil, entity: nil)
+  # move_entity
+  #
+  # Move an entity into the ContainerComponent of another entity.  If the
+  # entity being moved already resides within another entity's
+  # ContainerComponent, first remove it from it's existing container.
+  #
+  # This method will also fire the following hooks in order:
+  #   * will_exit;  if script returns :deny, will not move
+  #   * will_enter; if script returns :deny, will not move
+  #   * <move the entity>
+  #   * on_exit
+  #   * on_enter
+  #
+  def move_entity(dest: nil, entity: nil, look: false)
     container = get_component!(dest, :container)
     location = get_component!(entity, :location)
+    src = location.entity
 
-    if old = location.entity and src = get_component(old, :container)
-      debug "moving #{entity} from #{old} to #{dest}"
-      World.call_on_exit_scripts(actor: entity, location: old)
-      src.contents.delete(entity)
-    else
-      debug "moving #{entity} to #{dest}"
+    # run the will_exit/will_enter hooks, and check if the movement is denied
+    # by any of them.
+    if src
+      denied = World.fire_hooks(src, :will_exit,
+          entity: entity, src: src, dest: dest)
+      return if denied
     end
 
+    # destination room can also deny entry
+    denied = World.fire_hooks(dest, :will_enter,
+        entity: entity, src: src, dest: dest)
+    return if denied
+
+    # move the entity
+    get_component(src, :container)&.contents&.delete(entity) if src
     location.entity = dest
-    container.contents << entity
-    World.call_on_enter_scripts(actor: entity, location: dest)
+    get_component!(dest, :container).contents << entity
+
+    # notify the src location that the entity has left
+    World.fire_hooks(src, :on_exit, entity: entity, here: src) if src
+
+    # perform the look for the entity if it was requested
+    # XXX kludge for right now
+    send_to_char(char: entity, buf: Command.run(entity, 'look')) if look
+
+    # notify the room of the arrival
+    World.fire_hooks(dest, :on_enter, entity: entity, here: dest)
+    nil
   end
 
   # get a/all entities from ++pool++ that have keywords that match our

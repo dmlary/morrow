@@ -92,20 +92,6 @@ module World::Helpers
     loader.load(path: path, area: area)
     loader.finish
   end
-
-  # call_on_enter_scripts
-  #
-  # Call any on_enter scripts defined on location
-  def call_on_enter_scripts(location: nil, actor: nil)
-    fault 'no actor' unless actor
-    fault 'no location' unless location
-
-    get_components(location, :on_enter).each do |trig|
-      call_script(trig.script, entity: location, actor: actor)
-    end
-  end
-
-  # call_on_exit_scripts
   #
   # Call any on_enter scripts defined on location
   def call_on_exit_scripts(location: nil, actor: nil)
@@ -115,6 +101,22 @@ module World::Helpers
     get_components(location, :on_exit).each do |trig|
       call_script(trig.script, entity: location, actor: actor)
     end
+  end
+
+  # fire_hooks
+  #
+  # Call any scripts associated with the hook event on this entity
+  #
+  # Returns:
+  #   true: one of the scripts returned :deny
+  #   false: no script returned :deny
+  def fire_hooks(entity, event, args={})
+    get_components(entity, :hook).each do |hook|
+      next unless hook.event == event
+      result = call_script(hook.script, args)
+      return true if result == :deny
+    end
+    false   # not denied
   end
 
   # call_script

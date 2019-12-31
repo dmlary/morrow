@@ -116,22 +116,28 @@
 
 - id: base:act/teleporter
   components:
-  - on_enter: base:script/teleporter/enter
-  - on_exit: base:script/teleporter/exit
+  - hook:
+      event: :on_enter
+      script: base:script/teleporter/enter
+  - hook:
+      event: :on_exit
+      script: base:script/teleporter/exit
   - teleporter
 
 - id: base:script/teleporter/enter
   components:
   - script: !script |
-      unless porter = get_component(entity, :teleporter)
-        error "#{entity} missing teleporter component"
+      here = args[:here]
+      unless porter = get_component(here, :teleporter)
+        error "#{here} missing teleporter component"
         return
       end
-      port   = get_component!(actor, :teleport)
+      entity = args[:entity]
+      port = get_component!(entity, :teleport)
       port[:dest] = porter[:dest]
-      port[:at]   = now + porter[:delay]
+      port[:at] = now + porter[:delay]
 
 - id: base:script/teleporter/exit
   components:
   - script: !script |
-      remove_component(actor, :teleport)
+      remove_component(args[:entity], :teleport)

@@ -77,26 +77,67 @@ class Script
   InstanceMethodWhitelist = %i{
     ! % & | ^ + - * / == =~ === < > <= >= << >> [] []=
     first each map inject nil?
+    __id__
   }
 
-  # UnsafeScript
+  # ProhibitedScriptElementError
   #
-  # Exception we raise for untrusted elements in the script
-  class UnsafeScript < RuntimeError
-    attr_reader :root, :node
+  # Parent class for exceptions we raise when a script is determined to be
+  # unsafe.  This is mostly helper functions for the specific exceptions we
+  # encounter.
+  class ProhibitedScriptElementError < ArgumentError
+    def initialize(error, error_node)
+      @error = error
+      @error_node = error_node
 
-    def initialize(msg, root, node)
-      @root = root
-      @node = node
+      line = error_node.loc.line
+      column = error_node.loc.column + 1
+      msg = "At line #{line}, column #{column}, #{error}\n"
+      msg << clang_error
+
       super(msg)
+    end
+
+    # clang_error
+    #
+    # Generate a clang formatted error for this exception
+    def clang_error
+      loc = @error_node.loc
+      expr = loc.expression
+      line = loc.line
+      column = loc.column + 1
+      prefix = "#{expr.source_buffer.name}:#{line}:"
+      out = "#{prefix}#{column}: error: #{@error}\n"
+      out << "#{prefix} #{expr.source_line}\n"
+      out << "#{prefix} "
+      out << ' ' * (column - 1)
+      out << "^\n"
+    end
+  end
+  class ProhibitedMethod < ProhibitedScriptElementError;
+    def initialize(method, error_node)
+      super("prohibitied method call, #{method}.", error_node)
+    end
+  end
+  class ProhibitedNodeType < ProhibitedScriptElementError;
+    def initialize(type, error_node)
+      super("prohibitied ruby code, #{type}.", error_node)
     end
   end
 
   # initialize
   #
   # Create a new script with the source provided
-  def initialize(script)
-    @source = script.clone.freeze
+  #
+  # Arguments:
+  #   source: script source
+  #
+  # Parameters:
+  #   freeze: set to false to not freeze the class; ONLY FOR TESTING
+  #
+  def initialize(source, freeze: true)
+    @source = source.clone.freeze
+    safe!(freeze: freeze)
   end
 
   # Make yaml create a Script instance for `!script` tags
@@ -107,6 +148,7 @@ class Script
     raise RuntimeError, "invalid script: %s " %
         [ coder.send(coder.type).inspect ] unless coder.type == :scalar
     @source = coder.scalar.to_s.freeze
+    @safe = false   # trust nothing
     safe!
   end
 
@@ -115,33 +157,58 @@ class Script
     coder.scalar = @source
   end
 
-  # safe!
-  #
-  # Check to see if the script source is safe to be run
-  def safe!
-    ast = Parser::CurrentRuby.parse(@source)
-    node_safe!(ast)
-    true
-  end
-
   # call
   #
   # Call the script with provided arguments.
-  def call(entity: nil, actor: nil)
-    # XXX for the moment, we'll verify each time.  Later let's clean this up
-    # and only verify safe once, cache the result, and freeze the class.
-    safe!
+  def call(args={})
+    raise "refusing to run unsafe script: #{self}" unless @safe
 
     # eval the code within the Sandbox, but first set the entity & actor
     # provided.
     Sandbox.instance_exec(@source) do |source|
-      entity = entity
-      actor = actor
+      args = args
       eval(source)
     end
   end
 
   private
+
+  # safe!
+  #
+  # Check to see if the script source is safe to be run
+  #
+  # Parameters:
+  #   freeze: should the instance be frozen; ONLY FOR TESTING
+  #
+  def safe!(freeze: true)
+    begin
+      ast = parse(@source)
+      node_safe!(ast)
+      @safe = true
+    ensure
+      # After verifying the script is safe, we freeze the instance so that it
+      # cannot easily be modified later to run unsafe code.
+      self.freeze if freeze
+    end
+  end
+
+  # parse
+  #
+  # Wrapper around Parser::Current#parse() to silence the stderr output on
+  # syntax errors.  Opened https://github.com/whitequark/parser/issues/644
+  # but they didn't feel it was necessary to add that option to the top-level.
+  #
+  # Arguments: None
+  #
+  # Returns: Parser::AST::Node
+  def parse(source)
+    parser = Parser::CurrentRuby.new
+    parser.diagnostics.all_errors_are_fatal = true
+    parser.diagnostics.ignore_warnings      = true
+    source_buffer = Parser::Source::Buffer.new('script')
+    source_buffer.source = source
+    parser.parse(source_buffer)
+  end
 
   # node_safe!
   #
@@ -158,15 +225,12 @@ class Script
       # methods from the sandbox.
       receiver, method = node.children
       whitelist = receiver ? InstanceMethodWhitelist : Sandbox::ScriptMethods
-      raise UnsafeScript
-          .new("method not permitted: #{method} in #{node}", @ast, node) unless
-              whitelist.include?(method)
-
+      raise ProhibitedMethod.new(method, node) unless
+          whitelist.include?(method)
     else
 
       # If the node type is not supported, raise an exception.
-      raise UnsafeScript
-          .new("node type not in whitelist: #{node.type}", @ast, node) unless
+      raise ProhibitedNodeType.new(node.type, node) unless
           NodeTypeWhitelist.include?(node.type)
     end
     node.children.each { |c| node_safe!(c) }

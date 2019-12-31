@@ -1,17 +1,48 @@
 describe Script do
-  describe '#safe!' do
+  # various scripts
+  #
+  # This is a sampling of all the elements we support/reject in scripts.  This
+  # shared example is used for #initialize, and yaml load to verify that the
+  # scripts are safely handled under each condition.
+  #
+  shared_examples 'various scripts' do
+
+    # script is safe to run
     shared_examples 'no error' do
       it 'will not raise an error' do
-        expect { script.safe! }.to_not raise_error
+        expect { script }.to_not raise_error
+      end
+      it 'will freeze the instance' do
+        expect(script).to be_frozen
       end
     end
 
-    shared_examples 'raise error' do
-      it 'will raise an UnsafeScript error' do
-        expect { script.safe! }.to raise_error(Script::UnsafeScript)
+    # syntax error in the ruby syntax
+    shared_examples 'syntax error' do
+      it 'will raise Parser::SyntaxError' do
+        expect { script }
+            .to raise_error(Parser::SyntaxError)
       end
     end
 
+    # calling a prohibitied method
+    shared_examples 'method error' do
+      it 'will raise a ProhibitedMethod error' do
+        expect { script }
+            .to raise_error(Script::ProhibitedMethod)
+      end
+    end
+
+    # using an unsupported ruby feature (const, backticks)
+    shared_examples 'node error' do
+      it 'will raise a ProhibitedNodeType error' do
+        expect { script }
+            .to raise_error(Script::ProhibitedNodeType)
+      end
+    end
+
+    # All of the test cases, broken down into description, code, and the
+    # expected result.
     [
         # base types
         { desc: 'nil', code: 'nil', expect: 'no error' },
@@ -32,14 +63,14 @@ describe Script do
 
         # constants are not permitted; makes everything much easier to
         # implement scripting safely.
-        { desc: 'constant World', code: 'World', expect: 'raise error' },
+        { desc: 'constant World', code: 'World', expect: 'node error' },
         { desc: 'constant World::Helpers',
           code: 'World::Helpers',
-          expect: 'raise error' },
-        { desc: 'constant File', code: 'File', expect: 'raise error' },
-        { desc: 'constant Kernel', code: 'Kernel', expect: 'raise error' },
-        { desc: 'constant Object', code: 'Object', expect: 'raise error' },
-        { desc: 'constant Script', code: 'Script', expect: 'raise error' },
+          expect: 'node error' },
+        { desc: 'constant File', code: 'File', expect: 'node error' },
+        { desc: 'constant Kernel', code: 'Kernel', expect: 'node error' },
+        { desc: 'constant Object', code: 'Object', expect: 'node error' },
+        { desc: 'constant Script', code: 'Script', expect: 'node error' },
 
         # assignment
         { desc: 'assign local var',
@@ -47,16 +78,16 @@ describe Script do
           expect: 'no error' },
         { desc: 'assign instance var',
           code: '@instance_var = true',
-          expect: 'raise error' },
+          expect: 'node error' },
         { desc: 'assign class var',
           code: '@@class_var = true',
-          expect: 'raise error' },
+          expect: 'node error' },
         { desc: 'assign constant',
           code: 'Constant = true',
-          expect: 'raise error' },
+          expect: 'node error' },
         { desc: 'assign global variable',
           code: '$global_var = true',
-          expect: 'raise error' },
+          expect: 'node error' },
 
         { desc: 'multiple assignment to local variables',
           code: 'a,b = [1,2]',
@@ -92,12 +123,12 @@ describe Script do
         # module & class creation/modification
         { desc: 'module creation/modification',
           code: 'module Meep; end',
-          expect: 'raise error' },
+          expect: 'node error' },
         { desc: 'class creation/modification',
           code: 'class Meep; end',
-          expect: 'raise error' },
+          expect: 'node error' },
         { desc: 'singleton class',
-          expect: 'raise error',
+          expect: 'node error',
           code: <<~CODE
             class << self
               def breakout
@@ -109,18 +140,18 @@ describe Script do
 
         # method (un)definition
         { desc: 'define instance method',
-          expect: 'raise error',
+          expect: 'node error',
           code: 'def xxx; end' },
         { desc: 'undefine instance method',
-          expect: 'raise error',
+          expect: 'node error',
           code: 'undef :xxx' },
         { desc: 'define singleton method',
-          expect: 'raise error',
+          expect: 'node error',
           code: 'def self.xxx; end' },
 
         # aliasing
         { desc: 'method aliasing',
-          expect: 'raise error',
+          expect: 'node error',
           code: 'alias xxx yyy' },
 
         ## flow control
@@ -211,62 +242,94 @@ describe Script do
           code: '[].map { |v| v + 1 }'},
 
         { desc: 'send non-whitelist command to receiver',
-          expect: 'raise error',
+          expect: 'method error',
           code: 'a.eval("File")' },
         { desc: 'sending non-whitelist command with no receiver',
           code: 'eval("File")',
-          expect: 'raise error' },
+          expect: 'method error' },
 
         # regression prevention
         { desc: 'Symbol#to_proc',
-          expect: 'raise error',
+          expect: 'method error',
           code: ':send.to_proc.call(:eval, :puts, "hello world")' },
         { desc: 'back-tick shell command',
-          expect: 'raise error',
+          expect: 'node error',
           code: '`ls`' },
         { desc: '%x{} shell command',
-          expect: 'raise error',
+          expect: 'node error',
           code: '%x{ls}' },
         { desc: 'system() command',
-          expect: 'raise error',
+          expect: 'method error',
           code: 'system("ls")' },
         { desc: 'exec() command',
-          expect: 'raise error',
+          expect: 'method error',
           code: 'exec("ls")' },
         { desc: 'File.open()',
-          expect: 'raise error',
+          expect: 'method error',
           code: 'File.open("/etc/passwd")' },
         { desc: 'eval',
-          expect: 'raise error',
+          expect: 'method error',
           code: 'eval("File")' },
         { desc: 'instance_eval',
-          expect: 'raise error',
+          expect: 'method error',
           code: 'instance_eval("File")' },
-        { desc: 'send()',
-          expect: 'raise error',
+        { desc: 'send()', expect: 'method error',
           code: 'send(:eval, "File")' },
-        { desc: 'require()',
-          expect: 'raise error',
-          code: 'require("pry")' },
+        { desc: 'require()', expect: 'method error', code: 'require("pry")' },
+        { desc: 'open()', expect: 'method error', code: 'open("/etc/passwd")' },
 
         # teleporter examples
         { desc: 'teleporter enter',
           expect: 'no error',
-          code: <<~CODE
-            porter = get_component(entity, :teleporter) or return
-            port = get_component!(actor, :teleport)
+          code: <<~'CODE'
+            here = args[:here]
+            unless porter = get_component(here, :teleporter)
+              error "#{here} missing teleporter component"
+              return
+            end
+            entity = args[:entity]
+            port = get_component!(entity, :teleport)
             port[:dest] = porter[:dest]
             port[:at] = now + porter[:delay]
           CODE
         },
         { desc: 'teleporter exit',
           expect: 'no error',
-          code: 'remove_component(actor, :teleport)' },
+          code: 'remove_component(args[:entity], :teleport)' },
+
+        # syntax error
+        { desc: 'syntax error', code: '1 = 2', expect: 'syntax error' },
+
     ].each do |desc: nil, code: nil, expect: nil|
       context(desc) do
-        let(:script) { Script.new(code) }
+        let(:source) { code }
         include_examples(expect)
       end
+    end
+  end
+
+  describe '#initialize' do
+    let(:script) { Script.new(source) }
+    include_examples 'various scripts'
+  end
+
+  describe 'loaded from yaml' do
+    let(:script) do
+      if source
+        YAML.load("!script |\n#{source.indent(2)}")
+      else
+        YAML.load("!script")
+      end
+    end
+    include_examples 'various scripts'
+  end
+
+  describe '#call(args={})' do
+    it 'will execute the script & pass the arguments' do
+      script = Script.new('args[0] = :passed')
+      arg = [:failed]
+      script.call(arg)
+      expect(arg).to eq([:passed])
     end
   end
 end
