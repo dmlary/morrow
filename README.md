@@ -4,6 +4,8 @@ You will need to have both docker and docker compose installed.
 
 Techincally the code is built into the image, however this is mostly for dependency installation and is immediately layered over with local files via docker compose.
 
+You should really only have to run this if you change versions or update dependencies. 
+
 ```docker build -t morrow .```
 
 
