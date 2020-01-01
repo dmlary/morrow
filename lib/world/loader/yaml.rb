@@ -5,6 +5,15 @@ class World::Loader::Yaml < World::Loader::Base
 
   SUPPORTED_KEYS = %w{ id base components remove link }
 
+  # load_error!
+  #
+  # Raise a clang-style loader error
+  def load_error!(msg, path, yaml_node)
+    line = yaml_node.start_line
+    column = yaml_node.start_column
+    raise "#{path}:#{line}:#{column}: error: #{msg}"
+  end
+
   def load(path: nil, area: 'unknown')
     buf = File.read(path)
 
@@ -13,18 +22,15 @@ class World::Loader::Yaml < World::Loader::Base
     doc = YAML.parse(buf)
 
     unless seq = doc.children[0] and seq.sequence?
-      raise "expected #{path} does not contain the expected YAML sequence"
+      load_error!('not a yaml sequence', path, seq)
     end
 
     seq.children.each do |map|
-      raise "expected mapping at #{path}@#{map.start_line}, got #{map}" unless
-          map.mapping?
+      load_error!('not a yaml mapping', path, map) unless map.mapping?
       definition = map.to_ruby
 
       unknown_keys = definition.keys - SUPPORTED_KEYS
-      unless unknown_keys.empty?
-        warn "unknown keys #{unknown_keys} at #{path}:#{map.start_line}"
-      end
+      load_error!("unknown keys: #{unknown_keys}") unless unknown_keys.empty?
 
       # Create an Array of the various base Entities that will be layered into
       # this Entity
@@ -55,7 +61,11 @@ class World::Loader::Yaml < World::Loader::Base
             config = [ config ]
           end
 
-          Component.find(comp).new(config)
+          begin
+            Component.find(comp).new(config)
+          rescue Exception => ex
+            load_error!(ex, path, map)
+          end
         else
           warn 'skipping unsupported component config at %s:%d: %s' %
               [ path, map.start_line, conf.inspect ]
@@ -66,7 +76,14 @@ class World::Loader::Yaml < World::Loader::Base
       components << MetadataComponent
           .new(source: "#{path}:#{map.start_line}", area: area, base: base)
 
-      remove = (definition['remove'] || []).map(&:to_sym)
+      remove = (definition['remove'] || []).map do |conf|
+        if conf.is_a?(Hash)
+          comp, config = conf.first
+          Component.find(comp).new(config)
+        else
+          conf.to_sym
+        end
+      end
 
       # common arguments for creating an entity
       args = {
