@@ -27,7 +27,7 @@
       long: a red rubber ball is on the floor
 
 - id: spec:mob/leonidas
-  base: [ base:char, base:player ]
+  base: [ 'base:char', 'base:player' ]
   components:
   - keywords:
     - [ leonidas ]
