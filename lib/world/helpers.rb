@@ -50,7 +50,12 @@ module World::Helpers
           if mine.is_a?(Array)
             (mine - other).each do |comp|
               record[:components] <<
-                  { component_name(comp).to_s => comp.get_modified_fields }
+                  { component_name(comp).to_s => comp.to_h }
+            end
+            (other - mine).each do |comp|
+              record[:remove] << {
+                component_name(comp).to_s => comp.to_h
+              }
             end
           else
             next unless mine.save?

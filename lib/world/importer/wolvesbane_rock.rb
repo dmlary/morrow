@@ -118,9 +118,11 @@ class World::Importer::WolvesbaneRock
 
   def import_room(data)
     room = room_entity(data['number'])
+    flags = RoomFlags.decode(data['room_flags'])
     base = ['base:room']
     base << 'base:act/teleporter' if data['tele_targ'] != 0 or
         data['river_speed'] != 0
+    base << 'base:act/mob_limit' if flags.include?(:tunnel)
 
     create_entity(base: base, id: room)
 
@@ -177,6 +179,12 @@ class World::Importer::WolvesbaneRock
         hook = get_components(room, :hook).find { |h| h.event == :on_enter }
         hook.script_config = { skip_if_flying: true, message: message }
       end
+    end
+
+    if data['moblim'] > 0
+      hook = get_components(room, :hook)
+          .find { |h| h.script.include?('mob_limit') }
+      hook.script_config["limit"] = data['moblim']
     end
   end
 

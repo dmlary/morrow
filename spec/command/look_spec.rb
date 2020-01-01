@@ -81,10 +81,13 @@ describe Command::Look do
       end
     end
 
-    context '"look nothing"' do
-      it 'will not call show_obj'
-      it 'will not call show_room'
-      it 'will not call show_char'
+    context '"look <non-existent thing>"' do
+      %i{ show_obj show_room show_char show_contents }.each do |method|
+        it "will not call #{method}" do
+          expect(Command::Look).to_not receive(method)
+          Command.run(leo, 'look doesnotexist')
+        end
+      end
     end
 
     context '"look closed-chest"' do
@@ -106,7 +109,10 @@ describe Command::Look do
     end
 
     context '"look in leonidas"' do
-      it 'will not call show_contents(leo, leo)'
+      it 'will not call show_contents()' do
+        expect(Command::Look).to_not receive(:show_contents)
+        Command.run(leo, 'look in leonidas')
+      end
     end
   end
 

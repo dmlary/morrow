@@ -27,10 +27,12 @@
       long: a red rubber ball is on the floor
 
 - id: spec:mob/leonidas
-  base: base:char
+  base: [ 'base:char', 'base:player' ]
   components:
   - keywords:
     - [ leonidas ]
+  - connection:
+      conn: true    # fake connection so send_to_char works
   - viewable:
       short: Leonidas
       long: Leonidas the Cursed
@@ -156,11 +158,11 @@
       field: strength
       type: delta
       value: -1
-  - affect:
-      component: attributes
-      field: strength
-      type: delta
-      value: -1
+  - hook:
+      event: :will_exit
+      script: spec:script/non-existent
+      script_config:
+        delay: 10
 
 # Entities for use in movement tests
 - id: spec:room/movement

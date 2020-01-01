@@ -23,9 +23,8 @@ module Command::ActWiz
     next "goto <entity>" if arg.empty?
     next "entity not found: #{arg}" unless entity_exists?(arg)
 
-    loc = get_component(arg, :location) and dest = loc.entity
+    dest = get_component(arg, :location)&.entity
     dest ||= arg
-    move_entity(entity: actor, dest: dest)
-    Command.run(actor, 'look')
+    move_entity(entity: actor, dest: dest, look: true)
   end
 end

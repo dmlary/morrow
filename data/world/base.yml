@@ -17,6 +17,7 @@
 - id: base:char
   base: base:template
   components:
+  - animate
   - keywords:
     - [ char ]
   - viewable:
@@ -161,3 +162,31 @@
   components:
   - script: !script |
       remove_component(args[:entity], :teleport)
+
+- id: base:act/mob_limit
+  components:
+  - hook:
+      event: :will_enter
+      script: base:script/mob_limit/will_enter
+      script_config:
+        limit: 2
+
+- id: base:script/mob_limit/will_enter
+  components:
+  - script: !script |
+      # This script will prevent more than config[:limit] mobs from being in
+      # this room at the same time.
+      entity = args[:entity]
+      return unless entity_animate?(entity)
+
+      # count the number of mobs here
+      room = args[:dest]
+      count = entity_contents(room).inject(0) do |c,e|
+        entity_animate?(e) ? c + 1 : c
+      end
+
+      # let 'em in if there's enough space
+      return if count < config['limit']
+
+      send_to_char(char: entity, buf: "It's too crowded for you to fit.\n")
+      return :deny

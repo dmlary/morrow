@@ -63,6 +63,8 @@ module World::ScriptSafeHelpers
     # destination room can also deny entry
     denied = World.fire_hooks(dest, :will_enter,
         entity: entity, src: src, dest: dest)
+    debug("denying move") if denied
+    # XXX teleport denied by will_enter; need to do something with teleport
     return if denied
 
     # move the entity
@@ -285,6 +287,13 @@ module World::ScriptSafeHelpers
     meta.area
   end
 
+  # entity_has_component?
+  #
+  # Check to see if the entity has a specific component
+  def entity_has_component?(entity, component)
+    get_components(entity, component).empty? == false
+  end
+
   # entity_closed?
   #
   # Check if an entity has a ClosableComponent and is closed
@@ -315,12 +324,24 @@ module World::ScriptSafeHelpers
     false
   end
 
+  # entity_animate?
+  #
+  # check if the entity is animate
+  def entity_animate?(entity)
+    entity_has_component?(entity, :animate)
+  end
+
   # entity_short
   #
   # Get the short description for an entity
   def entity_short(entity)
-    view = get_component(entity, ViewableComponent) or return nil
-    view.short
+    get_component(entity, ViewableComponent)&.short
   end
 
+  # entity_desc
+  #
+  # Get the desc description for an entity
+  def entity_desc(entity)
+    get_component(entity, ViewableComponent)&.desc
+  end
 end
