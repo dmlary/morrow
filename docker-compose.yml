@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+    morrow:
+        image: morrow:latest
+        entrypoint: /usr/src/morrow-mud/bin/run-server.rb
+        volumes:
+            - "./:/usr/src/morrow-mud/"
+        ports:
+            - "1234:1234"
