@@ -36,6 +36,11 @@ class ViewableComponent < Component
   field :desc, freeze: true   # character, item description; room desc
 end
 
+# This Entity is animated.  Representing any sort of player or non-player
+# character.  Anything that can move on it's own, perform actions, etc.
+class AnimateComponent < Component
+end
+
 # Entity has been concealed.  Used for hidden/secret doors.  Could also work
 # for items and characters (hide).
 #
@@ -173,7 +178,7 @@ class HookComponent < Component
   # This points at the entity id for the script that should be run
   field :script
 
-  # Optional configuration for :script
+  # Optional configuration for :script.
   field :script_config
 end
 

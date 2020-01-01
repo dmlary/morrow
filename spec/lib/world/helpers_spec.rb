@@ -66,8 +66,14 @@ describe World::Helpers do
     let(:player) do
       player = create_entity(base: [ 'spec:save/base', 'base:race/elf' ])
       remove_component(player, :spawn_point)
+
+      # Add some non-unique components to the player
       add_component(player, AffectComponent.new(field: :wolf))
       add_component(player, AffectComponent.new(field: :bear))
+
+      # Modify a non-unique component we got from the base
+      get_components(player, :hook) .first.script_config['delay'] = :changed
+
       player
     end
     let(:inventory) do
@@ -202,11 +208,16 @@ describe World::Helpers do
       end
 
       context 'script returns :deny' do
+        before(:each) do
+          allow(script).to receive(:call).and_return(:deny)
+        end
         it 'will not move the entity' do
-          expect(script).to receive(:call)
-              .and_return(:deny)
           move_entity(entity: leo, dest: dest)
           expect(entity_location(leo)).to eq(src)
+        end
+        it 'will not issue "look" command' do
+          expect(Command).to_not receive(:run)
+          move_entity(entity: leo, dest: dest)
         end
       end
     end
