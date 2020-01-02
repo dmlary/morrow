@@ -10,6 +10,7 @@ require 'yaml'
 require 'pp'
 require 'eventmachine'
 require 'pry'
+require 'pry-remote'
 require_relative '../lib/world'
 require_relative '../lib/telnet_server'
 require_relative '../lib/web_server'
@@ -29,7 +30,15 @@ end
 Thread.abort_on_exception = true
 
 # Kick off a debugging thread
-Thread.new { World.pry }
+Thread.new do
+  loop do
+    begin
+      World.pry_remote('localhost', 4321)
+    rescue DRb::DRbConnError
+      # noop
+    end
+  end
+end
 
 # In development automatically reload the web server when the source file is
 # modified.  This saves us a lot of headaches.

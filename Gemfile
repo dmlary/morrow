@@ -22,4 +22,8 @@ group :test, :development do
   gem 'pry-stack_explorer'
   gem 'memory_profiler'
   gem 'get_process_mem'
+  gem 'guard'
+  gem 'guard-shell'
+  gem 'foreman'
+  gem 'rake'
 end
