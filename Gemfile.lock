@@ -62,6 +62,7 @@ GEM
     rack (2.0.8)
     rack-protection (2.0.8.1)
       rack
+    rake (12.3.2)
     rb-fsevent (0.10.3)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
@@ -114,6 +115,7 @@ DEPENDENCIES
   pry-remote
   pry-rescue
   pry-stack_explorer
+  rake
   rspec
   rspec-mocks
   sinatra
