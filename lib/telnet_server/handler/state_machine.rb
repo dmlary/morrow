@@ -3,7 +3,7 @@ module TelnetServer::Handler::StateMachine
   class StateAlreadyDefined < Error; end
   class UnknownState < Error; end
   class UnsupportedHandlerType < Error; end
-  
+
   module ClassMethods
     attr_reader :states
 

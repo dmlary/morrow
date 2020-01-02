@@ -20,7 +20,14 @@ module Helpers::Logging
 
   def self.log_exception(ex)
     @logger.error("#{ex.class}: #{ex.message}")
-    ex.backtrace.each { |l| @logger.error("  " << l) }
+    ex.backtrace.each do |line|
+
+      # this is a lazy way to do this, but my god, these traces are long.  This
+      # will work until I have a better solution.
+      break if line.include?('gems/sinatra')
+
+      @logger.error("  " << line)
+    end
     true
   end
 end

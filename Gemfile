@@ -5,6 +5,11 @@ gem 'colorize'
 gem 'facets'
 gem 'parser'    # needed for lib/script.rb
 
+# web stack
+gem 'thin'
+gem 'sinatra'
+gem 'faye-websocket'
+
 group :test do
   gem 'rspec'
   gem 'rspec-mocks'

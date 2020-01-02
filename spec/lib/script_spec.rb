@@ -300,7 +300,10 @@ describe Script do
         # syntax error
         { desc: 'syntax error', code: '1 = 2', expect: 'syntax error' },
 
-    ].each do |desc: nil, code: nil, expect: nil|
+    ].each do |p|
+      desc = p[:desc]
+      code = p[:code]
+      expect = p[:expect]
       context(desc) do
         let(:source) { code }
         include_examples(expect)
