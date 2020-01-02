@@ -7,7 +7,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 module.exports = {
   mode: 'development',
   output: {
-    path: path.resolve(__dirname, 'public')
+    path: path.resolve(__dirname, '../public')
   },
   entry: [
     './src/app.js'
