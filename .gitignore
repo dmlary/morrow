@@ -13,4 +13,8 @@ spec/reports
 .AppleDouble
 .DS_Store
 node_modules
-public/main.js
+
+public/js/
+
+.env.local
+.env.*.local
