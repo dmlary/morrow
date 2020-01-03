@@ -19,5 +19,5 @@
 #   watch(%r{file/path}) { `command(s)` }
 #
 guard :shell do
-  watch(%r{^src/}) { %x{ npm run build } }
+  watch(%r{^src/}) { %x{ bundle exec rake build 2>&1 } }
 end
