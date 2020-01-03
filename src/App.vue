@@ -7,6 +7,14 @@
             <v-icon>mdi-view-list</v-icon>
           </v-list-item-action>
           <v-list-item-content>
+            <v-list-item-title>Entity List</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+        <v-list-item link to="/entity-view">
+          <v-list-item-action>
+            <v-icon>mdi-magnify</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
             <v-list-item-title>Entity Viewer</v-list-item-title>
           </v-list-item-content>
         </v-list-item>

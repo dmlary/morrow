@@ -23,7 +23,13 @@ const routes = [
     path: "/entity-list",
     component: () =>
       import(/* webpackChunkName: "entity-list" */ "../views/EntityList.vue")
+  },
+  {
+    path: "/entity-view",
+    component: () =>
+      import(/* webpackChunkName: "entity-view" */ "@/views/EntityView.vue")
   }
+
 ];
 
 const router = new VueRouter({

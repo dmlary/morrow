@@ -2,6 +2,7 @@ require 'sinatra/base'
 require 'faye/websocket'
 Faye::WebSocket.load_adapter('thin')
 require 'json'
+require 'rack/deflater'
 
 require_relative 'world'
 
@@ -17,6 +18,7 @@ class WebServer < Sinatra::Base
   set :show_exceptions, false
   set :dump_errors, false
 
+  use Rack::Deflater
 
   error do
     ex = env['sinatra.error']

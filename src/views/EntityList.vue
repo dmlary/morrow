@@ -11,13 +11,12 @@
 <script>
 export default {
   data: () => ({
-    entities: ['wolf', 'bear']
+    entities: ["wolf", "bear"]
   }),
   mounted() {
-    var self = this;
-    $.getJSON("/entities", function(data) {
-      self.entities = data;
-    });
+    this.axios
+      .get("entities")
+      .then(response => (this.entities = response.data));
   }
 };
 </script>

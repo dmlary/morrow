@@ -1,11 +1,5 @@
 #!/usr/bin/env ruby
 
-# 2020-01-01: just upgraded to ruby 2.7.0 to get Module.const_source_location,
-# but there are so many deprecation warnings from Pry.  For now, we're
-# disabling those warnings.  This needs to be removed in a few months once gems
-# update.
-$VERBOSE = nil
-
 require 'yaml'
 require 'pp'
 require 'eventmachine'
