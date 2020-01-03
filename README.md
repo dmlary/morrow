@@ -1,5 +1,32 @@
 # morrow-mud
 
+## Requirements
+* ruby 2.6
+* bundler gem
+* npm
+
+## Intstall
+```
+bundle install
+npm install
+```
+
+## Development
+To start the server in development mode:
+
+```
+rake start-dev
+```
+
+This will:
+* start the mud engine
+* start the telnet server (port 1234)
+* start the web server (port 8080)
+* monitor the web-assets for changes, and rebuild them as they're modified
+
+### Other helpful rake tasks
+To attach the debugger to the server, `rake pry`.
+
 ## Docker
 You will need to have both docker and docker compose installed.
 
@@ -17,26 +44,3 @@ You should really only have to run this if you change versions or update depende
 This maps in the local directory in the right place and starts the server on port 1234
 
 ```docker-compose up```
-
-## Project setup
-```
-npm install
-```
-
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
