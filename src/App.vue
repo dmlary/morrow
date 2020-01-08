@@ -1,35 +1,29 @@
 <template>
   <v-app id="app">
-    <v-navigation-drawer v-model="drawer" app clipped>
-      <v-list dense>
-        <v-list-item link to="/entity-list">
-          <v-list-item-action>
-            <v-icon>mdi-view-list</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>Entity List</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-        <v-list-item link to="/entity-view">
-          <v-list-item-action>
-            <v-icon>mdi-magnify</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>Entity Viewer</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-
     <v-app-bar app clipped-left>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <v-toolbar-title>Application</v-toolbar-title>
+      <v-toolbar-title>
+        <span class="font-weight-black">morrow</span>
+        <span class="font-weight-light">mud</span>
+      </v-toolbar-title>
     </v-app-bar>
 
+    <v-navigation-drawer v-model="drawer" app clipped>
+      <v-list dense>
+        <template v-for="item in navagation">
+          <v-list-item :to="item.route" :key="item.route">
+            <v-list-item-action>
+              <v-icon>{{ item.icon }}</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </template>
+      </v-list>
+    </v-navigation-drawer>
     <v-content>
-      <v-container class="fill-height" fluid>
-        <router-view />
-      </v-container>
+      <router-view />
     </v-content>
   </v-app>
 </template>
@@ -41,7 +35,12 @@ export default {
     source: String
   },
   data: () => ({
-    drawer: null
+    drawer: null,
+    navagation: [
+      { route: "/entity-list", title: "Entity List", icon: "mdi-view-list" },
+      { route: "/entity-view", title: "Entity Viewer", icon: "mdi-magnify" },
+      { route: "/settings", title: "Settings", icon: "mdi-settings-box" }
+    ]
   }),
   created() {
     this.$vuetify.theme.dark = true;

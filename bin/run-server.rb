@@ -74,7 +74,7 @@ EventMachine::run do
     EventMachine::PeriodicTimer.new(World::PULSE) { World.update }
 
     Rack::Handler.get('thin')
-        .run(WebServer, signals: false)
+        .run(WebServer, Port: 8000, signals: false)
     TelnetServer.start('0.0.0.0', 1234)
   rescue Exception => ex
     World.log_exception(ex)

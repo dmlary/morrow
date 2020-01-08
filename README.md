@@ -3,6 +3,8 @@
 ## Requirements
 * ruby 2.6
 * bundler gem
+
+### Additional development environment requirements
 * npm
 
 ## Intstall

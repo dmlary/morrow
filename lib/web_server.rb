@@ -26,16 +26,25 @@ class WebServer < Sinatra::Base
     "Exception occurred: #{ex.inspect}"
   end
 
+  before do
+    # XXX dev only to allow node web served content to use ajax to query the
+    # real server.
+    response.headers['Access-Control-Allow-Origin'] = 'http://localhost:5100'
+  end
+
   get '/' do
     send_file File.expand_path('index.html', settings.public_folder)
   end
 
-  get '/entities' do
+  get '/api/v1/entities' do
     content_type :json
-    World.entities.keys.to_json
+    q = Regexp.new(params['q']) if params.has_key?('q')
+    entities = World.entities.keys
+    entities.reject! { |e| e !~ q }
+    entities.to_json
   end
 
-  get '/entity/*' do |id|
+  get '/api/v1/entity/*' do |id|
     halt 404 unless World.entity_exists?(id)
 
     content_type :json
