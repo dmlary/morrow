@@ -37,8 +37,17 @@
           :loading="loading"
           :footer-props="{
             'items-per-page-options': [10, 25, 50, 100, 250, 500, 1000]
-          }"
-        />
+          }">
+          <template v-slot:item="{ item }">
+            <router-link
+              :to="'entity/' + item.entity"
+              tag="tr">
+              <td route to="/">
+                {{ item.entity }}
+              </td>
+            </router-link>
+          </template>
+        </v-data-table>
       </v-card>
     </v-container>
   </div>

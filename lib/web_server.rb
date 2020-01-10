@@ -51,7 +51,8 @@ class WebServer < Sinatra::Base
     out = { entity: id, components: [] }
     World.entity_components(id).flatten.each do |comp|
       out[:components] << {
-        World.component_name(comp) => comp.to_h
+        name: World.component_name(comp),
+        fields: comp.to_h,
       }
     end
     out.to_json

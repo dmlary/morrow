@@ -23,6 +23,11 @@ const routes = [
     path: "/entity-view",
     component: () =>
       import(/* webpackChunkName: "entity-view" */ "@/views/EntityView.vue")
+  },
+  {
+    path: "/entity/:id(.*)",
+    component: () =>
+      import(/* webpackChunkName: "entity" */ "@/views/Entity.vue")
   }
 ];
 

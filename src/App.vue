@@ -4,7 +4,7 @@
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-toolbar-title>
         <span class="font-weight-black">morrow</span>
-        <span class="font-weight-light">mud</span>
+        <span class="font-weight-light">engine</span>
       </v-toolbar-title>
     </v-app-bar>
 
