@@ -30,6 +30,13 @@ class Component
 
     attr_accessor :defaults
 
+    # desc
+    #
+    # Set/get the description of this component.  Will only set the first time.
+    def desc(desc=nil)
+      @desc ||= desc
+    end
+
     # Note that this Component will not be unique on the Entity
     def not_unique
       define_method(:unique?) { false }

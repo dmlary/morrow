@@ -10,7 +10,7 @@ import VueLodash from "vue-lodash";
 
 Vue.config.productionTip = false;
 
-Vue.use(VueLodash, { name: "lodash" });
+Vue.use(VueLodash, { name: "$lodash" });
 
 new Vue({
   store,

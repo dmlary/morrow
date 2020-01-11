@@ -45,17 +45,31 @@ class WebServer < Sinatra::Base
   end
 
   get '/api/v1/entity/*' do |id|
+    content_type :json
+
     halt 404 unless World.entity_exists?(id)
 
-    content_type :json
     out = { entity: id, components: [] }
     World.entity_components(id).flatten.each do |comp|
-      out[:components] << {
+      data = {
         name: World.component_name(comp),
-        fields: comp.to_h,
+        desc: comp.class.desc,
+        id: comp.__id__,
+        fields: {},
       }
+      comp.class.defaults.each do |field,default|
+        data[:fields][field] = { default: default, value: comp[field] }
+      end
+      out[:components] << data
     end
     out.to_json
+  end
+
+  get '/api/v1/component/*' do |name|
+    content_type :json
+
+    comp = Component.find(name) or halt 404
+    { name: name, fields: comp.fields, defaults: comp.defaults }.to_json
   end
 
   get '/ws/:entity' do

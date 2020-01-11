@@ -2,6 +2,37 @@ require 'component'
 require 'yaml'
 
 describe Component do
+  describe '.desc(desc)' do
+    context 'when description is not set' do
+      let(:comp) { Class.new(Component) }
+      context 'with an argument' do
+        it 'will set the description' do
+          comp.instance_eval { desc 'passed' }
+          expect(comp.desc).to eq('passed')
+        end
+      end
+      context 'with no argument' do
+        it 'will return nil' do
+          expect(comp.desc).to eq(nil)
+        end
+      end
+    end
+    context 'when description has been set' do
+      let(:comp) { Class.new(Component) { desc 'passed' } }
+      context 'with an argument' do
+        it 'will not change the description' do
+          comp.desc('changed')
+          expect(comp.desc).to eq('passed')
+        end
+      end
+      context 'with no argument' do
+        it 'will return the description' do
+          expect(comp.desc).to eq('passed')
+        end
+      end
+    end
+  end
+
   describe '.field(name, default: nil, freeze: false)' do
     let(:component) do
       Class.new(Component) do

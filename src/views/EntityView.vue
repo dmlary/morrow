@@ -37,11 +37,10 @@
           :loading="loading"
           :footer-props="{
             'items-per-page-options': [10, 25, 50, 100, 250, 500, 1000]
-          }">
+          }"
+        >
           <template v-slot:item="{ item }">
-            <router-link
-              :to="'entity/' + item.entity"
-              tag="tr">
+            <router-link :to="'entity/' + item.entity" tag="tr">
               <td route to="/">
                 {{ item.entity }}
               </td>
@@ -88,10 +87,7 @@ export default {
     }
   },
   created: function() {
-    this.debounced_fetch_entities = this.lodash.debounce(
-      this.fetch_entities,
-      750
-    );
+    this.debounced_fetch_entities = this._.debounce(this.fetch_entities, 750);
   },
   methods: {
     fetch_entities() {
@@ -106,9 +102,11 @@ export default {
           params: { q: this.search }
         })
         .then(response => {
-          this.entities = response.data.map(id => { return {entity: id } });
+          this.entities = response.data.map(id => {
+            return { entity: id };
+          });
           this.loading = false;
-        })
+        });
     },
     edit_entity(item) {
       this.entity = Object.assign({}, item);

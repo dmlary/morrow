@@ -20,6 +20,15 @@
             </v-list-item-content>
           </v-list-item>
         </template>
+
+        <v-list-item>
+          <v-switch
+            small
+            dense
+            label="Dark Theme"
+            v-model="$vuetify.theme.dark"
+          />
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
     <v-content>
@@ -37,7 +46,6 @@ export default {
   data: () => ({
     drawer: null,
     navagation: [
-      { route: "/entity-list", title: "Entity List", icon: "mdi-view-list" },
       { route: "/entity-view", title: "Entity Viewer", icon: "mdi-magnify" },
       { route: "/settings", title: "Settings", icon: "mdi-settings-box" }
     ]

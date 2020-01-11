@@ -1,34 +1,43 @@
 require_relative 'component'
 
-# This Component is to mark those Entity instances that should not be visible
-# to Systems via EntityManager::View.  This primarily applies to mob & object
-# entities loaded from disk, and used as templates to spawn other Entity
-# instances into the world.
 class ViewExemptComponent < Component
+  desc <<~DESC
+    This Component is to mark those Entity instances that should not be visible
+    to Systems via EntityManager::View.  This primarily applies to mob & object
+    entities loaded from disk, and used as templates to spawn other Entity
+    instances into the world.
+  DESC
   no_save
 end
 
-# Set of keywords a player may use to reference this Entity
 class KeywordsComponent < Component
+  desc 'A set of keywords a player may use to reference this Entity'
   field :words
 end
 
-# maintains a list of entities that are within this component.  Goes in Rooms,
-# and Bags and Characters.
 class ContainerComponent < Component
+  desc <<~DESC
+    maintains a list of entities that are within this component.  Goes in
+    Rooms, and Bags and Characters.
+  DESC
+
   field :contents, default: []    # Array of entity id's
   field :max_volume               # Maximum volume of the container
 end
 
-# Tracks which entity this entity is inside.  If the location of an entity is
-# going to change, this entity must first be removed from the old entity's
-# ContainerComponent#contents Array.
 class LocationComponent < Component
+  desc <<~DESC
+    Tracks which entity this entity is inside.  If the location of an entity is
+    going to change, this entity must first be removed from the old entity's
+    ContainerComponent#contents Array.
+  DESC
+
   field :entity
 end
 
-# This Entity is viewable in the world
 class ViewableComponent < Component
+  desc 'Entity is viewable within the world'
+
   field :format, freeze: true,
       valid: %w{ room object character extra_desc exit }
   field :short, freeze: true  # name, room title
@@ -39,25 +48,32 @@ end
 # This Entity is animated.  Representing any sort of player or non-player
 # character.  Anything that can move on it's own, perform actions, etc.
 class AnimateComponent < Component
+  desc <<~DESC
+    This Entity is animated.  Representing any sort of player or non-player
+    character.  Anything that can move on it's own, perform actions, etc.
+  DESC
 end
 
-# Entity has been concealed.  Used for hidden/secret doors.  Could also work
-# for items and characters (hide).
-#
 # XXX Some time after being revealed, doors should reset.  Maybe in area reset
 # code, or at reveal time, a timer is set to restore the concealed state.
 class ConcealedComponent < Component
+  desc <<~DESC
+    Entity has been concealed.  Used for hidden/secret doors.  Could also work
+    for items and characters (hide).
+  DESC
   field :revealed, default: false, valid: [ true, false ]
 end
 
-# exits from a room, one per-cardinal direction
 class ExitsComponent < Component
+  desc 'Exits from a room; one for each cardinal direction'
   %w{ north south east west up down }.each { |dir| field dir }
 end
 
-# Environmental details for a room/container.  These things impact the entities
-# within the ContainerComponent.contents
 class EnvironmentComponent < Component
+  desc <<~DESC
+    Environmental details for a room/container.  These things impact the
+    entities within the ContainerComponent.contents
+  DESC
 
   # The type of terrain within a room; we default to the forest because TREES!
   field :terrain, valid: %i{ inside city field forest hills mountains
@@ -71,21 +87,24 @@ class EnvironmentComponent < Component
   field :flags, default: []
 end
 
-# Where this Entity leads to, be it a room, or a portal
 class DestinationComponent < Component
+  desc 'Where this Entity leads to, be it a room, or a portal'
+
   field :entity     # entity with a ContainerComponent
 end
 
-# Per-Player Configuration
 class PlayerConfigComponent < Component
+  desc 'Per-Player configuration data'
+
   field :color, default: false
   field :coder, default: false
   field :compact, default: false
   field :send_go_ahead, default: false
 end
 
-# Loader hints used by EntityManager::Loader::* for use when saving
 class MetadataComponent < Component
+  desc 'Loader hints used by EntityManager::Loader::* for use when saving'
+
   no_save
   field :source, freeze: true
   field :area, freeze: true
@@ -93,8 +112,9 @@ class MetadataComponent < Component
   field :base
 end
 
-# Denote an Entity is closable/lockable and their current state
 class ClosableComponent < Component
+  desc 'Denote an Entity is closable/lockable and its current state'
+
   field :closable, default: true
   field :closed, default: true
   field :lockable, default: false
@@ -103,13 +123,14 @@ class ClosableComponent < Component
   field :key    # ref to key Entity
 end
 
-# Spawn entities within this entity's ContainerComponent
 class SpawnPointComponent < Component
+  desc 'Spawn entities within this entity\'s ContainerComponent'
   field :list, default: []
 end
 
-# To schedule the spawning of an Entity within a container Entity
 class SpawnComponent < Component
+  desc 'To schedule the spawning of an Entity within a container Entity'
+
   field :entity               # entity to be spawned
   field :active, default: 0   # number of active entities spawned from point
   field :min, default: 1      # minimum number present after spawning
@@ -118,23 +139,25 @@ class SpawnComponent < Component
   field :next_spawn               # next spawn event; Time instance
 end
 
-# Command queue for characters
 class CommandQueueComponent < Component
+  desc' Command queue for characters'
+
   no_save
   field :queue, clone: false  # Queue instance
   field :blocked_until    # Time that next command can be processed
 end
 
-# Connection for players
 class ConnectionComponent < Component
+  desc 'Connection for players'
   no_save
   field :conn               # TelnetServer::Connection instance
   field :buf, default: ''   # String of pending output
 end
 
-# Used to run scripts when specific events occur in the world.
 #
 class HookComponent < Component
+  desc 'Used to run scripts when specific events occur in the world.'
+
   # due to compositing architecture, we're going to permit multiple hooks
   not_unique
 
@@ -182,9 +205,12 @@ class HookComponent < Component
   field :script_config
 end
 
-# This component holds configuration for a teleporter.  It is used by the
-# teleporter script.
+# XXX this should probably be changed into script arguments
 class TeleporterComponent < Component
+  desc <<~DESC
+    This component holds configuration for a teleporter.  It is used by the
+    teleporter script.
+  DESC
 
   # destination entity
   field :dest
@@ -197,9 +223,12 @@ class TeleporterComponent < Component
   field :look, default: true, valid: [ true, false ]
 end
 
-# This component is added to an entity that will be teleported at a later time.
-# It is added by the teleporter script
 class TeleportComponent < Component
+  desc <<~DESC
+    This component is added to an entity that will be teleported at a later
+    time.  It is added by the teleporter script.
+  DESC
+
   # destination entity
   field :dest, valid: proc { |v| v.nil? or World.entity_exists?(v) }
 
@@ -214,14 +243,17 @@ class TeleportComponent < Component
   field :look, default: true, valid: [ true, false ]
 end
 
-# Component that holds a script
 class ScriptComponent < Component
+  desc 'Component that holds a script'
+
   # Script instance
   field :script, clone: false
 end
 
 ### QUESTIONABLE COMPONENTS ###
 class AffectComponent < Component
+  desc 'affects; not reall in use yet'
+
   not_unique
   field :component    # Component to which this affect applies
   field :field        # field in the component to which this affect applies
