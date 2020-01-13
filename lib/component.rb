@@ -68,7 +68,10 @@ class Component
     #   freeze: if the setter should clone & freeze the value; default false
     #   clone: if the value should be cloned when set; default true
     #   valid: Array or Proc to check validity of values
-    def field(name, default: nil, freeze: false, clone: true, valid: nil)
+    #   type: Value type
+    #   desc: description of the value
+    def field(name, default: nil, freeze: false, clone: true, valid: nil,
+        type: nil, desc: nil)
       name = name.to_sym
       variable = "@#{name}".to_sym
       modified = "@__modified_#{name}".to_sym
@@ -89,7 +92,7 @@ class Component
       define_method('%s=' % name) do |value, set_modified: true|
 
         case valid
-        when Array
+        when Array, Range
           raise InvalidValue,
               "invalid value #{value} for #{self.class}.#{name}" unless
                   valid.include?(value)

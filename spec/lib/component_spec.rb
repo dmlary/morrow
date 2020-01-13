@@ -192,6 +192,29 @@ describe Component do
       end
     end
 
+    context 'when the field is declared with valid: Range' do
+      let(:comp) do
+        Class.new(Component) do
+          field :value, valid: 0..100, default: 100
+        end
+      end
+
+      context 'with a value from the valid Range is set' do
+        it 'will set the value' do
+          c = comp.new
+          c.value = 5
+          expect(c.value).to eq(5)
+        end
+      end
+
+      context 'with a value not in the valid Range' do
+        it 'will raise an error' do
+          c = comp.new
+          expect { c.value = 101 }.to raise_error(Component::InvalidValue)
+        end
+      end
+    end
+
     context 'when the field is declared with valid: Proc' do
       let(:comp) do
         Class.new(Component) do

@@ -54,11 +54,15 @@ class WebServer < Sinatra::Base
       data = {
         name: World.component_name(comp),
         desc: comp.class.desc,
+        unique: comp.unique?,
         id: comp.__id__,
         fields: {},
       }
       comp.class.defaults.each do |field,default|
-        data[:fields][field] = { default: default, value: comp[field] }
+        value = comp[field]
+        out = { default: default, value: comp[field] }
+        out[:entity] = true
+        data[:fields][field] = out
       end
       out[:components] << data
     end
