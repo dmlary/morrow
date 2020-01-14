@@ -34,6 +34,8 @@ Thread.new do
   end
 end
 
+Thread.new { World.pry }
+
 # In development automatically reload the web server when the source file is
 # modified.  This saves us a lot of headaches.
 Thread.new do
@@ -72,7 +74,6 @@ EventMachine::run do
 
   begin
     EventMachine::PeriodicTimer.new(World::PULSE) { World.update }
-
     Rack::Handler.get('thin')
         .run(WebServer, Port: 8000, signals: false)
     TelnetServer.start('0.0.0.0', 1234)

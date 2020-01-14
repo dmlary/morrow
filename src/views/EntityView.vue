@@ -40,11 +40,16 @@
           }"
         >
           <template v-slot:item="{ item }">
-            <router-link :to="'entity/' + item.entity" tag="tr">
-              <td route to="/">
-                {{ item.entity }}
-              </td>
-            </router-link>
+            <v-tooltip bottom fluid transition="fade-transition">
+              <template v-slot:activator="{ on }">
+                <router-link :to="'entity/' + item.entity" tag="tr">
+                  <td v-on="on" route to="/">
+                    {{ item.entity }}
+                  </td>
+                </router-link>
+              </template>
+              <compact-entity :id="item.entity" />
+            </v-tooltip>
           </template>
         </v-data-table>
       </v-card>

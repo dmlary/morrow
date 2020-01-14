@@ -29,7 +29,8 @@ class WebServer < Sinatra::Base
   before do
     # XXX dev only to allow node web served content to use ajax to query the
     # real server.
-    response.headers['Access-Control-Allow-Origin'] = 'http://localhost:5100'
+    response.headers['Access-Control-Allow-Origin'] = 'http://localhost:8080'
+    # response.headers['Access-Control-Allow-Origin'] = request.env['HTTP_REFERER']
   end
 
   get '/' do
@@ -50,7 +51,9 @@ class WebServer < Sinatra::Base
     halt 404 unless World.entity_exists?(id)
 
     out = { entity: id, components: [] }
+
     World.entity_components(id).flatten.each do |comp|
+
       data = {
         name: World.component_name(comp),
         desc: comp.class.desc,
@@ -58,12 +61,14 @@ class WebServer < Sinatra::Base
         id: comp.__id__,
         fields: {},
       }
-      comp.class.defaults.each do |field,default|
-        value = comp[field]
-        out = { default: default, value: comp[field] }
-        out[:entity] = true
-        data[:fields][field] = out
+
+      comp.class.defaults.each do |name, default|
+        data[:fields][name] = {
+          default: default,
+          value: comp[name]
+        }
       end
+
       out[:components] << data
     end
     out.to_json

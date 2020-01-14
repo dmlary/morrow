@@ -171,7 +171,7 @@ class Script
   #
   # simplest approach is to give the yaml
   def to_s
-    to_yaml
+    @source
   end
 
   private

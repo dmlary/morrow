@@ -1,6 +1,13 @@
 <template>
   <v-card min-width="500px">
-    <v-card-title>{{ id }}</v-card-title>
+    <v-card-title>
+      <v-tooltip bottom fluid>
+        <template v-slot:activator="{ on }">
+          <div v-on="on">{{ id }}</div>
+        </template>
+        <compact-entity :id="id" />
+      </v-tooltip>
+    </v-card-title>
     <v-divider />
     <v-card-text>
       <v-row wrap>
@@ -12,7 +19,7 @@
               <template v-slot:activator="{ on }">
                 <div v-on="on">{{ b }}</div>
               </template>
-              <entity-card :id="b" />
+              <compact-entity :id="b" />
             </v-tooltip>
           </v-chip>
         </v-col>
@@ -107,5 +114,8 @@ export default {
 }
 .row.field {
   border-left: 2px solid gray;
+}
+.tooltip.tooltip-after-open {
+  opacity: 1;
 }
 </style>
