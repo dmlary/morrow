@@ -62,10 +62,13 @@ class WebServer < Sinatra::Base
         fields: {},
       }
 
+      mods = comp.get_modified_fields
+
       comp.class.defaults.each do |name, default|
         data[:fields][name] = {
           default: default,
-          value: comp[name]
+          value: comp[name],
+          modified: mods.has_key?(name)
         }
       end
 
