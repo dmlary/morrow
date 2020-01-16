@@ -37,12 +37,10 @@
               <template v-slot:activator="{ on }">
                 <div v-on="on">{{ component.name }}</div>
               </template>
-              <v-card>
-                <v-card-title>{{ component.name }}</v-card-title>
-                <v-card-text>
-                  <pre>{{ component.desc }}</pre>
-                </v-card-text>
-              </v-card>
+              <pre v-if="component.desc.indexOf('\n') != -1">
+                {{ component.desc }}
+              </pre>
+              <div v-else>{{ component.desc }}</div>
             </v-tooltip>
           </v-col>
 
@@ -54,15 +52,35 @@
               v-for="(data, name) in component.fields"
               :key="component.id + name"
             >
-              <v-col class="ml-2" cols="2">{{ name }}</v-col>
+              <v-tooltip top transition="fade-transition">
+                <template v-slot:activator="{ on }">
+                  <v-col v-on="on" class="ml-2" cols="2">{{ name }}</v-col>
+                </template>
+                <div style="white-space: pre;">{{ data.desc }}</div>
+              </v-tooltip>
               <v-col
-                v-if="data.value != data.default"
-                class="primary--text text--lighten-1"
+                :class="
+                  `${
+                    data.modified
+                      ? 'primary--text text--lighten-1'
+                      : 'grey--text'
+                  }`
+                "
               >
-                {{ data.value ? data.value : "nil" }}
-              </v-col>
-              <v-col v-else class="grey--text">
-                {{ data.value ? data.value : "nil" }}
+                <v-tooltip
+                  bottom
+                  fluid
+                  transition="fade-transition"
+                  v-if="data.type === 'entity' && data.value"
+                >
+                  <template v-slot:activator="{ on }">
+                    <div v-on="on">{{ data.value }}</div>
+                  </template>
+                  <compact-entity :id="data.value" />
+                </v-tooltip>
+                <span v-else>
+                  {{ data.value ? data.value : "nil" }}
+                </span>
               </v-col>
             </v-row>
           </v-col>

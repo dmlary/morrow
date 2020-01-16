@@ -63,13 +63,9 @@ class WebServer < Sinatra::Base
       }
 
       mods = comp.get_modified_fields
-
-      comp.class.defaults.each do |name, default|
-        data[:fields][name] = {
-          default: default,
-          value: comp[name],
-          modified: mods.has_key?(name)
-        }
+      comp.class.fields.each do |name,field|
+        data[:fields][name] = field
+            .merge(value: comp[name], modified: mods.has_key?(name))
       end
 
       out[:components] << data

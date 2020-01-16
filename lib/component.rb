@@ -12,7 +12,7 @@ class Component
   # class methods
   class << self
     def inherited(other)
-      other.instance_variable_set(:@defaults, {})
+      other.instance_variable_set(:@fields, {})
       other.instance_variable_set(:@unique, true)
     end
 
@@ -27,8 +27,6 @@ class Component
         raise ArgumentError, "unknown Component, #{name}"
       end
     end
-
-    attr_accessor :defaults
 
     # desc
     #
@@ -83,7 +81,8 @@ class Component
       valid << default if valid.is_a?(Array) and !valid.include?(default)
 
       # set our default value in the class
-      @defaults[name] = default
+      @fields[name] = { desc: desc, type: type, default: default,
+          valid: valid }
 
       # declare the getter
       attr_reader name
@@ -119,18 +118,13 @@ class Component
       end
     end
 
-    # fields
-    #
-    # Return the list of fields defined in this component
-    def fields
-      @defaults.keys
-    end
+    attr_accessor :fields
   end
 
   # Component.new(1,2,3)    # Same number of fields
   # Component.new(a: 1, b: 2)
   def initialize(arg={})
-    fields = self.class.defaults
+    fields = self.class.fields
 
     case arg
     when Array
@@ -146,11 +140,11 @@ class Component
 
       # For hashes, we'll use the setter method for any field provided, but if
       # one wasn't provided, we'll set it to the default
-      fields.each do |key,default|
+      fields.each do |key,field|
         if arg.has_key?(key)
           send("#{key}=", arg[key])
         else
-          send("#{key}=", default, set_modified: false)
+          send("#{key}=", field[:default], set_modified: false)
         end
       end
     else
@@ -189,7 +183,7 @@ class Component
   # Return a Hash of field/value pairs
   #
   def to_h
-    self.class.defaults.keys.inject({}) do |o,field|
+    self.class.fields.inject({}) do |o,(field,_)|
       o[field] = send(field)
       o
     end
@@ -210,7 +204,7 @@ class Component
   #
   # Clone a component
   def clone
-    values = self.class.defaults.keys.map { |k| send(k) }
+    values = self.class.fields.map { |k,_| send(k) }
     self.class.new(values)
   end
 
@@ -219,7 +213,7 @@ class Component
   # Clear all modified flags on this instance.  Used in EntityManager after
   # merging all the base entities into a class.
   def clear_modified!
-    self.class.defaults.each do |k,_|
+    self.class.fields.each do |k,_|
       begin
         remove_instance_variable("@__modified_#{k}")
       rescue NameError
@@ -234,7 +228,7 @@ class Component
   # this will get a Hash containing field & modified value for every field in
   # this component that has been modified.
   def get_modified_fields
-    self.class.defaults.inject({}) do |out,(k,_)|
+    self.class.fields.inject({}) do |out,(k,_)|
       out[k] = send(k) if instance_variable_get("@__modified_#{k}")
       out
     end
@@ -274,7 +268,7 @@ class Component
   def [](key)
     key = key.to_sym unless key.is_a?(Symbol)
     raise KeyError, "key not found: #{key}" unless
-        self.class.fields.include?(key)
+        self.class.fields.has_key?(key)
     send(key)
   end
 
@@ -285,7 +279,7 @@ class Component
   def []=(key, value)
     key = key.to_sym unless key.is_a?(Symbol)
     raise KeyError, "key not found: #{key}" unless
-        self.class.fields.include?(key)
+        self.class.fields.has_key?(key)
     send("#{key}=", value)
   end
 end
