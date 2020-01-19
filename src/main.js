@@ -12,8 +12,11 @@ Vue.use(VueLodash, { name: "$lodash" });
 import EntityCard from "@/components/EntityCard";
 Vue.component(EntityCard.name, EntityCard);
 
-import CompactEntity from "@/components/CompactEntity";
-Vue.component(CompactEntity.name, CompactEntity);
+import ComponentRow from "@/components/ComponentRow";
+Vue.component(ComponentRow.name, ComponentRow);
+
+import EntityWithTooltip from "@/components/EntityWithTooltip";
+Vue.component(EntityWithTooltip.name, EntityWithTooltip);
 
 Vue.config.productionTip = false;
 
