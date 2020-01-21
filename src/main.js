@@ -15,8 +15,14 @@ Vue.component(EntityCard.name, EntityCard);
 import ComponentRow from "@/components/ComponentRow";
 Vue.component(ComponentRow.name, ComponentRow);
 
+import ComponentEditor from "@/components/ComponentEditor";
+Vue.component(ComponentEditor.name, ComponentEditor);
+
 import EntityWithTooltip from "@/components/EntityWithTooltip";
 Vue.component(EntityWithTooltip.name, EntityWithTooltip);
+
+import EntityAutocomplete from "@/components/EntityAutocomplete";
+Vue.component(EntityAutocomplete.name, EntityAutocomplete);
 
 Vue.config.productionTip = false;
 
@@ -27,8 +33,6 @@ new Vue({
   render: h => h(App),
 
   data: {},
-  components: { EntityCard },
-
   router,
   method: {}
 }).$mount("#app");

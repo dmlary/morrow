@@ -6,6 +6,21 @@
         <span class="font-weight-black">morrow</span>
         <span class="font-weight-light">engine</span>
       </v-toolbar-title>
+      <v-spacer />
+
+      <entity-autocomplete
+        width="100px"
+        class="mt-4"
+        v-model="search"
+        @input="show_entity"
+        v-slot="{ item }"
+        placeholder="Entity ID"
+        dense
+      >
+        <entity-with-tooltip :id="item" v-slot="{ on }" left>
+          <span class="entity" v-on="on">{{ item }}</span>
+        </entity-with-tooltip>
+      </entity-autocomplete>
     </v-app-bar>
 
     <v-navigation-drawer v-model="drawer" app clipped>
@@ -45,11 +60,24 @@ export default {
   },
   data: () => ({
     drawer: null,
+    search: "",
     navagation: [
       { route: "/entity-view", title: "Entity Viewer", icon: "mdi-magnify" },
       { route: "/settings", title: "Settings", icon: "mdi-settings-box" }
     ]
   }),
+  methods: {
+    show_entity() {
+      if (this.search == null) {
+        return;
+      }
+      var path = "/entity/" + this.search;
+      if (this.$router.path == path) {
+        return;
+      }
+      this.$router.push(path);
+    }
+  },
   created() {
     this.$vuetify.theme.dark = true;
   }

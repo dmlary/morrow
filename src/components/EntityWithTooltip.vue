@@ -1,12 +1,11 @@
 <template>
-  <v-tooltip bottom transition="fade-transition">
-    <template v-slot:activator="{ on: tooltip }">
-      <router-link :to="'/entity/' + id">
-        <slot v-bind:activator="tooltip">
-          <span class="secondary--text" v-on="tooltip">{{ id }}</span>
-        </slot>
-      </router-link>
+  <v-tooltip :left="left" :bottom="bottom" transition="fade-transition">
+    <template v-slot:activator="{ on }">
+      <slot v-bind:on="on">
+        <span class="entity" v-on="on">{{ id }}</span>
+      </slot>
     </template>
+
     <v-card class="compact-entity" max-width="600px">
       <v-card-text>
         <h3>{{ id }}</h3>
@@ -55,7 +54,10 @@ export default {
     id: {
       type: String,
       required: true
-    }
+    },
+    link: Boolean,
+    left: Boolean,
+    bottom: Boolean
   },
   data: () => ({
     components: []

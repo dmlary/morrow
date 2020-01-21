@@ -9,14 +9,17 @@
             v-for="b in base"
             :key="b"
             :id="b"
-            v-slot="props"
+            v-slot="{ on }"
+            bottom
           >
             <v-chip
               small
               class="mx-1 secondary lighten-1 black--text"
-              v-on="props.activator"
-              >{{ b }}</v-chip
+              v-on="on"
+              @click="$router.push('/entity/' + b)"
             >
+              {{ b }}
+            </v-chip>
           </entity-with-tooltip>
         </v-col>
         <v-col v-else>none</v-col>
