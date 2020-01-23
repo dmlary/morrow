@@ -1,7 +1,10 @@
 import axios from "axios";
 
 export default url => {
-  const client = axios.create({ baseURL: url, json: true });
+  const client = axios.create({
+    baseURL: url,
+    json: true
+  });
 
   return {
     async execute(method, path, data) {
@@ -18,6 +21,9 @@ export default url => {
     },
     get_entities(str) {
       return this.execute("get", `/entities?q=${str}`);
+    },
+    set_component_field(id, name, value) {
+      return this.execute("put", `/component/${id}/${name}`, { value: value });
     }
   };
 };

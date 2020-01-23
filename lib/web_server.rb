@@ -3,10 +3,13 @@ require 'faye/websocket'
 Faye::WebSocket.load_adapter('thin')
 require 'json'
 require 'rack/deflater'
+require 'rack/contrib/post_body_content_type_parser'
 
 require_relative 'world'
 
 class WebServer < Sinatra::Base
+  include Helpers::Logging
+
   # point the public directory at our static content
   set :public_folder, File.join(File.dirname(__FILE__), '../public')
 
@@ -18,7 +21,12 @@ class WebServer < Sinatra::Base
   set :show_exceptions, false
   set :dump_errors, false
 
+  configure do
+    enable :cross_origin
+  end
+
   use Rack::Deflater
+  use Rack::PostBodyContentTypeParser
 
   error do
     ex = env['sinatra.error']
@@ -31,6 +39,14 @@ class WebServer < Sinatra::Base
     # real server.
     response.headers['Access-Control-Allow-Origin'] = 'http://localhost:8080'
     # response.headers['Access-Control-Allow-Origin'] = request.env['HTTP_REFERER']
+  end
+
+  options "*" do
+    response.headers["Allow"] = "GET,PUT,POST,DELETE,OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, X-User-Email, X-Auth-Token"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    200
   end
 
   get '/' do
@@ -78,6 +94,28 @@ class WebServer < Sinatra::Base
 
     comp = Component.find(name) or halt 404
     { name: name, fields: comp.fields, defaults: comp.defaults }.to_json
+  end
+
+  put '/api/v1/component/:id/:field' do |id,field|
+    content_type :json
+
+    comp = begin
+      ObjectSpace._id2ref(id.to_i)
+    rescue Exception
+      return 404
+    end
+
+    return 404 unless comp.kind_of?(Component)
+
+    begin
+      comp[field] = params["value"]
+    rescue KeyError
+      return 404
+    rescue Exception => ex
+      return 422, ex.message
+    end
+
+    return 200
   end
 
   get '/ws/:entity' do

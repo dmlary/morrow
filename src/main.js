@@ -34,8 +34,7 @@ new Vue({
   vuetify,
   axios,
   render: h => h(App),
-
-  data: {},
   router,
+  data: {},
   method: {}
 }).$mount("#app");

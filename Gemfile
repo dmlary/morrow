@@ -9,6 +9,7 @@ gem 'parser'    # needed for lib/script.rb
 gem 'thin'
 gem 'sinatra'
 gem 'faye-websocket'
+gem 'rack-contrib'  # auto-parse json content into params
 
 group :test do
   gem 'rspec'
