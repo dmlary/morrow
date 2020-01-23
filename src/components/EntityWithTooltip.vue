@@ -72,22 +72,17 @@ export default {
       return metadata ? metadata.fields.area.value : null;
     }
   },
-  mounted: function() {
-    this.get_entity(this.id).then(response => {
-      this.components = response.data.components.sort((a, b) =>
-        a.name > b.name ? 1 : -1
-      );
-    });
+  async created() {
+    var data = await this.$morrow.get_entity(this.id);
+    this.components = data.components.sort((a, b) =>
+      a.name > b.name ? 1 : -1
+    );
   },
   methods: {
     get_component(name) {
       return this._.find(this.components, function(comp) {
         return comp.name == name;
       });
-    },
-    get_entity(id) {
-      var url = process.env.VUE_APP_BACKEND_URL + "/entity/";
-      return this.axios.get(url + id);
     }
   }
 };

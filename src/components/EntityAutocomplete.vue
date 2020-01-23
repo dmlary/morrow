@@ -55,7 +55,7 @@ export default {
     }
   },
   methods: {
-    fetch_entities(val) {
+    async fetch_entities(val) {
       if (val == null || val.length < 3) {
         this.loading = false;
         this.hint = "Minimum of 3 characters";
@@ -66,22 +66,12 @@ export default {
         return;
       }
 
-      this.axios
-        .get(process.env.VUE_APP_BACKEND_URL + "/entities", {
-          params: { q: val }
-        })
-        .then(response => {
-          this.entities = response.data;
-          this.loading = false;
+      this.entities = await this.$morrow.get_entities(val);
+      if (this.entities.length == 0) {
+        this.error_msg = "No matches found";
+      }
 
-          if (this.entities.length == 0) {
-            this.error_msg = "No matches found";
-          }
-        })
-        .catch(error => {
-          console.log(error);
-          this.error_msg = error;
-        });
+      this.loading = false;
     }
   }
 };

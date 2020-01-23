@@ -26,6 +26,9 @@ Vue.component(EntityAutocomplete.name, EntityAutocomplete);
 
 Vue.config.productionTip = false;
 
+import morrow from "@/plugins/morrow";
+Vue.use(morrow, { url: process.env.VUE_APP_BACKEND_URL });
+
 new Vue({
   store,
   vuetify,
