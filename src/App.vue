@@ -83,3 +83,10 @@ export default {
   }
 };
 </script>
+
+<style>
+/* this doesn't seem to be working :-/ */
+.v-tooltip_content {
+  opacity: 1 !important;
+}
+</style>

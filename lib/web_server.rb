@@ -21,10 +21,6 @@ class WebServer < Sinatra::Base
   set :show_exceptions, false
   set :dump_errors, false
 
-  configure do
-    enable :cross_origin
-  end
-
   use Rack::Deflater
   use Rack::PostBodyContentTypeParser
 
@@ -32,6 +28,12 @@ class WebServer < Sinatra::Base
     ex = env['sinatra.error']
     World.log_exception(ex)
     "Exception occurred: #{ex.inspect}"
+  end
+
+  # XXX here is all sorts of CORS shit we really don't understand.  This needs
+  # to be cleaned up and implemented the correct way.
+  configure do
+    enable :cross_origin
   end
 
   before do

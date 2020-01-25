@@ -1,39 +1,164 @@
 <template>
-  <v-card min-width="500px">
-    <v-card-title>{{ id }}</v-card-title>
-    <v-card-text>
-      <v-row wrap>
-        <v-col cols="12" sm="3" md="2" xl="1">base entities</v-col>
-        <v-col v-if="base.length > 0">
-          <entity-with-tooltip
-            v-for="b in base"
-            :key="b"
-            :id="b"
-            v-slot="{ on }"
-            bottom
-          >
-            <v-chip
-              small
-              class="mx-1 secondary lighten-1 black--text"
-              v-on="on"
-              @click="$router.push('/entity/' + b)"
-            >
-              {{ b }}
-            </v-chip>
-          </entity-with-tooltip>
-        </v-col>
-        <v-col v-else>none</v-col>
-      </v-row>
-      <v-divider />
-      <template v-for="component in components">
-        <component-row
-          class="component"
-          :component="component"
-          :key="component.id"
+  <div>
+    <v-card min-width="500px">
+      <v-card-title>
+        {{ id }}
+        <v-spacer></v-spacer>
+        <v-text-field
+          dense
+          v-model="search"
+          append-icon="mdi-filter-outline"
+          label="filter"
+          single-line
+          hide-details
+          clearable
         />
-      </template>
-    </v-card-text>
-  </v-card>
+      </v-card-title>
+
+      <v-card-text>
+        <v-data-table
+          :headers="headers"
+          :items="component_fields"
+          item-key="_key"
+          group-by="_comp_id"
+          :hide-default-footer="true"
+          :hide-default-header="true"
+          :disable-pagination="true"
+          :disable-sort="true"
+          :search="search"
+          dense
+        >
+          <template #group.header="{ group: comp_id, toggle: toggle }">
+            <td colspan="3" @click="toggle()">
+              <v-tooltip top transition="fade-transition">
+                <template v-slot:activator="{ on }">
+                  <span v-on="on">
+                    {{ components[comp_id].name }}
+                  </span>
+                </template>
+                {{ components[comp_id].desc }}
+              </v-tooltip>
+            </td>
+          </template>
+
+          <template #item._field="{ item }">
+            <v-tooltip top transition="fade-transition">
+              <template v-slot:activator="{ on }">
+                <span v-on="on">
+                  {{ item._field }}
+                </span>
+              </template>
+              {{ item.desc }}
+            </v-tooltip>
+          </template>
+
+          <template #item.value="{ item }">
+            <div v-if="item.value instanceof Array">
+              <ul>
+                <li
+                  v-for="(value, index) in item.value"
+                  :key="item.key + '[' + index + ']'"
+                >
+                  <router-link
+                    v-if="item.type[0] === 'entity'"
+                    :to="'/entity/' + value"
+                  >
+                    <entity-with-tooltip bottom :id="value" />
+                  </router-link>
+                  <span v-else>
+                    {{ value }}
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <div v-else-if="item.value instanceof Object">
+              TODO Object: {{ item.value }}
+            </div>
+            <div v-else>
+              <router-link
+                v-if="item.type === 'entity' && item.value"
+                :to="'/entity/' + item.value"
+              >
+                <entity-with-tooltip bottom :id="item.value" />
+              </router-link>
+              <span v-else>
+                {{ item.value }}
+              </span>
+            </div>
+          </template>
+
+          <template #item.actions="{ item }">
+            <div style="white-space:nowrap">
+              <v-tooltip top transition="fade-transition">
+                <template v-slot:activator="{ on }">
+                  <v-icon small v-on="on" @click="edit_field(item)"
+                    >mdi-pencil-outline</v-icon
+                  >
+                </template>
+                edit
+              </v-tooltip>
+
+              <v-tooltip top transition="fade-transition">
+                <template v-slot:activator="{ on }">
+                  <v-icon small v-on="on">mdi-rotate-left</v-icon>
+                </template>
+                set to default
+              </v-tooltip>
+
+              <v-tooltip top transition="fade-transition">
+                <template v-slot:activator="{ on }">
+                  <v-icon
+                    small
+                    v-on="on"
+                    @click="set_field(item._comp_id, item._field, item.default)"
+                  >
+                    mdi-close
+                  </v-icon>
+                </template>
+                clear
+              </v-tooltip>
+            </div>
+          </template>
+        </v-data-table>
+      </v-card-text>
+    </v-card>
+
+    <v-dialog v-model="edit.active" max-width="500px">
+      <v-card>
+        <v-card-title>
+          {{ edit.name }}
+        </v-card-title>
+
+        <v-card-subtitle>
+          {{ edit.desc }}
+        </v-card-subtitle>
+
+        <v-card-text>
+          <entity-autocomplete
+            v-if="edit.type === 'entity'"
+            v-model="edit.value"
+          />
+          <v-input v-else v-model="edit.value" />
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            class="primary"
+            text
+            @click="set_field(edit.comp_id, edit.field, edit.value)"
+          >
+            Save
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar v-model="snack" :timeout="3000" :color="snack_color">
+      {{ snack_text }}
+      <v-btn text @click="snack = false">Close</v-btn>
+    </v-snackbar>
+  </div>
 </template>
 
 <script>
@@ -46,7 +171,18 @@ export default {
     }
   },
   data: () => ({
-    components: []
+    headers: [
+      { text: "field", value: "_field" },
+      { text: "value", value: "value" },
+      { text: "actions", value: "actions" }
+    ],
+    components: {},
+    component_fields: [],
+    edit: { active: false },
+    snack: false,
+    snack_color: "info",
+    snack_text: "",
+    search: ''
   }),
   computed: {
     base: function() {
@@ -54,15 +190,50 @@ export default {
       return metadata ? metadata.fields.base.value : [];
     }
   },
-  mounted: function() {
-    var url = process.env.VUE_APP_BACKEND_URL + "/entity/" + this.id;
-    this.axios.get(url).then(response => {
-      this.components = response.data.components.sort((a, b) =>
-        a.name > b.name ? 1 : -1
-      );
+  mounted: async function() {
+    var entity = await this.$morrow.get_entity(this.id);
+    var components = entity.components.sort((a, b) => {
+      return a.name > b.name ? 1 : -1;
+    });
+
+    components.forEach(comp => {
+      this.components[comp.id] = comp;
+      for (let name of Object.keys(comp.fields)) {
+        let field = comp.fields[name];
+        this.component_fields.push(
+          this._.merge(field, {
+            _comp_id: comp.id,
+            _comp_name: comp.name,
+            _key: comp.id + "." + name,
+            _field: name
+          })
+        );
+      }
     });
   },
   methods: {
+    edit_field(field) {
+      this.edit.comp_id = field._comp_id;
+      this.edit.field = field._field;
+      this.edit.value = field.value;
+      this.edit.name = field._comp_name + "." + field._field;
+      this.edit.desc = field.desc;
+      this.edit.type = field.type;
+      this.edit.active = true;
+    },
+
+    set_field(comp_id, field, value) {
+      this.$morrow.set_component_field(comp_id, field, value).then(() => {
+        this.snack = true;
+        this.snack_color = "success";
+        this.snack_text = "Field updated";
+        this.edit.active = false;
+        this.components[comp_id].fields[field].value = value;
+      });
+    },
+    open() {
+      console.log("opened");
+    },
     get_component(name) {
       return this._.find(this.components, function(comp) {
         return comp.name == name;
