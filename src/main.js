@@ -12,22 +12,17 @@ Vue.use(VueLodash, { name: "$lodash" });
 import EntityCard from "@/components/EntityCard";
 Vue.component(EntityCard.name, EntityCard);
 
-import ComponentRow from "@/components/ComponentRow";
-Vue.component(ComponentRow.name, ComponentRow);
-
-import ComponentEditor from "@/components/ComponentEditor";
-Vue.component(ComponentEditor.name, ComponentEditor);
-
 import EntityWithTooltip from "@/components/EntityWithTooltip";
 Vue.component(EntityWithTooltip.name, EntityWithTooltip);
 
 import EntityAutocomplete from "@/components/EntityAutocomplete";
 Vue.component(EntityAutocomplete.name, EntityAutocomplete);
 
-Vue.config.productionTip = false;
 
 import morrow from "@/plugins/morrow";
 Vue.use(morrow, { url: process.env.VUE_APP_BACKEND_URL });
+
+Vue.config.productionTip = false;
 
 new Vue({
   store,

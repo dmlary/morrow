@@ -15,14 +15,9 @@ const routes = [
     component: () => import("@/views/Settings.vue")
   },
   {
-    path: "/entity-view",
-    component: () =>
-      import(/* webpackChunkName: "entity-view" */ "@/views/EntityView.vue")
-  },
-  {
     path: "/entity/:id(.*)",
     component: () =>
-      import(/* webpackChunkName: "entity" */ "@/views/Entity.vue")
+      import(/* webpackChunkName: "entity-view" */ "@/views/EntityView.vue")
   }
 ];
 

@@ -62,7 +62,6 @@ export default {
     drawer: null,
     search: "",
     navagation: [
-      { route: "/entity-view", title: "Entity Viewer", icon: "mdi-magnify" },
       { route: "/settings", title: "Settings", icon: "mdi-settings-box" }
     ]
   }),

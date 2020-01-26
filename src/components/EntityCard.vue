@@ -169,7 +169,7 @@
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snack" :timeout="3000" :color="snack_color">
+    <v-snackbar top v-model="snack" :timeout="3000" :color="snack_color">
       {{ snack_text }}
       <v-btn text @click="snack = false">Close</v-btn>
     </v-snackbar>
@@ -229,6 +229,11 @@ export default {
     });
   },
   methods: {
+    show_snack(color, msg) {
+      this.snack_color = color;
+      this.snack_text = msg;
+      this.snack = true;
+    },
     edit_field(field) {
       this.edit.comp_id = field._comp_id;
       this.edit.field = field._field;
@@ -240,13 +245,15 @@ export default {
     },
 
     set_field(comp_id, field, value) {
-      this.$morrow.set_component_field(comp_id, field, value).then(() => {
-        this.snack = true;
-        this.snack_color = "success";
-        this.snack_text = "Field updated";
-        this.edit.active = false;
-        this.components[comp_id].fields[field].value = value;
-      });
+      this.$morrow.set_component_field(comp_id, field, value)
+          .then(() => {
+            this.show_snack("success", "Field updated");
+            this.edit.active = false;
+            this.components[comp_id].fields[field].value = value;
+          })
+          .catch((e) => {
+            this.show_snack("error", e.response.data);
+          });
     },
     open() {
       console.log("opened");
