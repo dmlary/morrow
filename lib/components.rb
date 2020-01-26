@@ -90,7 +90,7 @@ class EnvironmentComponent < Component
       desc: 'Type of terrain within a room'
 
 
-  field :light, valid: 0..100, default: 100,
+  field :light, type: Integer, valid: 0..100, default: 100,
       desc: 'Amount of light in a room as a percent; not in use'
 
   field :flags, default: [], type: [Symbol],
@@ -163,7 +163,7 @@ class SpawnComponent < Component
       desc: 'minimum number present after spawning'
   field :max, default: 1, type: Integer,
       desc: 'maximum number that can be active at one time'
-  field :frequency, default: 300, type: Numeric,
+  field :frequency, default: 300, type: Integer,
       desc: 'seconds between spawn events'
   field :next_spawn, type: Time,
       desc: 'next spawn event; Time instance'

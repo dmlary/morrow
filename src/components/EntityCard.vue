@@ -138,11 +138,26 @@
             v-if="edit.type === 'entity'"
             v-model="edit.value"
           />
-          <v-input v-else v-model="edit.value" />
+          <v-text-field
+            v-else-if="edit.type === 'Integer'"
+            v-model.number="edit.value"
+            type="number"
+          />
+          <v-textarea
+            v-else-if="typeof(edit.value) === 'string'
+                && edit.value.indexOf('\n') != -1"
+            v-model="edit.value"
+            auto-grow
+            autofocus
+            filled
+            counter
+          />
+          <v-text-field v-else v-model="edit.value" />
         </v-card-text>
 
         <v-card-actions>
           <v-spacer />
+          <v-btn text @click="edit.active = false">Cancel</v-btn>
           <v-btn
             class="primary"
             text
@@ -182,7 +197,9 @@ export default {
     snack: false,
     snack_color: "info",
     snack_text: "",
-    search: ''
+    search: '',
+    rules: {
+    }
   }),
   computed: {
     base: function() {

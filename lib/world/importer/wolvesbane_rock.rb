@@ -133,7 +133,7 @@ class World::Importer::WolvesbaneRock
 
     view = get_component!(room, :viewable)
     view.short = data['name']
-    view.desc  = data['description'].chomp.chomp
+    view.desc  = data['description'].chomp.chomp.gsub(/\r/, '')
 
     env = get_component!(room, :environment)
     env.flags = RoomFlags.decode(data['room_flags'])
