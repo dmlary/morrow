@@ -46,12 +46,10 @@ export default {
   watch: {
     value(v) {
       if (!this.entities.includes(v)) { this.entities = [ v ] }
-      console.log("value", v, this.entities);
     }
   },
   methods: {
     do_search(v) {
-      console.log("search", { value: this.value, search: v })
 
       /* with issue https://github.com/vuetifyjs/vuetify/issues/9489
        * we need to jump through a lot of hoops to prevent an infinite loop.
