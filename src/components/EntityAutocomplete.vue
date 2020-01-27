@@ -1,15 +1,17 @@
 <template>
   <v-autocomplete
     :value="value"
-    @input="$emit('input', $event)"
     :dense="dense"
     :items="entities"
-    :search-input.sync="search"
     :loading="loading"
     :error-messages="error_msg"
-    :hint="search && search.length < 3 ? 'Minimum of 3 characters' : ''"
+    :hint="hint"
     :label="label"
     :placeholder="placeholder"
+    :append-outer-icon="appendOuterIcon"
+    @input="$emit('input', $event)"
+    @click:append-outer="$emit('click:append-outer', $event)"
+    @update:search-input="do_search"
     clearable
     hide-no-data
   >
@@ -28,49 +30,61 @@ export default {
     value: String,
     label: String,
     placeholder: String,
-    dense: Boolean
+    dense: Boolean,
+    appendOuterIcon: String
   },
   data: () => ({
     entities: [],
-    search: null,
     loading: false,
     error_msg: null,
     hint: null
   }),
   created: function() {
     this.debounced_fetch_entities = this._.debounce(this.fetch_entities, 450);
-    if (this.value) {
-      this.entities = [this.value];
-    }
+    if (this.value) { this.entities.push(this.value) }
   },
   watch: {
-    search(val) {
-      if (this.search == null) {
-        this.entities = [];
-      } else if (this.value != this.search) {
-        this.loading = true;
-        this.error_msg = null;
-        this.debounced_fetch_entities(val);
-      }
+    value(v) {
+      if (!this.entities.includes(v)) { this.entities = [ v ] }
+      console.log("value", v, this.entities);
     }
   },
   methods: {
-    async fetch_entities(val) {
-      if (val == null || val.length < 3) {
+    do_search(v) {
+      console.log("search", { value: this.value, search: v })
+
+      /* with issue https://github.com/vuetifyjs/vuetify/issues/9489
+       * we need to jump through a lot of hoops to prevent an infinite loop.
+       * Basically whenever we update the items, the v-autocomplete is going to
+       * fire a @update:search-input, which is going to cause us to update the
+       * items again starting the whole cycle over again.
+       *
+       * The only way I've seen to avoid this is to not do anything if the
+       * search term matches the value.  There's something more going on here,
+       * but it works for now. */
+      if (this.value == v) {
         this.loading = false;
+        this.error_msg = null;
+        return;
+      }
+      if (v == null || v.length < 3) {
+        this.loading = false;
+        this.error_msg = null;
         this.hint = "Minimum of 3 characters";
         return;
       }
 
-      if (val.length < 3) {
-        return;
-      }
+      this.loading = true;
+      this.error_msg = null;
+      this.debounced_fetch_entities(v);
+    },
+    async fetch_entities(val) {
+      this.hint = null;
 
       this.entities = await this.$morrow.get_entities(val);
       if (this.entities.length == 0) {
         this.error_msg = "No matches found";
       }
-
       this.loading = false;
     }
   }

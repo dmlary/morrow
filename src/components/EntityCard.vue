@@ -134,25 +134,11 @@
         </v-card-subtitle>
 
         <v-card-text>
-          <entity-autocomplete
-            v-if="edit.type === 'entity'"
+          <component-field-input
             v-model="edit.value"
+            :type="edit.type"
+            @keyup.enter="console.log('submit')"
           />
-          <v-text-field
-            v-else-if="edit.type === 'Integer'"
-            v-model.number="edit.value"
-            type="number"
-          />
-          <v-textarea
-            v-else-if="typeof(edit.value) === 'string'
-                && edit.value.indexOf('\n') != -1"
-            v-model="edit.value"
-            auto-grow
-            autofocus
-            filled
-            counter
-          />
-          <v-text-field v-else v-model="edit.value" />
         </v-card-text>
 
         <v-card-actions>
