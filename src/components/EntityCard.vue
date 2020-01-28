@@ -137,7 +137,8 @@
           <component-field-input
             v-model="edit.value"
             :type="edit.type"
-            @keyup.enter="console.log('submit')"
+            :options="edit.options"
+            @keyup.enter="set_field(edit.comp_id, edit.field, edit.value)"
           />
         </v-card-text>
 
@@ -227,6 +228,7 @@ export default {
       this.edit.name = field._comp_name + "." + field._field;
       this.edit.desc = field.desc;
       this.edit.type = field.type;
+      this.edit.options = field.valid instanceof Array ? field.valid : null;
       this.edit.active = true;
     },
 

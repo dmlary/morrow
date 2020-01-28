@@ -1,7 +1,20 @@
 <template>
   <div class="component-field-input">
+    <v-radio-group
+      v-if="options"
+      :value="value"
+      @change="$emit('input', $event)"
+      column
+    >
+      <v-radio
+        v-for="(v, index) in options"
+        :key="'option-' + index"
+        :label="v"
+        :value="v"
+      />
+    </v-radio-group>
     <entity-autocomplete
-      v-if="type === 'entity'"
+      v-else-if="type === 'entity'"
       v-model="local_value"
       v-on="on"
       :append-outer-icon="appendOuterIcon"
@@ -42,6 +55,27 @@
         @keyup.enter="add_array_value()"
       />
     </template>
+    <template v-else-if="local_value instanceof Object">
+      <v-text-field
+        v-for="(v, k) in local_value"
+        :key="'obj-' + k"
+        :label="k"
+        :value="v"
+        :autofocus="focused_prop === k"
+        ref="obj_prop"
+        @input="local_value[k] = $event; $emit('input', local_value)"
+        append-outer-icon="mdi-delete-outline"
+        @click:append-outer="$delete(local_value, k); $emit('input', local_value)"
+      />
+      <v-text-field
+        label="New Property"
+        v-model="new_value"
+        append-outer-icon="mdi-plus-box-outline"
+        @click:append-outer="add_obj_prop()"
+        @keyup.enter="add_obj_prop()"
+        hint="Enter a name for the new property"
+      />
+    </template>
 
     <v-text-field
       v-else
@@ -58,6 +92,7 @@ export default {
   props: {
     value: { required: true },
     type: { required: true },
+    options: null,
     appendOuterIcon: String
   },
   data: function() {
@@ -69,7 +104,8 @@ export default {
         change: (ev) => { this.$emit('change', ev) },
         keyup: (ev) => { this.$emit('keyup', ev) },
         "click:append-outer": (ev) => { this.$emit("click:append-outer", ev) }
-      }
+      },
+      focused_prop: null
     };
   },
   watch: {
@@ -80,6 +116,12 @@ export default {
   methods: {
     add_array_value: function() {
       this.local_value.push(this.new_value);
+      this.new_value = null;
+      this.$emit('input', this.local_value);
+    },
+    add_obj_prop: function() {
+      this.local_value[this.new_value] = null;
+      this.focused_prop = this.new_value;
       this.new_value = null;
       this.$emit('input', this.local_value);
     }
