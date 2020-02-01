@@ -15,7 +15,6 @@ module World
 
   extend ::Helpers::Logging
 
-
   @entity_manager = EntityManager.new
   @systems = []
 
@@ -30,6 +29,7 @@ module World
     attr_reader :exceptions
     attr_reader :entity_manager
     alias em entity_manager   # shortcut for my sanity
+
     def_delegators :@entity_manager, :entities,
         :add_component, :remove_component, :get_component, :get_components,
         :get_view
@@ -151,6 +151,15 @@ module World
       @update_index += 1
       @update_index = 0 if @update_index == @update_time.size
       true
+    end
+
+    # log_exception
+    #
+    # Log an exception to the log, and store it for inspection if we're running
+    # in development.
+    def log_exception(ex)
+      ::Helpers::Logging.log_exception(ex)
+      exceptions << ex
     end
   end
 end

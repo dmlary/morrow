@@ -2,6 +2,37 @@ require 'component'
 require 'yaml'
 
 describe Component do
+  describe '.desc(desc)' do
+    context 'when description is not set' do
+      let(:comp) { Class.new(Component) }
+      context 'with an argument' do
+        it 'will set the description' do
+          comp.instance_eval { desc 'passed' }
+          expect(comp.desc).to eq('passed')
+        end
+      end
+      context 'with no argument' do
+        it 'will return nil' do
+          expect(comp.desc).to eq(nil)
+        end
+      end
+    end
+    context 'when description has been set' do
+      let(:comp) { Class.new(Component) { desc 'passed' } }
+      context 'with an argument' do
+        it 'will not change the description' do
+          comp.desc('changed')
+          expect(comp.desc).to eq('passed')
+        end
+      end
+      context 'with no argument' do
+        it 'will return the description' do
+          expect(comp.desc).to eq('passed')
+        end
+      end
+    end
+  end
+
   describe '.field(name, default: nil, freeze: false)' do
     let(:component) do
       Class.new(Component) do
@@ -157,6 +188,29 @@ describe Component do
         it 'will raise an error' do
           c = comp.new
           expect { c.value = :fail }.to raise_error(Component::InvalidValue)
+        end
+      end
+    end
+
+    context 'when the field is declared with valid: Range' do
+      let(:comp) do
+        Class.new(Component) do
+          field :value, valid: 0..100, default: 100
+        end
+      end
+
+      context 'with a value from the valid Range is set' do
+        it 'will set the value' do
+          c = comp.new
+          c.value = 5
+          expect(c.value).to eq(5)
+        end
+      end
+
+      context 'with a value not in the valid Range' do
+        it 'will raise an error' do
+          c = comp.new
+          expect { c.value = 101 }.to raise_error(Component::InvalidValue)
         end
       end
     end

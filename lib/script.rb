@@ -167,6 +167,13 @@ class Script
     Sandbox.instance_exec(config: config, args: args, &@proc)
   end
 
+  # to_s
+  #
+  # simplest approach is to give the yaml
+  def to_s
+    @source
+  end
+
   private
 
   # safe!

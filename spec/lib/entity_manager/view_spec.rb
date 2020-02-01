@@ -8,7 +8,7 @@ describe EntityManager::View do
       any:  any.map { |c| em.send(:add_component_type, c) },
       excl: excl.map { |c| em.send(:add_component_type, c) }
     }
-    EntityManager::View.new(params)
+    EntityManager::View.new(**params)
   end
 
   let(:req_a) { Class.new(Component) }

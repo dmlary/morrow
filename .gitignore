@@ -12,3 +12,9 @@ spec/reports
 .*.sw[a-z]
 .AppleDouble
 .DS_Store
+node_modules
+
+public/js/
+
+.env.local
+.env.*.local

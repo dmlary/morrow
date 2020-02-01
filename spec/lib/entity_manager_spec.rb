@@ -38,17 +38,17 @@ describe EntityManager do
 
     context 'by class' do
       let(:comp_arg) { comp }
-      include_examples next_include, p
+      include_examples next_include, **p
     end if types.include?(:class) or types.empty?
 
     context 'by instance' do
       let(:comp_arg) { comp_instance }
-      include_examples next_include, p
+      include_examples next_include, **p
     end if types.include?(:instance) or types.empty?
 
     context 'by name' do
       let(:comp_arg) { comp_name }
-      include_examples next_include, p
+      include_examples next_include, **p
     end if types.include?(:name) or types.empty?
   end
 

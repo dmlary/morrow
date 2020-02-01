@@ -249,7 +249,7 @@ class EntityManager
     end
 
     # New view, let's update it for every known entity in the system
-    view = View.new(args)
+    view = View.new(**args)
     entities.each { |entity,comps| view.update!(entity, comps) }
     @views[args] = view
   end

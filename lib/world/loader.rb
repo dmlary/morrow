@@ -143,7 +143,7 @@ class World::Loader
   def handle_task(task, arg)
     case task
     when :create_entity
-      try_create_entity(arg)
+      try_create_entity(**arg)
     when :link
       try_link_entity(arg)
     else
