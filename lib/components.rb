@@ -241,11 +241,13 @@ class TeleporterComponent < Component
   field :dest, type: :entity, desc: 'destination of this teleporter'
 
   field :delay, type: Range, default: 10..10, desc: <<~DESC
-    Amount of time in seconds before the victim will be teleported.
+    Amount of time in seconds before the victim will be teleported.  This may
+    be a Range or a Numeric
 
     Examples:
-      delay = 0..0    # teleport "immediately"
-      delay = 10..10  # teleport in 10 seconds
+      delay = 0       # teleport "immediately"
+      delay = 0.25    # teleport "immediately" also, but as a Float
+      delay = 10      # teleport in 10 seconds
       delay = 5..15   # teleport in a random number of seconds between 5 & 15
   DESC
 
