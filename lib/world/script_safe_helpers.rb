@@ -68,8 +68,8 @@ module World::ScriptSafeHelpers
         [v, w]
       end
 
-      return :full if max_vol && vol > max_vol
-      return :full if max_weight && weight > max_weight
+      return :full if (max_vol && vol > max_vol) ||
+          (max_weight && weight > max_weight)
     end
 
     # remove the entity from any existing location
@@ -84,9 +84,6 @@ module World::ScriptSafeHelpers
     # XXX kludge for right now
     send_to_char(char: entity, buf: Command.run(entity, 'look')) if look
 
-    # fire on-enter hook
-    container.on_enter&.call(args: { entity: entity, here: dest })
-
     # schedule the teleport if the dest is a teleporter
     if teleporter = get_component(dest, :teleporter)
       tele = get_component!(entity, :teleport)
@@ -95,6 +92,9 @@ module World::ScriptSafeHelpers
       tele.time = Time.now + delay
       tele.teleporter = dest
     end
+
+    # fire on-enter hook
+    container.on_enter&.call(args: { entity: entity, here: dest })
 
     nil
   end

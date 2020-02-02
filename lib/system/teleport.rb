@@ -31,8 +31,7 @@ module System::Teleport
         return
       end
 
-      send_to_char(char: entity, buf: teleporter.to_entity) if
-          teleporter.to_entity
+      buf = teleporter.to_entity and send_to_char(char: entity, buf: buf)
 
       move_entity(entity: entity, dest: teleporter.dest, look: teleporter.look)
 
