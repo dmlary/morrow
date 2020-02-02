@@ -4,7 +4,6 @@ require 'forwardable'
 require 'benchmark'
 require_relative 'helpers'
 require_relative 'component'
-require_relative 'components'
 require_relative 'entity_manager'
 
 module World
@@ -164,11 +163,12 @@ module World
   end
 end
 
-require_relative 'world/constants'
 require_relative 'world/script_safe_helpers'
 require_relative 'world/helpers'
 require_relative 'world/loader'
 require_relative 'system'
-require_relative 'command'
 require_relative 'script'
+require_relative 'components'
+require_relative 'world/constants'
+require_relative 'command'
 World.extend(World::Helpers)

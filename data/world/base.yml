@@ -18,6 +18,10 @@
   base: base:template
   components:
   - animate
+  - corporeal:
+      height: 1.8   # meters, because metric is the future!!
+      weight: 79    # kg
+      volume: 79    # liters, aproximate human density
   - keywords:
     - [ char ]
   - viewable:
@@ -64,6 +68,10 @@
   - affect: [ attributes, strength, modify, -2 ]
   - affect: [ attributes, dexterity, modify, 1 ]
   - affect: [ attributes, wisdon, modify, 1 ]
+  - corporeal:
+      height: 1.8   # meters, because metric is the future!!
+      weight: 70    # kg
+      volume: 78    # lighter than human, but still take up the same space
 
 - id: base:exit
   components:
@@ -117,76 +125,8 @@
 
 - id: base:act/teleporter
   components:
-  - hook:
-      event: :on_enter
-      script: base:script/teleporter/enter
-  - hook:
-      event: :on_exit
-      script: base:script/teleporter/exit
   - teleporter
 
 - id: base:act/river
   components:
-  - hook:
-      event: :on_enter
-      script: base:script/teleporter/enter
-      script_config:
-        exclude_fliers: true
-  - hook:
-      event: :on_exit
-      script: base:script/teleporter/exit
   - teleporter
-
-- id: base:script/teleporter/enter
-  components:
-  - script: !script |
-      entity = args[:entity]
-      return if config[:skip_if_flying] and
-          entity_flying?(entity)
-
-      here = args[:here]
-      unless porter = get_component(here, :teleporter)
-        error "#{here} missing teleporter component"
-        return
-      end
-
-      port = get_component!(entity, :teleport)
-      port[:dest] = porter[:dest]
-      port[:message] = config[:message]
-      port[:look] = porter[:look]
-      delay = porter[:delay]
-      delay = rand(delay) if is_range?(delay)
-      port[:time] = now + delay
-
-- id: base:script/teleporter/exit
-  components:
-  - script: !script |
-      remove_component(args[:entity], :teleport)
-
-- id: base:act/mob_limit
-  components:
-  - hook:
-      event: :will_enter
-      script: base:script/mob_limit/will_enter
-      script_config:
-        limit: 2
-
-- id: base:script/mob_limit/will_enter
-  components:
-  - script: !script |
-      # This script will prevent more than config[:limit] mobs from being in
-      # this room at the same time.
-      entity = args[:entity]
-      return unless entity_animate?(entity)
-
-      # count the number of mobs here
-      room = args[:dest]
-      count = entity_contents(room).inject(0) do |c,e|
-        entity_animate?(e) ? c + 1 : c
-      end
-
-      # let 'em in if there's enough space
-      return if count < config['limit']
-
-      send_to_char(char: entity, buf: "It's too crowded for you to fit.\n")
-      return :deny

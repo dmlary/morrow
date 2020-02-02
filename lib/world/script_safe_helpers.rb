@@ -41,8 +41,6 @@ module World::ScriptSafeHelpers
   # ContainerComponent, first remove it from it's existing container.
   #
   # This method will also fire the following hooks in order:
-  #   * will_exit;  if script returns :deny, will not move
-  #   * will_enter; if script returns :deny, will not move
   #   * <move the entity>
   #   * on_exit
   #   * on_enter
@@ -52,35 +50,52 @@ module World::ScriptSafeHelpers
     location = get_component!(entity, :location)
     src = location.entity
 
-    # run the will_exit/will_enter hooks, and check if the movement is denied
-    # by any of them.
-    if src
-      denied = World.fire_hooks(src, :will_exit,
-          entity: entity, src: src, dest: dest)
-      return if denied
+    # I apologize, but this is gonna be ugly and may be premature optimization.
+    #
+    # For corporeal entities, we need to first check if the entity will fit in
+    # the destination (by volume & weight), but only if the container has a
+    # limit on at least one of volume or weight.  We only want to sweep through
+    # the entities once, so we do all of this at once.  Thus, ugly.
+    if corp = get_component(entity, :corporeal) and
+        (max_vol = container.max_volume or max_weight = container.max_weight)
+
+      vol, weight = container.contents
+          .inject([corp.volume || 0, corp.weight || 0]) do |(v,w),e|
+        if c = get_component(e, :corporeal)
+          v += c.volume || 0
+          w += c.weight || 0
+        end
+        [v, w]
+      end
+
+      return :full if max_vol && vol > max_vol
+      return :full if max_weight && weight > max_weight
     end
 
-    # destination room can also deny entry
-    denied = World.fire_hooks(dest, :will_enter,
-        entity: entity, src: src, dest: dest)
-    debug("denying move") if denied
-    # XXX teleport denied by will_enter; need to do something with teleport
-    return if denied
+    # remove the entity from any existing location
+    src && get_component(src, :container)&.contents.delete(entity)
+    remove_component(entity, :teleport)
 
     # move the entity
-    get_component(src, :container)&.contents&.delete(entity) if src
     location.entity = dest
-    get_component!(dest, :container).contents << entity
-
-    # notify the src location that the entity has left
-    World.fire_hooks(src, :on_exit, entity: entity, here: src) if src
+    container.contents << entity
 
     # perform the look for the entity if it was requested
     # XXX kludge for right now
     send_to_char(char: entity, buf: Command.run(entity, 'look')) if look
 
-    # notify the room of the arrival
-    World.fire_hooks(dest, :on_enter, entity: entity, here: dest)
+    # fire on-enter hook
+    container.on_enter&.call(args: { entity: entity, here: dest })
+
+    # schedule the teleport if the dest is a teleporter
+    if teleporter = get_component(dest, :teleporter)
+      tele = get_component!(entity, :teleport)
+      delay = teleporter.delay
+      delay = rand(teleporter.delay) if delay.is_a?(Range)
+      tele.time = Time.now + delay
+      tele.teleporter = dest
+    end
+
     nil
   end
 
@@ -343,5 +358,19 @@ module World::ScriptSafeHelpers
   # Get the desc description for an entity
   def entity_desc(entity)
     get_component(entity, ViewableComponent)&.desc
+  end
+
+  # entity_volume
+  #
+  # Get the volume for an entity
+  def entity_volume(entity)
+    get_component(entity, :corporeal)&.volume || 0
+  end
+
+  # entity_weight
+  #
+  # Get the weight for an entity
+  def entity_weight(entity)
+    get_component(entity, :corporeal)&.weight || 0
   end
 end

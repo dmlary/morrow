@@ -7,18 +7,36 @@ module System::Teleport
     end
 
     def update(entity, teleport)
-      if !teleport.dest or !teleport.time
-        error("invalid teleport (#{teleport.to_h}) on #{entity}; removing")
+      if !teleport.time
         remove_component(entity, teleport)
+        warn('%s: no teleport time; %s; removed' % [ entity, teleport.to_h ])
         return
       end
 
       return if teleport.time > Time.now
 
-      send_to_char(char: entity, buf: teleport.message + "\n") if
-          teleport.message
+      teleporter = begin
+        get_component(teleport.teleporter, :teleporter)
+      rescue EntityManager::UnknownId
+        remove_component(entity, teleport)
+        warn('%s: teleporter id invalid; %s; removed' %
+            [ entity, teleport.to_h ])
+        return
+      end
 
-      move_entity(entity: entity, dest: teleport.dest, look: teleport.look)
+      if teleporter.nil?
+        remove_component(entity, teleport)
+        warn('%s: teleporter missing component; %s; removed' %
+            [ entity, teleport.to_h ])
+        return
+      end
+
+      send_to_char(char: entity, buf: teleporter.to_entity) if
+          teleporter.to_entity
+
+      move_entity(entity: entity, dest: teleporter.dest, look: teleporter.look)
+
+      Command.run(entity, 'look') if teleporter.look
     end
   end
 end

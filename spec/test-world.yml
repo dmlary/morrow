@@ -158,11 +158,7 @@
       field: strength
       type: delta
       value: -1
-  - hook:
-      event: :will_exit
-      script: spec:script/non-existent
-      script_config:
-        delay: 10
+  # XXX need to find another way to test `remove_comp`; got rid of hook
 
 # Entities for use in movement tests
 - id: spec:room/movement
@@ -211,3 +207,21 @@
   - closable:
       closed: true
   - concealed
+
+# Used for movement tests, specifically into a full room
+- id: spec:room/full
+  base: base:room
+  components:
+  - container:
+      max_volume: 1
+
+- id: spec:room/not-full
+  base: base:room
+  components:
+  - exits:
+      east: spec:passage/to-full
+
+- id: spec:passage/to-full
+  base: base:exit
+  components:
+  - destination: spec:room/full

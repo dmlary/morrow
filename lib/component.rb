@@ -69,7 +69,7 @@ class Component
     #   type: Value type
     #   desc: description of the value
     def field(name, default: nil, freeze: false, clone: true, valid: nil,
-        type: nil, desc: nil)
+        type: String, desc: nil)
       name = name.to_sym
       variable = "@#{name}".to_sym
       modified = "@__modified_#{name}".to_sym
@@ -80,7 +80,7 @@ class Component
       # be added to a valid Array.
       valid << default if valid.is_a?(Array) and !valid.include?(default)
 
-      # set our default value in the class
+      # note the details about the field in the class
       @fields[name] = { desc: desc, type: type, default: default,
           valid: valid }
 
