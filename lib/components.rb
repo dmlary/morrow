@@ -18,12 +18,38 @@ end
 class ContainerComponent < Component
   desc <<~DESC
     maintains a list of entities that are within this component.  Goes in
-    Rooms, and Bags and Characters.
+    Rooms, Items (Bags) and Characters.
   DESC
 
   field :contents, default: [], type: [:entity],
       desc: 'Array of Entity IDs that reside within this Entity'
-  field :max_volume, type: Integer, desc: 'Maximum volume of the container'
+
+  field :max_volume, type: Numeric, desc: <<~DESC
+    Maximum volume of this container.
+
+    When set for a room, this limits the number of characters & items that can
+    fit within the room.
+
+    When set for an item, this limits the number of items that can fit inside.
+
+    When set on a character, this limits the number of items they can carry.
+
+    The volume of an entity is stored in CorporealComponent.volume
+  DESC
+
+  field :max_weight, type: Numeric, desc: <<~DESC
+    Maximum weight this container can hold.
+
+    Primarily used on a character, to limit how much they can carry by weight.
+  DESC
+
+  field :on_enter, type: Script, desc: <<~DESC
+    Script to run when an Entity is added to :contents.
+
+    Script is called with the following parameters:
+      here:   this Entity
+      entity: Entity being moved
+  DESC
 end
 
 class LocationComponent < Component
@@ -39,7 +65,7 @@ end
 class ViewableComponent < Component
   desc 'Entity is viewable within the world'
 
-  field :format, freeze: true,
+  field :format, freeze: true, type: String,
       valid: %w{ room object character extra_desc exit },
       desc: 'How the "look" command should show this entity'
   field :short, freeze: true, type: String,
@@ -50,12 +76,29 @@ class ViewableComponent < Component
       desc: 'character, item, or room desc'
 end
 
-# This Entity is animated.  Representing any sort of player or non-player
-# character.  Anything that can move on it's own, perform actions, etc.
 class AnimateComponent < Component
   desc <<~DESC
     This Entity is animated.  Representing any sort of player or non-player
     character.  Anything that can move on it's own, perform actions, etc.
+  DESC
+end
+
+class CorporealComponent < Component
+  desc <<~DESC
+    This component is added to entities that have physical substance within the
+    world.
+  DESC
+
+  field :height, type: Numeric,
+      desc: 'Height; just for flavor at the moment.'
+
+  field :weight, type: Numeric, default: 0, desc: <<~DESC
+    Weight of the Entity.  Should be updated to include the sum weight of its
+    contents if the Entity also has a ContainerComponent.
+  DESC
+
+  field :volume, type: Numeric, default: 0, desc: <<~DESC
+    Total volume this Entity takes up inside a ContainerComponent.
   DESC
 end
 
@@ -66,7 +109,7 @@ class ConcealedComponent < Component
     Entity has been concealed.  Used for hidden/secret doors.  Could also work
     for items and characters (hide).
   DESC
-  field :revealed, default: false, valid: [ true, false ],
+  field :revealed, type: :boolean, default: false, valid: [ true, false ],
       desc: 'If this entity has been revealed in the room'
 end
 
@@ -83,12 +126,13 @@ class EnvironmentComponent < Component
     entities within the ContainerComponent.contents
   DESC
 
-  field :terrain, valid: %i{ inside city field forest hills mountains
-                             water_swim water_noswim air underwater
-                             desert },
-      default: :forest,
-      desc: 'Type of terrain within a room'
-
+  field :terrain,
+      desc: 'Type of terrain within a room',
+      type: Symbol,
+      valid: %i{ inside city field forest hills mountains
+                 water_swim water_noswim air underwater
+                 desert },
+      default: :forest
 
   field :light, type: Integer, valid: 0..100, default: 100,
       desc: 'Amount of light in a room as a percent; not in use'
@@ -106,13 +150,13 @@ end
 class PlayerConfigComponent < Component
   desc 'Per-Player configuration data'
 
-  field :color, default: false, valid: [ true, false ],
+  field :color, type: :boolean, default: false, valid: [ true, false ],
       desc: 'enable color output'
-  field :coder, default: false, valid: [ true, false ],
+  field :coder, type: :boolean, default: false, valid: [ true, false ],
       desc: 'enable coder output'
-  field :compact, default: false, valid: [ true, false ],
+  field :compact, type: :boolean, default: false, valid: [ true, false ],
       desc: 'enable compact output'
-  field :send_go_ahead, default: false, valid: [ true, false ],
+  field :send_go_ahead, type: :boolean, default: false, valid: [ true, false ],
       desc: 'send telnet go-ahead codes'
 end
 
@@ -133,15 +177,15 @@ end
 class ClosableComponent < Component
   desc 'Denote an Entity is closable/lockable and its current state'
 
-  field :closable, default: true, valid: [ true, false ],
+  field :closable, type: :boolean, default: true, valid: [ true, false ],
       desc: 'this entity can be closed'
-  field :closed, default: true, valid: [ true, false ],
+  field :closed, type: :boolean, default: true, valid: [ true, false ],
       desc: 'this entity is closed'
-  field :lockable, default: false, valid: [ true, false ],
+  field :lockable, type: :boolean, default: false, valid: [ true, false ],
       desc: 'this entity can be locked'
-  field :locked, default: false, valid: [ true, false ],
+  field :locked, type: :boolean, default: false, valid: [ true, false ],
       desc: 'this entity is locked'
-  field :pickable, default: true, valid: [ true, false ],
+  field :pickable, type: :boolean, default: true, valid: [ true, false ],
       desc: 'this entity can be unlocked with "pick", and similar abilities'
   field :key, type: :entity,
       desc: 'entity that can be used to unlock this entity'
@@ -186,58 +230,6 @@ class ConnectionComponent < Component
   field :buf, default: '', type: String, desc: 'String of pending output'
 end
 
-class HookComponent < Component
-  desc 'Used to run scripts when specific events occur in the world.'
-
-  # due to compositing architecture, we're going to permit multiple hooks
-  not_unique
-
-  field :event, valid: %i{ will_enter on_enter will_exit on_exit },
-      desc: <<~FIELD
-    Event when this script should be run
-
-    will_enter: Entity (entity) will be added to (dest) entity's
-                ContainerComponent.  May be blocked by returning :deny.
-                This hook will be called before the character performs 'look'
-                in the dest room.
-
-                Script arguments:
-                  entity: Entity being moved
-                  src:    entity's current location; may be nil
-                  dest:   destination entity
-
-    on_enter:   Entity (entity) has been added to (here) entity's
-                ContainerComponent.
-                This hook will be caled after the character performs 'look' in
-                here.
-
-                Script arguments:
-                  entity: Entity that was added
-                  here:   entity's current location
-
-    will_exit:  Entity (entity) will removed from (src) entity's
-                ContainerComponent.  May be blocked by returning :deny.
-                Script arguments:
-
-                  entity: Entity being moved
-                  src:    entity's current location; may be nil
-                  dest:   destination entity
-
-    on_exit:    Entity (entity) has been removed from (here) entity's
-                ContainerComponent.
-
-                Script arguments:
-                  entity: Entity that was removed
-                  here:   entity's current location
-  FIELD
-
-  field :script, type: :entity,
-      desc: 'entity containing the ScriptComponent to be run'
-
-  field :script_config, type: Hash,
-      desc: 'optional configuration for script'
-end
-
 class TeleporterComponent < Component
   desc <<~DESC
     This component holds configuration for a teleporter.  It is used by the
@@ -248,12 +240,23 @@ class TeleporterComponent < Component
 
   field :dest, type: :entity, desc: 'destination of this teleporter'
 
-  field :delay, default: 10,
-      valid: proc { |v| [ Integer, Range, Float ].include?(v.class) },
-      desc: 'delay before entity should be moved'
+  field :delay, type: Range, default: 10..10, desc: <<~DESC
+    Amount of time in seconds before the victim will be teleported.
 
-  field :look, default: true, valid: [ true, false ],
-      desc: 'should the "look" command be run after teleport'
+    Examples:
+      delay = 0..0    # teleport "immediately"
+      delay = 10..10  # teleport in 10 seconds
+      delay = 5..15   # teleport in a random number of seconds between 5 & 15
+  DESC
+
+  field :to_entity, type: String,
+      desc: 'message sent to character when they\'re moved'
+
+  field :to_room, type: String,
+      desc: 'message sent to room when entity is moved'
+
+  field :look, type: :boolean, default: true, valid: [ true, false ],
+      desc: 'run "look" after entity is moved'
 end
 
 class TeleportComponent < Component
@@ -262,22 +265,12 @@ class TeleportComponent < Component
     time.  It is added by the teleporter script.
   DESC
 
-  field :dest, type: :entity, desc: 'where this entity should be moved to'
-
   field :time, type: Time, desc: 'when this entity should be moved'
 
-  field :message, type: String,
-      desc: 'message to display to character when they\'re moved'
-
-  field :look, default: true, valid: [ true, false ],
-      desc: 'run "look" after entity is moved'
-end
-
-class ScriptComponent < Component
-  desc 'Component that holds a script'
-
-  # Script instance
-  field :script, clone: false, desc: 'script source code'
+  field :teleporter, type: :entity, desc: <<~DESC
+    The entity that scheduled this teleport.  It will have a
+    TeleporterComponent.
+  DESC
 end
 
 ### QUESTIONABLE COMPONENTS ###

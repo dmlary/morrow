@@ -72,7 +72,7 @@ describe World::Helpers do
       add_component(player, AffectComponent.new(field: :bear))
 
       # Modify a non-unique component we got from the base
-      get_components(player, :hook) .first.script_config['delay'] = :changed
+      # XXX need to re-add this; removed with hook component removal
 
       player
     end
@@ -156,28 +156,13 @@ describe World::Helpers do
     end
   end
 
-  context '.move_entity' do
+  describe '.move_entity' do
     let(:script) { Script.new('true', freeze: false) }
-    let(:script_entity) do
-      create_entity(components: ScriptComponent.new(script: script))
-    end
     let(:dest) { create_entity(base: 'base:room') }
     let(:src) { create_entity(base: 'base:room') }
-    before(:each) { move_entity(entity: leo, dest: src) }
-
-    def add_hook(entity, event)
-      add_component(entity,
-          HookComponent.new(event: event, script: script_entity))
-    end
+    let(:ghost) { create_entity }
 
     context 'when dest has on_enter hook' do
-      before(:each) { add_hook(dest, :on_enter) }
-
-      it 'will move the entity' do
-        move_entity(entity: leo, dest: dest)
-        expect(entity_location(leo)).to eq(dest)
-      end
-
       it 'will call on_enter script after moving entity' do
         expect(script).to receive(:call) do |args: {}, config: {}|
           here = args[:here]; entity = args[:entity]
@@ -185,87 +170,149 @@ describe World::Helpers do
           expect(entity).to eq(leo)
           expect(entity_contents(here)).to include(leo)
         end
+        get_component!(dest, :container)[:on_enter] = script;
         move_entity(entity: leo, dest: dest)
       end
     end
 
-    context 'when dest has will_enter script' do
-      before(:each) { add_hook(src, :will_exit) }
+    def boxes(field, value)
+      e = create_entity
+      c = get_component!(e, :corporeal)
+      c[field] = value
+      e
+    end
 
-      it 'will move the entity' do
-        move_entity(entity: leo, dest: dest)
-        expect(entity_location(leo)).to eq(dest)
+    shared_examples 'will move' do
+      it 'will move entity' do
+        move_entity(dest: dest, entity: entity)
+        expect(entity_location(entity)).to eq(dest)
       end
-
-      it 'will call will_exit script before moving entity' do
-        expect(script).to receive(:call) do |args: {}, config: {}|
-          expect(args[:entity]).to eq(leo)
-          expect(args[:src]).to eq(src)
-          expect(args[:dest]).to eq(dest)
-          expect(entity_location(leo)).to eq(src)
-        end
-        move_entity(entity: leo, dest: dest)
+      it 'will return nil' do
+        expect(move_entity(dest: dest, entity: entity)).to be(nil)
       end
+    end
 
-      context 'script returns :deny' do
+    shared_examples 'room full' do
+      it 'will not move' do
+        before = entity_location(entity)
+        move_entity(dest: dest, entity: entity)
+        expect(entity_location(entity)).to eq(before)
+      end
+      it 'will return :full' do
+        expect(move_entity(dest: dest, entity: entity)).to be(:full)
+      end
+    end
+
+    shared_examples 'with entity types' do |full: nil, attr: nil|
+      context 'entity is corporeal' do
+        let(:entity) { leo }
         before(:each) do
-          allow(script).to receive(:call).and_return(:deny)
+          get_component!(entity, :corporeal)[attr] = 100
         end
-        it 'will not move the entity' do
-          move_entity(entity: leo, dest: dest)
-          expect(entity_location(leo)).to eq(src)
+        include_examples full ? 'room full' : 'will move'
+      end
+
+      context 'entity is not corporeal' do
+        let(:entity) { leo }
+        before(:each) { remove_component(entity, :corporeal) }
+        include_examples 'will move'
+      end
+    end
+
+    shared_examples 'with dest states' do |attr: nil|
+      context "dest max_#{attr} is nil" do
+        before(:each) do
+          get_component!(dest, :container)['max_' + attr] = nil
         end
-        it 'will not issue "look" command' do
-          expect(Command).to_not receive(:run)
-          move_entity(entity: leo, dest: dest)
+        include_examples 'with entity types', full: false, attr: attr
+      end
+
+      context "dest #{attr} has space for entity" do
+        before(:each) do
+          move_entity(dest: dest, entity: boxes(attr, 100))
+          move_entity(dest: dest, entity: boxes(attr, 100))
+          get_component!(dest, :container)['max_' + attr] = 1000
+        end
+        include_examples 'with entity types', full: false, attr: attr
+      end
+
+      context "dest is near max_#{attr}" do
+        before(:each) do
+          move_entity(dest: dest, entity: boxes(attr, 99))
+          get_component!(dest, :container)['max_' + attr] = 100
+        end
+        include_examples 'with entity types', full: true, attr: attr
+      end
+    end
+
+    include_examples 'with dest states', attr: 'volume'
+    include_examples 'with dest states', attr: 'weight'
+
+    [ { src: true,  dest: false, teleport: false },
+      { src: true,  dest: true,  teleport: true },
+      { src: false, dest: false, teleport: false },
+      { src: false, dest: true,  teleport: true }
+    ].each do |p|
+
+      context 'src %s teleporter, dest %s teleporter' %
+          [ p[:src] ? 'is' : 'is not', p[:dest] ? 'is' : 'is not' ] do
+
+        let(:teleport) { get_component(leo, :teleport) }
+
+        before(:each) do
+          move_entity(dest: src, entity: leo)
+
+          if p[:src]
+            get_component!(src, :teleporter)
+            get_component!(leo, :teleport)
+          else
+            remove_component(src, :teleporter)
+            remove_component(leo, :teleport)
+          end
+
+          if p[:dest]
+            t = get_component!(dest, :teleporter)
+          else
+            remove_component(dest, :teleporter)
+          end
+
+          move_entity(dest: dest, entity: leo)
+        end
+
+        if p[:teleport]
+          it 'will add teleport component' do
+            expect(teleport).to_not be(nil)
+          end
+          it 'will set the teleporter field' do
+            expect(teleport.teleporter).to eq(dest)
+          end
+          it 'will set the time' do
+            expect(teleport.time).to be > Time.now
+          end
+        else
+          it 'will remove any teleport component' do
+            expect(get_component(leo, :teleport)).to be(nil)
+          end
         end
       end
     end
 
-    context 'when dest has on_exit hook' do
-      before(:each) { add_hook(src, :on_exit) }
+    context 'teleporter has Numeric delay' do
+      let(:teleport) { get_component(leo, :teleport) }
+      before(:each) { get_component!(dest, :teleporter).delay = 10 }
 
-      it 'will move the entity' do
-        move_entity(entity: leo, dest: dest)
-        expect(entity_location(leo)).to eq(dest)
-      end
-
-      it 'will call on_exit script after moving entity' do
-        expect(script).to receive(:call) do |args: {}, config: {}|
-          here = args[:here]; entity = args[:entity]
-          expect(here).to eq(src)
-          expect(entity).to eq(leo)
-          expect(entity_contents(here)).to_not include(leo)
-        end
-        move_entity(entity: leo, dest: dest)
+      it 'will set time to delay seconds in the future' do
+        move_entity(dest: dest, entity: leo)
+        expect(teleport.time).to be_within(1).of(Time.now + 10)
       end
     end
+    context 'teleporter has Range delay' do
+      let(:teleport) { get_component(leo, :teleport) }
+      before(:each) { get_component!(dest, :teleporter).delay = 60..90 }
 
-    context 'when entity location has will_exit script' do
-      before(:each) { add_hook(src, :will_exit) }
-
-      it 'will move the entity' do
-        move_entity(entity: leo, dest: dest)
-        expect(entity_location(leo)).to eq(dest)
-      end
-
-      it 'will call on_exit script before moving entity' do
-        expect(script).to receive(:call) do |args: {}, config: {}|
-          expect(args[:entity]).to eq(leo)
-          expect(args[:src]).to eq(src)
-          expect(args[:dest]).to eq(dest)
-          expect(entity_location(leo)).to eq(src)
-        end
-        move_entity(entity: leo, dest: dest)
-      end
-
-
-      context 'script returns :deny' do
-        it 'will not move the entity' do
-          expect(script).to receive(:call).and_return(:deny)
-          move_entity(entity: leo, dest: dest)
-          expect(entity_location(leo)).to eq(src)
-        end
+      it 'will set time to random seconds in the future' do
+        move_entity(dest: dest, entity: leo)
+        expect(teleport.time - Time.now).to be_between(60, 90)
       end
     end
   end

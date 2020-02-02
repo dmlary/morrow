@@ -1,12 +1,19 @@
 describe System::Teleport do
   include World::Helpers
 
-  before(:each) { load_test_world }
   let(:leo) { 'spec:mob/leonidas' }
   let(:teleport) { get_component!(leo, :teleport) }
-  let(:dest) { create_entity(base: 'base:room') }
+  let(:teleporter) { TeleporterComponent.new }
   let(:src) { create_entity(base: 'base:room') }
-  before(:each) { move_entity(entity: leo, dest: src) }
+  let(:dest) { create_entity(base: 'base:room') }
+
+  before(:each) do
+    load_test_world
+    move_entity(entity: leo, dest: src)
+
+    teleporter.dest = dest
+    add_component(src, teleporter)
+  end
 
   def run_update
     System::Teleport.update(leo, teleport)
@@ -14,27 +21,56 @@ describe System::Teleport do
 
   shared_examples 'error' do
     before(:each) { run_update }
+
     it 'will remove the teleport component' do
       expect(get_component(leo, :teleport)).to eq(nil)
     end
+
     it 'will not move the entity' do
       expect(entity_location(leo)).to eq(src)
     end
   end
 
-  context 'with no time set' do
-    before(:each) { teleport.dest = dest }
+  context 'with time = nil' do
+    before(:each) do
+      teleport.teleporter = src
+      teleport.time = nil
+    end
+
     include_examples 'error'
   end
 
-  context 'with no dest set' do
-    before(:each) { teleport.time = Time.now }
+  context 'with teleporter = nil' do
+    before(:each) do
+      teleport.teleporter = nil
+      teleport.time = Time.now
+    end
+
+    include_examples 'error'
+  end
+
+  context 'with unknown teleporter' do
+    before(:each) do
+      teleport.teleporter = 'spec:invalid-id'
+      teleport.time = Time.now
+    end
+
+    include_examples 'error'
+  end
+
+  context 'with teleporter without teleporter component' do
+    before(:each) do
+      teleport.teleporter = dest
+      teleport.time = Time.now
+      remove_component(dest, :teleporter)
+    end
+
     include_examples 'error'
   end
 
   context 'when time is in the future' do
     before(:each) do
-      teleport.dest = dest
+      teleport.teleporter = src
       teleport.time = Time.now + 1
       run_update
     end
@@ -46,76 +82,60 @@ describe System::Teleport do
 
   context 'when time is in the past' do
     before(:each) do
-      teleport.dest = dest
+      teleport.teleporter = src
       teleport.time = Time.now - 1
     end
 
     shared_examples 'move entity' do
       it 'will move the entity' do
-        run_update
         expect(entity_location(leo)).to eq(dest)
+      end
+      it 'will remove teleport component' do
+        expect(get_component(leo, :teleport)).to be_nil
       end
     end
 
     context 'when look is false' do
       before(:each) do
-        teleport.look = false
+        player_output(leo).clear
+        teleporter.look = false
+        get_component(dest, :viewable).desc = 'FAILED'
+        run_update
       end
 
       include_examples 'move entity'
 
-      it 'will not send the "look" command' do
-        expect(Command).to_not receive(:run)
-        run_update
+      it 'will not perform look' do
+        expect(player_output(leo)).to_not include('FAILED')
       end
     end
 
     context 'when look is true' do
       before(:each) do
-        teleport.look = true
+        teleporter.look = true
+        player_output(leo).clear
+        get_component(dest, :viewable).desc = 'PASSED'
+        run_update
       end
 
       include_examples 'move entity'
 
-      it 'will send the "look" command' do
-        expect(Command).to receive(:run)
-        run_update
+      it 'will not perform look' do
+        expect(player_output(leo)).to include('PASSED')
       end
     end
 
-    context 'when message is set' do
+    context 'when to_entity is set' do
       before(:each) do
-        teleport.look = false
-        teleport.message = '*TARDIS sounds*'
+        teleporter.to_entity = "PASSED\n"
+        player_output(leo).clear
+        run_update
       end
 
       include_examples 'move entity'
-
-      it 'will call send_to_char' do
-        expect(System::Teleport).to receive(:send_to_char)
-            .with(char: leo, buf: teleport.message + "\n")
-        run_update
-      end
-
-      it 'will not send the "look" command' do
-        expect(Command).to_not receive(:run)
-        run_update
+      it 'will send to_entity string to player' do
+        expect(player_output(leo)).to include('PASSED')
       end
     end
-
-    context 'when message is not set' do
-      before(:each) do
-        teleport.look = false
-        teleport.message = nil
-      end
-
-      include_examples 'move entity'
-
-      it 'will not call send_to_char' do
-        expect(System::Teleport).to_not receive(:send_to_char)
-        run_update
-      end
-    end
-
   end
 end

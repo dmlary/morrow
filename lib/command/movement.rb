@@ -27,7 +27,9 @@ module Command::Movement
       else
         dest = get_component(passage, :destination) or
             fault "passage #{passage} has no destination!"
-        move_entity(entity: actor, dest: dest.entity, look: true)
+        if error = move_entity(entity: actor, dest: dest.entity, look: true)
+          send_to_char(char: actor, buf: "It's too crowded for you to fit.\n")
+        end
       end
     end
   end

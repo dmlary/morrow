@@ -69,4 +69,21 @@ describe Command::Movement do
       end
     end
   end
+
+  describe 'tunnel rooms' do
+    before(:each) do
+      move_entity(dest: 'spec:room/not-full', entity: leo)
+      player_output(leo).clear
+      Command.run(leo, 'east')
+    end
+
+    it 'will tell user they won\'t fit' do
+      expect(player_output(leo))
+          .to include("It's too crowded for you to fit.")
+    end
+    it 'will not move the actor' do
+      expect(entity_location(leo)).to eq('spec:room/not-full')
+    end
+  end
+
 end

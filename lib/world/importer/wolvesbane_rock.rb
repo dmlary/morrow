@@ -120,9 +120,6 @@ class World::Importer::WolvesbaneRock
     room = room_entity(data['number'])
     flags = RoomFlags.decode(data['room_flags'])
     base = ['base:room']
-    base << 'base:act/teleporter' if data['tele_targ'] != 0 or
-        data['river_speed'] != 0
-    base << 'base:act/mob_limit' if flags.include?(:tunnel)
 
     create_entity(base: base, id: room)
 
@@ -174,18 +171,13 @@ class World::Importer::WolvesbaneRock
       else
         tele.dest = get_component(passage, :destination).entity
         tele.delay = data['river_speed'] * World::PULSE
-        message = "You drift #{DIRS[data['river_dir']]} ..."
-
-        hook = get_components(room, :hook).find { |h| h.event == :on_enter }
-        hook.script_config = { skip_if_flying: true, message: message }
+        tele.to_entity = "You drift #{DIRS[data['river_dir']]} ...\n"
+        # XXX need to not teleport fliers
       end
     end
 
-    if data['moblim'] > 0
-      hook = get_components(room, :hook)
-          .find { |h| h.script.include?('mob_limit') }
-      hook.script_config["limit"] = data['moblim']
-    end
+    get_component!(room, :container).max_volume = data['moblim'] * 79 if
+        data['moblim'] > 0
   end
 
   def import

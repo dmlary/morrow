@@ -56,7 +56,7 @@ RSpec.configure do |config|
   end
 
   config.before(:suite) do
-    Helpers::Logging.logger.level = Logger::WARN
+    Helpers::Logging.logger.level = Logger::ERROR
   end
 end
 
