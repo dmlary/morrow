@@ -35,6 +35,9 @@ module Morrow
 
   class << self
 
+    # List of exceptions that have occurred in ths system.  When run in
+    # development environment, Pry.rescued() can be used to debug these
+    # exceptions.
     attr_reader :exceptions
 
     # Get the server configuration.
