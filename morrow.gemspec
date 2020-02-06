@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir.chdir(File.dirname(__FILE__)) do
     gemignore = File.readlines('.gemignore').map(&:chomp)
-    (%x{ git ls-files -z } + %x{ [[ -d dist ]] && find dist -type f -print0 })
+    (%x{ git ls-files -z } + %x{ [ -d dist ] && find dist -type f -print0 })
         .split("\0")
         .reject { |f| gemignore.find { |p| File.fnmatch(p, f) } }
   end
