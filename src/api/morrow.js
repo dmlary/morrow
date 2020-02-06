@@ -1,7 +1,6 @@
 import axios from "axios";
 
 export default url => {
-  console.log("morrow", url);
   const client = axios.create({
     baseURL: url,
     json: true

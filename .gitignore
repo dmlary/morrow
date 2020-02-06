@@ -1,20 +1,22 @@
-*.gem
-*.rbc
-.bundle
-.config
-.yardoc
-_yardoc
-doc/
-lib/bundler/man
-pkg
-rdoc
-spec/reports
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+Gemfile.lock
+
+# generic temporary files
 .*.sw[a-z]
 .AppleDouble
 .DS_Store
-node_modules
 
-public/js/
-
-.env.local
-.env.*.local
+# npm/vue cruft
+/node_modules/
+/dist/

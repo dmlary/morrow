@@ -41,16 +41,19 @@ export default {
   }),
   created: function() {
     this.debounced_fetch_entities = this._.debounce(this.fetch_entities, 450);
-    if (this.value) { this.entities.push(this.value) }
+    if (this.value) {
+      this.entities.push(this.value);
+    }
   },
   watch: {
     value(v) {
-      if (!this.entities.includes(v)) { this.entities = [ v ] }
+      if (!this.entities.includes(v)) {
+        this.entities = [v];
+      }
     }
   },
   methods: {
     do_search(v) {
-
       /* with issue https://github.com/vuetifyjs/vuetify/issues/9489
        * we need to jump through a lot of hoops to prevent an infinite loop.
        * Basically whenever we update the items, the v-autocomplete is going to

@@ -21,7 +21,6 @@ Vue.component(EntityAutocomplete.name, EntityAutocomplete);
 import ComponentFieldInput from "@/components/ComponentFieldInput";
 Vue.component(ComponentFieldInput.name, ComponentFieldInput);
 
-
 import morrow from "@/plugins/morrow";
 Vue.use(morrow, { url: process.env.VUE_APP_BACKEND_URL });
 

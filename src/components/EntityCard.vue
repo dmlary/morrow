@@ -184,9 +184,8 @@ export default {
     snack: false,
     snack_color: "info",
     snack_text: "",
-    search: '',
-    rules: {
-    }
+    search: "",
+    rules: {}
   }),
   computed: {
     base: function() {
@@ -233,18 +232,16 @@ export default {
     },
 
     set_field(comp_id, field, value) {
-      this.$morrow.set_component_field(comp_id, field, value)
-          .then(() => {
-            this.show_snack("success", "Field updated");
-            this.edit.active = false;
-            this.components[comp_id].fields[field].value = value;
-          })
-          .catch((e) => {
-            this.show_snack("error", e.response.data);
-          });
-    },
-    open() {
-      console.log("opened");
+      this.$morrow
+        .set_component_field(comp_id, field, value)
+        .then(() => {
+          this.show_snack("success", "Field updated");
+          this.edit.active = false;
+          this.components[comp_id].fields[field].value = value;
+        })
+        .catch(e => {
+          this.show_snack("error", e.response.data);
+        });
     },
     get_component(name) {
       return this._.find(this.components, function(comp) {

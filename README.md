@@ -1,48 +1,105 @@
-# morrow-mud
+# Morrow
 
-## Requirements
-* ruby 2.6
-* bundler gem
+Ruby implementation of an ECS-based MUD server.
 
-### Additional development environment requirements
-* npm
+This codebase is in a pre-alpha state; all APIs are likely to change.  You
+should not use this gem, but feel free to poke around.
 
-## Intstall
+## Features
+* Entity-Component-System Architecture
+* Telnet server
+* Web server
+    * Administrative Entity Editor
+    * TODO: Builder's Interface
+    * TODO: Player's Interface
+* Scripting in sandboxed ruby
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'morrow'
 ```
-bundle install
-npm install
+
+And then execute:
+
+    $ bundle
+
+Or install it yourself as:
+
+    $ gem install morrow
+
+## Usage
+
+To start the stock server in production mode, with telnet & web server
+
+    $ APP_ENV="production" bundle exec morrow serve
+
+To run the server with all manner of customizations:
+
+```
+require 'morrow'
+
+Morrow.run do |c|
+  c.host = '0.0.0.0'    # bind to all IPs on this host
+  c.telnet_port = 6000  # listen on port 6000 for telnet connections
+
+  c.telnet_login_handler = CustomLoginHandler
+                        # Use a custom login handler
+
+  c.http_port = 6010    # listen on port 6010 for http connections
+  c.http_port = nil     # or disable the web server
+
+  # override where the mud will load/store data
+  c.data_dir   = './data'
+  c.player_dir = './data/player.d'
+  c.area_dir   = './data/area.d'
+
+  # Do not load the stock world (templates, rooms, items, etc)
+  c.load_stock = false
+
+  # Add additional systems to the mud
+  c.systems << MyMud::AuctionSystem
+
+  # Replace all the systems in the mud
+  c.systems = [ MyMud::CombatSystem, MyMud::AuctionSystem ]
+end
 ```
 
 ## Development
-To start the server in development mode:
 
-```
-rake start-dev
-```
+You will need the following software installed to do development on Morrow.
+* `bundler`
+* `npm`: only needed to make changes to the web interface
 
-This will:
-* start the mud engine
-* start the telnet server (port 1234)
-* start the web server (port 8080)
-* monitor the web-assets for changes, and rebuild them as they're modified
+Once these dependencies are installed, and checking out the repo, run
+`bin/setup` to install the remaining dependencies.
 
-### Other helpful rake tasks
-To attach the debugger to the server, `rake pry`.
+The tests can be run by using `rake spec`.
 
-## Docker
-You will need to have both docker and docker compose installed.
+You can also run `bin/morrow console` for an interactive prompt without running
+the server that will allow you to experiment.
 
-## To build/rebuild the docker image:
+### Web Interface
+To work on the Vue.js web-interface, it's best to run both morrow, and the npm
+webpack server in separate windows:
 
-Techincally the code is built into the image, however this is mostly for dependency installation and is immediately layered over with local files via docker compose.
+    $ ./bin/morrow serve
+    $ npm run serve
 
-You should really only have to run this if you change versions or update dependencies.
+Use the URL reported by `npm` to view the latest web-interface.  Both servers
+will need to be up, as the interface served by npm will query the Morrow web
+server.
 
-```docker build -t morrow .```
+### Building a release
+To build a production release, `rake build`.
 
+## Contributing
 
-## To run with Docker Compose:
+Bug reports and pull requests are welcome on GitHub at
+https://github.com/dmlary/morrow.
 
-This maps in the local directory in the right place and starts the server on port 1234
+## License
 
-```docker-compose up```
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

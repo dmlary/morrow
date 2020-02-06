@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'morrow'
+require 'thor'
+require 'pry'
+
+class CLI < Thor
+  desc 'serve', 'run morrow server'
+  def serve
+    t = Thread.new { Morrow.run }
+    sleep(0.5)  # because Morrow.run outputs stuff that hides the prompt
+    Morrow.pry
+  end
+
+  desc 'console', 'load morrow and run pry'
+  def console
+    Morrow.pry
+  end
+end
+
+CLI.start(ARGV)

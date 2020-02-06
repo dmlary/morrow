@@ -1,2 +1,0 @@
-module TelnetServer::Handler
-end

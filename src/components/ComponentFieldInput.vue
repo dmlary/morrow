@@ -27,8 +27,9 @@
       :append-outer-icon="appendOuterIcon"
     />
     <v-textarea
-      v-else-if="typeof(local_value) === 'string'
-          && local_value.indexOf('\n') != -1"
+      v-else-if="
+        typeof local_value === 'string' && local_value.indexOf('\n') != -1
+      "
       :value="local_value"
       v-on="on"
       auto-grow
@@ -42,9 +43,15 @@
         :key="index"
         :value="v"
         :type="type[0]"
-        @input="local_value[index] = $event; $emit('input', local_value)"
+        @input="
+          local_value[index] = $event;
+          $emit('input', local_value);
+        "
         append-outer-icon="mdi-delete-outline"
-        @click:append-outer="local_value.splice(index, 1); $emit('input', local_value)"
+        @click:append-outer="
+          local_value.splice(index, 1);
+          $emit('input', local_value);
+        "
       />
       <component-field-input
         label="Add new value"
@@ -63,9 +70,15 @@
         :value="v"
         :autofocus="focused_prop === k"
         ref="obj_prop"
-        @input="local_value[k] = $event; $emit('input', local_value)"
+        @input="
+          local_value[k] = $event;
+          $emit('input', local_value);
+        "
         append-outer-icon="mdi-delete-outline"
-        @click:append-outer="$delete(local_value, k); $emit('input', local_value)"
+        @click:append-outer="
+          $delete(local_value, k);
+          $emit('input', local_value);
+        "
       />
       <v-text-field
         label="New Property"
@@ -100,30 +113,38 @@ export default {
       local_value: this._.cloneDeep(this.value),
       new_value: null,
       on: {
-        input: (ev) => { this.$emit('input', ev) },
-        change: (ev) => { this.$emit('change', ev) },
-        keyup: (ev) => { this.$emit('keyup', ev) },
-        "click:append-outer": (ev) => { this.$emit("click:append-outer", ev) }
+        input: ev => {
+          this.$emit("input", ev);
+        },
+        change: ev => {
+          this.$emit("change", ev);
+        },
+        keyup: ev => {
+          this.$emit("keyup", ev);
+        },
+        "click:append-outer": ev => {
+          this.$emit("click:append-outer", ev);
+        }
       },
       focused_prop: null
     };
   },
   watch: {
     value: function(v) {
-      return this.local_value = this._.cloneDeep(v);
+      return (this.local_value = this._.cloneDeep(v));
     }
   },
   methods: {
     add_array_value: function() {
       this.local_value.push(this.new_value);
       this.new_value = null;
-      this.$emit('input', this.local_value);
+      this.$emit("input", this.local_value);
     },
     add_obj_prop: function() {
       this.local_value[this.new_value] = null;
       this.focused_prop = this.new_value;
       this.new_value = null;
-      this.$emit('input', this.local_value);
+      this.$emit("input", this.local_value);
     }
   }
 };
