@@ -11,18 +11,6 @@ class Morrow::Component
       other.instance_variable_set(:@unique, true)
     end
 
-    # find
-    #
-    # Given a human-readable component name as a String or Symbol, return the
-    # Class for that Component type.
-    def find(name)
-      begin
-        Kernel.constant("#{name}_component".modulize)
-      rescue NameError
-        raise ArgumentError, "unknown Component, #{name}"
-      end
-    end
-
     # desc
     #
     # Set/get the description of this component.  Will only set the first time.

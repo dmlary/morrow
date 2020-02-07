@@ -38,6 +38,10 @@ class Morrow::Configuration
   # interface.
   attr_accessor :public_html
 
+  # Map of Component name to Component class for all Components in use in the
+  # world.
+  attr_accessor :components
+
   def initialize
     @env = ENV['APP_ENV']&.to_sym || :development
     @host = development? ? 'localhost' : '0.0.0.0'
@@ -48,6 +52,8 @@ class Morrow::Configuration
     @telnet_login_handler = Morrow::TelnetServer::LoginHandler
 
     @public_html = File.join(File.dirname(__FILE__), '../../dist')
+
+    @components = {}
   end
 
   def development?

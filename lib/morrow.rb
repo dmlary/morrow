@@ -137,3 +137,4 @@ end
 
 require_relative 'morrow/web_server'
 require_relative 'morrow/component'
+require_relative 'morrow/entity_manager'
