@@ -38,8 +38,11 @@ class Morrow::Configuration
   # interface.
   attr_accessor :public_html
 
-  # Map of Component name to Component class for all Components in use in the
+  # Hash of Component name to Component class for all Components in use in the
   # world.
+  #
+  #   Morrow.config.components[:resources] = MyResourceComponent
+  #   Morrow.config.components[:shadow] = ShadowComponent
   attr_accessor :components
 
   def initialize

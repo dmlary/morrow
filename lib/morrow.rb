@@ -12,11 +12,11 @@ require_relative 'morrow/telnet_server'
 #
 # Example usage:
 #
-#   # start the server, telnet on port 1234, http on port 8080
+#   # start the server, telnet on port 5000, http on port 8080
 #   Morrow.run
 #
 #   # start the server, telnet on port 6000, no web server
-#   Morrow.run(port: 6000)
+#   Morrow.run(telnet_port: 6000)
 #
 #   # Complex invocation
 #   Morrow.run do |c|
@@ -53,12 +53,12 @@ module Morrow
     # * +telnet_port+ port to listen for telnet connections; default: 1234
     # * +http_port+ port to listen for http connections; default: 8080
     #
-    def run(host: nil, telnet_port: nil, http_port: nil)
+    def run(host: nil, telnet_port: 5000, http_port: 8080)
 
       # configure the server
       config.host = host if host
-      config.telnet_port = telnet_port if telnet_port
-      config.http_port = http_port if http_port
+      config.telnet_port = telnet_port
+      config.http_port = http_port
 
       yield config if block_given?
 

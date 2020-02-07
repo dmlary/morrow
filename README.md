@@ -69,6 +69,42 @@ Morrow.run do |c|
 end
 ```
 
+### Expanding Morrow
+```ruby
+# Create a custom Component
+class Poisoned < Morrow::Component
+  field :damage, type: Numeric, desc: 'amount of damage to do'
+  field :frequency, type: Numeric, desc: 'frequency of damage'
+  field :next_tick, type: Time, desc: 'next time damage should occur'
+  field :ticks, type: Integer, desc: 'number of ticks remaining'
+end
+
+# Create a custom System
+module PoisonSystem < Morrow::System
+  def self.view
+    @view ||= Morrow.get_view(all: [ :poisoned, :resources ])
+  end
+
+  def self.update(entity, poison, resources)
+    now = Time.now
+    next if poison.next_update > now
+
+    resources.health -= poison.damage
+    if (poison.ticks -= 1) == 0
+      remove_component(entity, poison)
+    else
+      poison.next_tick += poison.frequency
+    end
+  end
+end
+
+# Start up the server, and add the poison
+Morrow.run do |c|
+  c.components[:poison] = Poisoned
+  c.systems << PoisonSystem
+end
+```
+
 ## Development
 
 You will need the following software installed to do development on Morrow.
