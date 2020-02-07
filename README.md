@@ -40,7 +40,7 @@ To start the stock server in production mode, with telnet & web server
 
 To run the server with all manner of customizations:
 
-```
+```ruby
 require 'morrow'
 
 Morrow.run do |c|
@@ -70,31 +70,64 @@ end
 ```
 
 ### Expanding Morrow
-```ruby
-# Create a custom Component
-class Poisoned < Morrow::Component
-  field :damage, type: Numeric, desc: 'amount of damage to do'
-  field :frequency, type: Numeric, desc: 'frequency of damage'
-  field :next_tick, type: Time, desc: 'next time damage should occur'
-  field :ticks, type: Integer, desc: 'number of ticks remaining'
-end
 
-# Create a custom System
-module PoisonSystem < Morrow::System
-  def self.view
-    @view ||= Morrow.get_view(all: [ :poisoned, :resources ])
+Additional components and Systems can be easily added to Morrow
+
+```ruby
+module Poison
+
+  # Create a custom Component for tracking Poison
+  class Component < Morrow::Component
+    field :damage, type: Numeric, desc: 'amount of damage to do'
+    field :frequency, type: Numeric, desc: 'frequency of damage'
+    field :next_tick, type: Time, desc: 'next time damage should occur'
+    field :ticks, type: Integer, desc: 'number of ticks remaining'
   end
 
-  def self.update(entity, poison, resources)
-    now = Time.now
-    next if poison.next_update > now
+  # Create a System for performing updates to entities that are poisoned.
+  module System < Morrow::System
 
-    resources.health -= poison.damage
-    if (poison.ticks -= 1) == 0
-      remove_component(entity, poison)
-    else
-      poison.next_tick += poison.frequency
+    # Create a view of all entities that are poisoned and have health (buried
+    # in the resources Component)
+    def self.view
+      @view ||= Morrow.get_view(all: [ :poisoned, :resources ])
     end
+
+    # Each update of the world, this method will be called for any entity that
+    # has both the poisoned component, and the resources component.  The order
+    # of the arguments is the same as the order of the Morrow#get_view call
+    # above.
+    def self.update(entity, poison, resources)
+      now = Time.now
+      next if poison.next_update > now
+
+      send_to_char(entity, 'You feel the poison burning in your veins.')
+      resources.health -= poison.damage
+      if (poison.ticks -= 1) == 0
+        remove_component(entity, poison)
+      else
+        poison.next_tick += poison.frequency
+      end
+    end
+  end
+
+  # We'll need a command to poison things!
+  def do_poison(actor, arg=nil)
+    unless victim = match_keyword(arg, animate_entities(actor))
+      send_to_char(actor, "They're not here to be poisoned.")
+      return
+    end
+
+    if rand(100) < 5    # or, you know, do a real skill check
+      send_to_char(actor, "You failed to poison them!")
+      send_to_char(victim, "You feel momentarily ill, but the feeling passes.")
+      return
+    end
+
+    args = { damage: 1, frequency: 6, ticks: 10, next_tick: Time.now + 6 }
+    add_component(victim, poison: args)
+    send_to_char(actor, '$n turns green as your poison takes hold.')
+    send_to_char(victom, "You feel $n's poison seep into your veins.")
   end
 end
 
@@ -102,6 +135,7 @@ end
 Morrow.run do |c|
   c.components[:poison] = Poisoned
   c.systems << PoisonSystem
+  c.command[:poison] = Poison.method(:do_poison)
 end
 ```
 
