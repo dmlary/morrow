@@ -6,8 +6,14 @@ require 'thor'
 require 'pry'
 
 class CLI < Thor
+  class_option(:config, aliases: 'c', type: :string, desc: 'configuration file')
+  class_option(:env, aliases: 'e', type: :string, desc: 'environment')
+  class_option(:data, type: :string, desc: 'data directory')
+  class_option(:world, type: :string, desc: 'world directory or file')
+
   desc 'serve', 'run morrow server'
   def serve
+    load_config
     t = Thread.new { Morrow.run }
     sleep(0.5)  # because Morrow.run outputs stuff that hides the prompt
     Morrow.pry
@@ -15,7 +21,30 @@ class CLI < Thor
 
   desc 'console', 'load morrow and run pry'
   def console
+    load_config
+    Morrow.load_world
     Morrow.pry
+  end
+
+  desc 'check', 'check world files for errors'
+  def check
+    load_config
+    Morrow.load_world
+    puts "World loaded successfully"
+  end
+
+  private
+
+  def load_config
+    if options[:config]
+      YAML.load_file(path).each_pair do |key,value|
+        Morrow.config.send(key + '=', value)
+      end
+    end
+
+    Morrow.config.env = options[:env].to_sym if options[:env]
+    Morrow.config.data_dir = options[:data] if options[:data]
+    Morrow.config.world_dir = options[:world] if options[:world]
   end
 end
 

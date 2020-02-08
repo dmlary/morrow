@@ -45,7 +45,20 @@ class Morrow::Configuration
   #   Morrow.config.components[:shadow] = ShadowComponent
   attr_accessor :components
 
+  # Directory that contains runtime data for Morrow.  Used as the default
+  # prefix for world_dir and player_dir
+  attr_accessor :data_dir
+
+  # Directory that contains the entity files to load into the world.
+  # Default: File.join(data_dir, 'world')
+  attr_writer :world_dir
+
+  # When set to false, the base entities included with Morrow will not be
+  # loaded.  Default: true
+  attr_accessor :load_morrow_base
+
   def initialize
+
     @env = ENV['APP_ENV']&.to_sym || :development
     @host = development? ? 'localhost' : '0.0.0.0'
     @http_port = 8080
@@ -54,9 +67,35 @@ class Morrow::Configuration
     @telnet_port = 5000
     @telnet_login_handler = Morrow::TelnetServer::LoginHandler
 
-    @public_html = File.join(File.dirname(__FILE__), '../../dist')
+    base_dir = File.expand_path('../../../', __FILE__)
+    @public_html = File.join(base_dir, 'dist')
+    @data_dir = File.join(base_dir, 'data')
+    @world_dir = nil    #
+    @load_morrow_base = true
 
-    @components = {}
+    @components = {
+      view_exempt: Morrow::ViewExemptComponent,
+      keywords: Morrow::KeywordsComponent,
+      container: Morrow::ContainerComponent,
+      location: Morrow::LocationComponent,
+      viewable: Morrow::ViewableComponent,
+      animate: Morrow::AnimateComponent,
+      corporeal: Morrow::CorporealComponent,
+      concealed: Morrow::ConcealedComponent,
+      exits: Morrow::ExitsComponent,
+      environment: Morrow::EnvironmentComponent,
+      destination: Morrow::DestinationComponent,
+      player_config: Morrow::PlayerConfigComponent,
+      metadata: Morrow::MetadataComponent,
+      closable: Morrow::ClosableComponent,
+      spawn_point: Morrow::SpawnPointComponent,
+      spawn: Morrow::SpawnComponent,
+      command_queue: Morrow::CommandQueueComponent,
+      connection: Morrow::ConnectionComponent,
+      teleporter: Morrow::TeleporterComponent,
+      teleport: Morrow::TeleportComponent,
+      affect: Morrow::AffectComponent,
+    }
   end
 
   def development?
@@ -69,5 +108,9 @@ class Morrow::Configuration
 
   def test?
     @env == :test
+  end
+
+  def world_dir
+    @world_dir || File.join(@data_dir, 'world')
   end
 end

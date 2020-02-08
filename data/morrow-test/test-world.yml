@@ -1,0 +1,235 @@
+---
+- id: spec:obj/chest_closed
+  base: morrow:obj/chest/wooden
+  components:
+  - keywords:
+    - [ wooden, chest, closed ]
+  - closable
+
+- id: spec:obj/chest_open_empty
+  base: spec:obj/chest_closed
+  components:
+  - keywords:
+    - [ wooden, chest, open, empty ]
+  - viewable:
+      short: an open wooden chest
+      long: a wooden chest sits open on the floor
+  - closable:
+      closed: false
+
+- id: spec:obj/junk/ball
+  base: morrow:obj
+  components:
+  - keywords:
+    - [red, rubber, ball]
+  - viewable:
+      short: a red rubber ball
+      long: a red rubber ball is on the floor
+
+- id: spec:mob/leonidas
+  base: morrow:player
+  components:
+  - keywords:
+    - [ leonidas ]
+  - connection:
+      conn: true    # fake connection so send_to_char works
+  - viewable:
+      short: Leonidas
+      long: Leonidas the Cursed
+      desc: |
+        Shoulders hunched, and back bent, this man stands as
+        though the world has beaten him, and he is bracing for the next
+        blow.  His eyes, downcast and lined with concern, dart about the
+        room, never lighting on anything for more than a moment.
+
+- id: spec:player
+  base: morrow:player
+  components:
+  - viewable:
+      short: Generic Player
+  - connection:
+      conn: true    # fake connection so send_to_char works
+
+- id: spec:room/1
+  base: morrow:room
+  components:
+  - viewable:
+      short: The Testing Room
+      desc: |
+        A horrific room where all manner of gruesome experiments are conducted
+        against hapless, helpess, and hopeless victims.  Oddly, this room is
+        not yet covered in blood.
+  - exits:
+      up: spec:room/1/exit/up-to-void
+      east: spec:room/1/exit/east-to-2
+      west: spec:room/1/exit/west-to-cupboard
+
+- id: spec:room/2
+  base: morrow:room
+  components:
+  - viewable:
+      short: The Eastern Room
+      desc: |
+        This room is oddly serene, despite the bits of gore that have been
+        tracked in from the west.  Oh look, there's a ficus!
+  - exits:
+      west: spec:room/2/exit/west-to-1
+
+- id: spec:room/cupboard
+  base: morrow:room
+  components:
+  - viewable:
+      short: In the cupboard
+      desc: |
+        Darkness, shelves, no cobwebs though.
+  - exits:
+      east: spec:room/cupboard/exit/east-to-1
+
+# Used in testing for regular exits
+- id: spec:room/1/exit/up-to-void
+  base: morrow:exit
+  components:
+  - destination: base:room/void
+
+# Used in testing for open/close exit
+- id: spec:room/1/exit/east-to-2
+  base: morrow:exit
+  components:
+  - destination: spec:room/2
+  - keywords:
+    - [ east ]
+  - closable:
+      closed: true
+
+# Used in testing for concealed exits
+- id: spec:room/1/exit/west-to-cupboard
+  base: morrow:exit
+  components:
+  - destination: spec:room/cupboard
+  - closable:
+      closed: true
+  - keywords:
+    - [ hidden, cupboard ]
+  - concealed
+
+- id: spec:room/2/exit/west-to-1
+  base: morrow:exit
+  components:
+  - destination: spec:room/1
+  - closable:
+      closed: true
+  - keywords:
+    - [ west, door ]
+
+- id: spec:room/cupboard/exit/east-to-1
+  base: morrow:exit
+  components:
+  - destination: spec:room/1
+  - keywords:
+    - [ east, door ]
+  - closable:
+      closed: true
+
+# Spawn testing
+- id: spec:obj/spawn-bag
+  base: morrow:obj/bag/small
+  components:
+  - spawn_point:
+      list:
+      - 'spec:spawn/ball'
+
+- id: spec:spawn/ball
+  components:
+  - spawn:
+      entity: spec:obj/junk/ball
+      min: 2
+      max: 5
+
+# Specially crafted base used in the .save_entities() test
+- id: spec:save/base
+  components:
+
+  # unique component that is savable
+  - closable:
+      closed: false
+
+  # unique component that is not saved
+  - command_queue:
+      blocked_until: deleted
+
+  # unique, saved component that will be removed
+  - spawn_point
+
+  # a couple of non-unique components
+  - affect:
+      component: attributes
+      field: strength
+      type: delta
+      value: -1
+  # XXX need to find another way to test `remove_comp`; got rid of hook
+
+# Entities for use in movement tests
+- id: spec:room/movement
+  base: morrow:room
+  components:
+  - exits:
+      # explicitly bad entity ids here
+      north: fail
+      south: fail
+      east:  fail
+      west:  fail
+      up:    fail
+      down:  fail
+
+- id: spec:exit/open
+  base: morrow:exit
+  components:
+  - destination: base:room/void
+
+- id: spec:exit/door/open
+  base: morrow:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: false
+
+- id: spec:exit/door/closed
+  base: morrow:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: true
+
+- id: spec:exit/door/open/hidden
+  base: morrow:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: false
+  - concealed
+
+- id: spec:exit/door/closed/hidden
+  base: morrow:exit
+  components:
+  - destination: base:room/void
+  - closable:
+      closed: true
+  - concealed
+
+# Used for movement tests, specifically into a full room
+- id: spec:room/full
+  base: morrow:room
+  components:
+  - container:
+      max_volume: 1
+
+- id: spec:room/not-full
+  base: morrow:room
+  components:
+  - exits:
+      east: spec:passage/to-full
+
+- id: spec:passage/to-full
+  base: morrow:exit
+  components:
+  - destination: spec:room/full

@@ -1,0 +1,132 @@
+--- !morrow-v1
+# Base Entities used throughout the system.  Any Entity may be used as the base
+# for another Entity, these are just the most generic among them.
+- id: morrow:room
+  components:
+  - environment
+  - viewable:
+      format: room
+      short: An indescribable room
+      desc: |-
+        There is space here.
+
+- id: morrow:template
+  components:
+  - view_exempt
+
+- id: morrow:char
+  base: morrow:template
+  components:
+  - animate
+  - corporeal:
+      height: 1.8   # meters, because metric is the future!!
+      weight: 79    # kg
+      volume: 79    # liters, aproximate human density
+  - keywords:
+    - [ char ]
+  - viewable:
+      format: character
+      short: a non-descript character
+      long: |-
+        You see nothing special about them.
+
+- id: morrow:obj
+  base: morrow:template
+  components:
+  - keywords:
+    - [ obj ]
+  - viewable:
+      format: object
+      short: an object
+      long: You see nothing special...
+
+- id: morrow:room/void
+  base: morrow:room
+  components:
+  - viewable:
+      short: The Void
+      desc: You are floating in nothing
+
+- id: morrow:player
+  base: morrow:char
+  components:
+  - player_config
+  - connection
+  - command_queue
+
+- id: morrow:race/human
+  base: morrow:char
+  components:
+  - viewable:
+      short: a human
+
+- id: morrow:race/elf
+  base: morrow:char
+  components:
+  - viewable:
+      short: an elf
+  - affect: [ attributes, strength, modify, -2 ]
+  - affect: [ attributes, dexterity, modify, 1 ]
+  - affect: [ attributes, wisdon, modify, 1 ]
+  - corporeal:
+      height: 1.8   # meters, because metric is the future!!
+      weight: 70    # kg
+      volume: 78    # lighter than human, but still take up the same space
+
+- id: morrow:exit
+  components:
+  - viewable:
+      format: exit
+      desc: You see nothing special...
+  - destination:
+
+- id: morrow:door/closed
+  base: morrow:exit
+  components:
+  - keywords:
+    - [ door ]
+  - viewable:
+      format: object
+      short: a door
+      desc: A wooden door bars your way.
+
+- id: morrow:obj/bag/small
+  base: morrow:obj
+  components:
+  - keywords:
+    - [ small, bag ]
+  - viewable:
+      short: a small bag
+      long: a small bag is here, collecting dust
+  - container:
+      max_volume: 10
+  - closable
+
+- id: morrow:obj/chest/wooden
+  base: morrow:obj
+  components:
+  - keywords:
+    - [ wooden, chest ]
+  - viewable:
+      short: a wooden chest
+      long: a wooden chest rests on the floor
+  - container:
+      max_volume: 100
+  - closable
+
+- id: morrow:obj/junk/ball
+  base: morrow:obj
+  components:
+  - keywords:
+    - [red, rubber, ball]
+  - viewable:
+      short: a red rubber ball
+      long: a red rubber ball is on the floor
+
+- id: morrow:act/teleporter
+  components:
+  - teleporter
+
+- id: morrow:act/river
+  components:
+  - teleporter

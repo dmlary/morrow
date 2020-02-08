@@ -1,10 +1,10 @@
 require 'eventmachine'
 require 'rack'
 require 'yaml'
+require 'find'
 
 module Morrow; end
 require_relative 'morrow/version'
-require_relative 'morrow/configuration'
 require_relative 'morrow/logging'
 require_relative 'morrow/telnet_server'
 
@@ -38,11 +38,25 @@ module Morrow
     # List of exceptions that have occurred in ths system.  When run in
     # development environment, Pry.rescued() can be used to debug these
     # exceptions.
-    attr_reader :exceptions
+    attr_reader :exceptions, :em
 
     # Get the server configuration.
     def config
       @config ||= Configuration.new
+    end
+
+    # Load the world.
+    #
+    # **NOTE** This is automatically called from Morrow#run; it's just exposed
+    # publicly as a convenience for debugging & testing.
+    def load_world
+      raise Error, 'World has already been loaded!' if @em
+      @em = EntityManager.new(components: config.components)
+
+      load_path(File.expand_path('../../data/morrow-base', __FILE__)) if
+          config.load_morrow_base
+      load_path(config.world_dir)
+      info 'world has been loaded'
     end
 
     # Run the server.  More advanced configuration can be done using the block
@@ -50,7 +64,7 @@ module Morrow
     #
     # Parameters:
     # * +host+ host to bind to; default: '0.0.0.0', 'localhost' in development
-    # * +telnet_port+ port to listen for telnet connections; default: 1234
+    # * +telnet_port+ port to listen for telnet connections; default: 5000
     # * +http_port+ port to listen for http connections; default: 8080
     #
     def run(host: nil, telnet_port: 5000, http_port: 8080)
@@ -61,6 +75,9 @@ module Morrow
       config.http_port = http_port
 
       yield config if block_given?
+
+      info 'Loading the world'
+      load_world
 
       info 'Morrow starting in %s mode' % config.env
       WebServer::Backend.set :environment, config.env
@@ -132,9 +149,23 @@ module Morrow
         end
       end
     end
+
+    # Load entities from a specific path.
+    def load_path(base)
+      loader = Loader.new(@em)
+      Find.find(base) do |path|
+        next unless File.basename(path) =~ /^[^.].*\.yml$/
+        info "loading #{path} ..."
+        loader.load_file(path)
+      end
+      loader.finalize
+    end
   end
 end
 
-require_relative 'morrow/web_server'
 require_relative 'morrow/component'
+require_relative 'morrow/components'
+require_relative 'morrow/configuration'
+require_relative 'morrow/web_server'
 require_relative 'morrow/entity_manager'
+require_relative 'morrow/loader'

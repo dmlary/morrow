@@ -67,7 +67,11 @@ class Morrow::EntityManager
       entity = @entities[id] = []
 
       # merge any requested bases into the new entity
-      base.each { |b| merge_entity(id, b) }
+      base.each do |b|
+        merge_entity(id, b)
+      rescue UnknownId
+        raise UnknownId, "unknown base entity: #{b}"
+      end
 
       # clear the modified flags on all of our components; they came from the
       # base entities.
@@ -90,8 +94,10 @@ class Morrow::EntityManager
   # Component, the Component will be merged into dest.
   def merge_entity(dest_id, other_id)
     dest_id = dest_id.to_s unless dest_id.is_a?(String)
-    raise UnknownId, dest_id unless dest = @entities[dest_id]
-    raise UnknownId, other_id unless others = @entities[other_id.to_s]
+    raise UnknownId, "unknown dest entity: #{dest_id}" unless
+        dest = @entities[dest_id]
+    raise UnknownId, "unknown other entity: #{other_id}" unless
+        others = @entities[other_id.to_s]
 
     others.each_with_index do |other,i|
       if other.is_a?(Array)
@@ -141,7 +147,7 @@ class Morrow::EntityManager
   #   add_component('player', instance)
   #
   def add_component(id, *components)
-    raise UnknownId, id unless entity = @entities[id]
+    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
 
     out = components.map do |component|
       type, args, instance = case component
@@ -187,7 +193,7 @@ class Morrow::EntityManager
   #
   # Get a component for an entity.
   def get_component(id, type)
-    raise UnknownId, id unless entity = @entities[id]
+    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
 
     index, klass = @comp_map[type]
 
@@ -206,7 +212,7 @@ class Morrow::EntityManager
   #
   # Get all instances of a Component for the Entity.
   def get_components(id, comp)
-    raise UnknownId, id unless entity = @entities[id]
+    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
 
     index, _ = @comp_map[comp]
     return [] unless index
@@ -226,7 +232,7 @@ class Morrow::EntityManager
   # Returns:
   #   Array of component instances removed
   def remove_component(id, type)
-    raise UnknownId, id unless entity = @entities[id]
+    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
 
     # Massage our type to handle someone passing in a component instance
     type, instance = type.is_a?(Morrow::Component) ?

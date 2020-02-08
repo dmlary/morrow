@@ -11,15 +11,8 @@ module Morrow::Logging
 
     def log_exception(ex)
       Morrow.exceptions << ex
-      error("#{ex.class}: #{ex.message}")
-      ex.backtrace.each do |line|
-
-        # this is a lazy way to do this, but my god, these traces are long.
-        # This will work until I have a better solution.
-        break if line.include?('gems/sinatra')
-
-        error("  " << line)
-      end
+      ex.full_message(order: :bottom, highlight: false)
+          .lines.each { |l| error(l.chomp) }
       true
     end
   end

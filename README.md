@@ -54,9 +54,8 @@ Morrow.run do |c|
   c.http_port = nil     # or disable the web server
 
   # override where the mud will load/store data
-  c.data_dir   = './data'
-  c.player_dir = './data/player.d'
-  c.area_dir   = './data/area.d'
+  c.player_dir = './my_data/player.d'
+  c.world_dir  = './my_data/area.d'
 
   # Do not load the stock world (templates, rooms, items, etc)
   c.load_stock = false
