@@ -153,8 +153,10 @@ module Morrow
     # Load entities from a specific path.
     def load_path(base)
       loader = Loader.new(@em)
-      Find.find(base) do |path|
-        next unless File.basename(path) =~ /^[^.].*\.yml$/
+      Find.find(base)
+          .select { |path| File.basename(path) =~ /^[^.].*\.yml$/ }
+          .sort
+          .each do |path|
         info "loading #{path} ..."
         loader.load_file(path)
       end

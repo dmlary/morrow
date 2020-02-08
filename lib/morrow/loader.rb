@@ -3,7 +3,7 @@ require 'facets/hash/rekey'
 class Morrow::Loader
   include Morrow::Logging
 
-  SUPPORTED_KEYS = %w{ id base components remove }
+  SUPPORTED_KEYS = %w{ id base components update }
 
   def initialize(em)
     @em = em      # EntityManager
@@ -34,8 +34,12 @@ class Morrow::Loader
       load_error!("unknown keys: #{unknown_keys}", file, map) unless
           unknown_keys.empty?
 
+      load_error!("id and update are mutually exclusive", file, map) if
+          entity['id'] and entity['update']
+
       create = {}
       create[:id] = entity['id'] if entity.has_key?('id')
+      create[:update] = entity['update'] if entity.has_key?('update')
 
       # Create an Array of the various base Entities that will be layered into
       # this Entity
@@ -81,13 +85,9 @@ class Morrow::Loader
         end
       end
 
-      create[:remove] = (entity['remove'] || []).map do |conf|
-        conf.is_a?(Hash) ? conf : conf.to_sym
-      end
-
-      # defer the creation if we're not able to create right now
+      # defer the action if we're not able to do it at the moment
       begin
-        create_entity(**create)
+        create_or_update(**create)
       rescue Morrow::EntityManager::UnknownId
         source = "#{file}:#{map.start_line + 1}"
         defer(source: source, entity: create)
@@ -140,12 +140,19 @@ class Morrow::Loader
     @tasks << { source: source, entity: entity, last_error: nil }
   end
 
-  # create an entity; if it fails due to UnknownId, return false
-  def create_entity(id: nil, base: [], components: [], remove: [])
-    id = @em.create_entity(id: id, base: base, components: components)
-    remove.each { |c| @em.remove_component(id, c) }
-    debug "created entity #{id}"
-    id
+  # create or update an entity.  This is an awful interface that grew out of
+  # multiple changes; it needs to be cleaned up.
+  def create_or_update(id: nil, update: nil, base: [], components: [])
+    if update
+      @em.entity_exists!(update)
+      tmp = @em.create_entity(base: base, components: components)
+      @em.merge_entity(update, tmp)
+      @em.destroy_entity(tmp)
+      debug "updated entity #{update}"
+    else
+      entity = @em.create_entity(id: id, base: base, components: components)
+      debug "created entity #{entity}"
+    end
   end
 
   # attempt to perform any deferred entity creation
@@ -154,7 +161,7 @@ class Morrow::Loader
       before = @tasks.size
 
       @tasks.delete_if do |task|
-        create_entity(**task[:entity])
+        create_or_update(**task[:entity])
       rescue Morrow::EntityManager::UnknownId => ex
         task[:last_error] = ex
         false

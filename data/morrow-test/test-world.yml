@@ -64,6 +64,16 @@
       east: spec:room/1/exit/east-to-2
       west: spec:room/1/exit/west-to-cupboard
 
+- id: spec:passage/to-1
+  base: morrow:exit
+  components:
+  - destination: spec:room/1
+
+- update: morrow:room/void
+  components:
+  - exits:
+      west: spec:passage/to-1
+
 - id: spec:room/2
   base: morrow:room
   components:

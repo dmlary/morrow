@@ -61,7 +61,8 @@ class Morrow::EntityManager
     id ||= SecureRandom.uuid
 
     # make sure the id isn't a duplicate
-    raise DuplicateId, id if @entities.has_key?(id)
+    raise DuplicateId, "entity already exists: #{id.inspect}" if
+        @entities.has_key?(id)
 
     begin
       entity = @entities[id] = []
@@ -86,6 +87,16 @@ class Morrow::EntityManager
 
     # return the id
     id
+  end
+
+  # Check to see if a given entity exists
+  def entity_exists?(id)
+    @entities.has_key?(id)
+  end
+
+  # Ensure a given entity id exists, or raise an UnknownId error
+  def entity_exists!(id)
+    @entities.has_key?(id) or raise UnknownId, "unknown entity: #{id}"
   end
 
   # merge_entity
