@@ -324,6 +324,31 @@ describe Morrow::EntityManager do
             returns: 'component instance'
       end
     end
+
+    context 'is a Hash' do
+      let(:entity) { em.create_entity }
+
+      context 'with multiple keys' do
+        it 'will raise an ArgumentError' do
+          expect { em.add_component(entity, a: {}, b: {}) }
+              .to raise_error(ArgumentError)
+        end
+      end
+
+      context 'with a single key for an unknown component' do
+        it 'will raise UnknownComponent' do
+          expect { em.add_component(entity, a: {}) }
+              .to raise_error(described_class::UnknownComponent)
+        end
+      end
+
+      context 'with a single key for a known component' do
+        it 'will pass the value to the component initializer' do
+          comp = em.add_component(entity, unique_test: { a: :pass })
+          expect(comp.a).to eq(:pass)
+        end
+      end
+    end
   end
 
   describe '#get_component(id, comp)' do

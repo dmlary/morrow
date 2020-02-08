@@ -71,7 +71,9 @@ end
 
 ### Expanding Morrow
 
-Additional components and Systems can be easily added to Morrow
+Additional Components, Systems and Commands can be easily added to Morrow.  The
+following example implements a basic poison skill, along with supporting
+Component & System.
 
 ```ruby
 module Poison
@@ -79,29 +81,34 @@ module Poison
   # Create a custom Component for tracking Poison
   class Component < Morrow::Component
     field :damage, type: Numeric, desc: 'amount of damage to do'
-    field :frequency, type: Numeric, desc: 'frequency of damage'
-    field :next_tick, type: Time, desc: 'next time damage should occur'
+    field :frequency, type: Numeric, desc: 'frequency of damage in seconds'
     field :ticks, type: Integer, desc: 'number of ticks remaining'
+    field :next_tick, type: Time, desc: 'next time damage should occur'
   end
 
   # Create a System for performing updates to entities that are poisoned.
   module System < Morrow::System
 
-    # Create a view of all entities that are poisoned and have health (buried
-    # in the resources Component)
-    def self.view
-      @view ||= Morrow.get_view(all: [ :poisoned, :resources ])
+    # Define a filter to specify which entities this System operates on.  In
+    # this case, poison works on entities with the :poisoned Component created
+    # above (we'll assign the name later), and also a :resources Component that
+    # contains health.
+    def self.entity_filter
+      { all: [ :poisoned, :resources ] }
     end
 
     # Each update of the world, this method will be called for any entity that
-    # has both the poisoned component, and the resources component.  The order
-    # of the arguments is the same as the order of the Morrow#get_view call
-    # above.
+    # matches our entity filter above.  The order of arguments to this method
+    # will be entity id, then the components in the order defined in
+    # entity_filter().
     def self.update(entity, poison, resources)
       now = Time.now
       next if poison.next_update > now
 
       send_to_char(entity, 'You feel the poison burning in your veins.')
+      act('$n shivers in agony as $p veins pulse red.', actor: entity,
+          to: entity_room(entity))
+
       resources.health -= poison.damage
       if (poison.ticks -= 1) == 0
         remove_component(entity, poison)
@@ -111,16 +118,33 @@ module Poison
     end
   end
 
+  # Pull in a bunch of utility functions into this module so we can use them
+  # within our command below.
+  extend Morrow::Helpers
+
   # We'll need a command to poison things!
   def do_poison(actor, arg=nil)
-    unless victim = match_keyword(arg, animate_entities(actor))
-      send_to_char(actor, "They're not here to be poisoned.")
-      return
-    end
+    victim = find_victim!(actor: actor, keyword: arg,
+        absent: "They're not here to be poisoned.")
 
-    if rand(100) < 5    # or, you know, do a real skill check
+    if rand(100) < 10   # or, you know, do a real skill check
       send_to_char(actor, "You failed to poison them!")
       send_to_char(victim, "You feel momentarily ill, but the feeling passes.")
+
+      send_to_char(actor,
+          "You attempt to poison %{victim}, but %{victim:pronoun} recover
+
+      act("$act attempts to poison $vict, but $vict_pronoun recover.",
+          actor: actor, victim: victom)
+
+      # room: Actor attempts to poison Victim, but they recover.
+      # room: Actor attempts to poison Victim, but he recovers.
+      # room: Actor attempts to poison Victim, but she recovers.
+      # actor: You attempt to poison Victim, but they recover.
+      # actor: You attempt to poison Victim, but he recovers.
+      # actor: You attempt to poison Victim, but she recovers.
+      # victom: Actor attempts to poison you, but you recover.
+      act("$a attempt$sa to poison $b, but $pb recover$sb", actor, victim)
       return
     end
 
@@ -131,10 +155,11 @@ module Poison
   end
 end
 
-# Start up the server, and add the poison
+# Run the server, adding each of the pieces we implemented; the Component,
+# System, and the command.
 Morrow.run do |c|
-  c.components[:poison] = Poisoned
-  c.systems << PoisonSystem
+  c.components[:poison] = Poison::Component
+  c.systems << Poison::System
   c.command[:poison] = Poison.method(:do_poison)
 end
 ```
