@@ -39,6 +39,8 @@ describe Morrow::Loader do
       expect(em.get_component('entity', :player_config)).to_not be_nil
     end
 
-    it 'will update the metadata to denote the new base'
+    it 'will update the metadata to denote the new base' do
+      expect(get_component('entity', :metadata).base).to include('base')
+    end
   end
 end

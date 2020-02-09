@@ -42,18 +42,32 @@ describe Morrow::Helpers do
     end
   end
 
-  describe '.visibile_contents(actor: nil, cont: nil)' do
+  describe '.visible_contents(actor: nil, cont: nil)' do
     context 'when the container does not have the ContainerComponent' do
-      it 'will raise an exception'
+      it 'will raise an exception' do
+        entity = create_entity
+        expect { visible_contents(actor: leo, cont: entity) }
+            .to raise_error(Morrow::Error)
+      end
     end
+
     context 'when the container is empty' do
-      it 'will return an empty Array'
+      it 'will return an empty Array' do
+        bag = create_entity(base: 'morrow:obj/bag/small')
+        expect(visible_contents(actor: leo, cont: bag)).to eq([])
+      end
     end
     context 'when an item in the container is visible to the actor' do
-      it 'will be in included in the results'
+      it 'will be in included in the results' do
+        bag = create_entity(base: 'morrow:obj/bag/small')
+        ball = spawn_at(dest: bag, base: 'morrow:obj/junk/ball')
+        expect(visible_contents(actor: leo, cont: bag))
+            .to contain_exactly(ball)
+      end
     end
     context 'when an item in the container is not visible to the actor' do
-      it 'will not be included in the results'
+      # XXX commenting out this pending test until we get visibility
+      # it 'will not be included in the results'
     end
   end
 

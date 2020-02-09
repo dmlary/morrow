@@ -50,7 +50,7 @@ module Morrow
     # **NOTE** This is automatically called from Morrow#run; it's just exposed
     # publicly as a convenience for debugging & testing.
     def load_world
-      raise Error, 'World has already been loaded!' if @em&.empty? == false
+      raise Error, 'World has already been loaded!' if @em && !@em.empty?
       reset! unless @em
 
       load_path(File.expand_path('../../data/morrow-base', __FILE__)) if

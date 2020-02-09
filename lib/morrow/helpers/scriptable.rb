@@ -91,7 +91,7 @@ module Morrow::Helpers::Scriptable
   #   * on_exit
   #   * on_enter
   #
-  def move_entity(dest: nil, entity: nil, look: false)
+  def move_entity(dest:, entity:, look: false)
     container = get_component!(dest, :container)
     location = get_component!(entity, :location)
     src = location.entity
@@ -202,9 +202,7 @@ module Morrow::Helpers::Scriptable
   # Arguments:
   #   dest: container Entity to move entity to
   #   base: base Entity to spawn
-  def spawn_at(dest: nil, base: nil)
-    raise ArgumentError, 'no dest' unless dest
-    raise ArgumentError, 'no base' unless base
+  def spawn_at(dest:, base:)
 
     entity = spawn(base: base, area: entity_area(dest))
     move_entity(entity: entity, dest: dest)
@@ -235,7 +233,7 @@ module Morrow::Helpers::Scriptable
   # send_to_char
   #
   # Send output to entity if they have a connected ConnectionComponent
-  def send_to_char(char: nil, buf: nil)
+  def send_to_char(char:, buf:)
     conn_comp = get_component(char, :connection) or return
     return unless conn_comp.conn
     conn_comp.buf << buf.to_s
@@ -250,17 +248,12 @@ module Morrow::Helpers::Scriptable
     comp.contents
   end
 
-  # visible_contents
-  #
   # Return the array of Entities within a Container Entity that are visibile to
   # the actor.
-  def visible_contents(actor: nil, cont: nil)
-    raise ArgumentError, 'no actor' unless actor
-    raise ArgumentError, 'no container' unless cont
-
-    # XXX handle visibility checks at some point
-    comp = get_component(cont, :container) or return []
-    comp.contents.select { |c| get_component(c, :viewable) }
+  def visible_contents(actor:, cont:)
+    c = get_component(cont, :container) or
+        raise Morrow::Error, "not a container: #{cont}"
+    c.contents&.select { |e| entity_has_component?(e, :viewable) } or []
   end
 
   # entity_exits
@@ -275,9 +268,7 @@ module Morrow::Helpers::Scriptable
   # visible_exits
   #
   # Return the array of exits visible to actor in room.
-  def visible_exits(actor: nil, room: nil)
-    raise ArgumentError, 'no actor' unless actor
-    raise ArgumentError, 'no room' unless room
+  def visible_exits(actor:, room:)
 
     # XXX handle visibility checks at some point
 

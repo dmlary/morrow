@@ -151,7 +151,14 @@ class Morrow::Loader
       tmp = Morrow.em.create_entity(base: base, components: components)
       Morrow.em.merge_entity(update, tmp)
       Morrow.em.destroy_entity(tmp)
+
       remove.each { |c| remove_component(update, c.to_sym) }
+
+      # patch up the metadata
+      metadata = get_component!(update, :metadata)
+      metadata.base ||= []
+      metadata.base += base
+
       debug "updated entity #{update}"
     else
       entity = create_entity(id: id, base: base, components: components)
