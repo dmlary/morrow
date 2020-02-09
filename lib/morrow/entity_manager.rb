@@ -89,6 +89,11 @@ class Morrow::EntityManager
     id
   end
 
+  # check to see if there are any entities defined
+  def empty?
+    @entities.empty?
+  end
+
   # Check to see if a given entity exists
   def entity_exists?(id)
     @entities.has_key?(id)

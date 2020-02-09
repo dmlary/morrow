@@ -3,6 +3,15 @@ require "morrow"
 require 'pry-rescue'
 require 'pry-rescue/rspec'
 
+module Helpers
+  # generate a temporary filename
+  def tmppath
+    ts = Time.now.strftime('%Y%m%d')
+    File.join(Dir.tmpdir,
+        "rspec-morrow-#{$$}-#{ts}-#{rand(0xffffffff).to_s(16)}")
+  end
+end
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -20,4 +29,9 @@ RSpec.configure do |config|
   end
 
   Morrow.config.logger.level = Logger::ERROR
+  Morrow.config.world_dir =
+      File.expand_path('../../data/morrow-test', __FILE__)
+
+  config.include Morrow::Helpers
+  config.include Helpers
 end

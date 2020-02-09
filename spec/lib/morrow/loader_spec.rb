@@ -1,7 +1,7 @@
 describe Morrow::Loader do
-  let(:em) do
-    Morrow::EntityManager.new(components: Morrow.config.components)
-  end
+  let(:em) { Morrow.em }
+
+  before(:each) { Morrow.reset! }
 
   context 'file contains an update to an existing entity' do
     # We set up the following scenario:
@@ -17,7 +17,7 @@ describe Morrow::Loader do
       em.create_entity(id: 'base', components: :player_config)
       em.create_entity(id: 'entity', components: :exits)
 
-      loader = described_class.new(em)
+      loader = described_class.new
       loader.load_file(File .expand_path('../loader_entity_update.yml',
           __FILE__))
       loader.finalize

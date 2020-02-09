@@ -38,7 +38,7 @@ module Morrow
     # List of exceptions that have occurred in ths system.  When run in
     # development environment, Pry.rescued() can be used to debug these
     # exceptions.
-    attr_reader :exceptions, :em
+    attr_reader :exceptions, :em, :update_start_time
 
     # Get the server configuration.
     def config
@@ -50,13 +50,18 @@ module Morrow
     # **NOTE** This is automatically called from Morrow#run; it's just exposed
     # publicly as a convenience for debugging & testing.
     def load_world
-      raise Error, 'World has already been loaded!' if @em
-      @em = EntityManager.new(components: config.components)
+      raise Error, 'World has already been loaded!' if @em&.empty? == false
+      reset! unless @em
 
       load_path(File.expand_path('../../data/morrow-base', __FILE__)) if
           config.load_morrow_base
       load_path(config.world_dir)
       info 'world has been loaded'
+    end
+
+    # This will wipe the world entirely clean.  Used for testing
+    def reset!
+      @em = EntityManager.new(components: config.components)
     end
 
     # Run the server.  More advanced configuration can be done using the block
@@ -152,7 +157,7 @@ module Morrow
 
     # Load entities from a specific path.
     def load_path(base)
-      loader = Loader.new(@em)
+      loader = Loader.new
       Find.find(base)
           .select { |path| File.basename(path) =~ /^[^.].*\.yml$/ }
           .sort
@@ -170,4 +175,6 @@ require_relative 'morrow/components'
 require_relative 'morrow/configuration'
 require_relative 'morrow/web_server'
 require_relative 'morrow/entity_manager'
+require_relative 'morrow/helpers'
 require_relative 'morrow/loader'
+require_relative 'morrow/script'

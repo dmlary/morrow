@@ -1,12 +1,11 @@
 require 'facets/hash/rekey'
 
 class Morrow::Loader
-  include Morrow::Logging
+  include Morrow::Helpers
 
-  SUPPORTED_KEYS = %w{ id base components update }
+  SUPPORTED_KEYS = %w{ id base components update remove }
 
-  def initialize(em)
-    @em = em      # EntityManager
+  def initialize
     @tasks = []   # Array of tasks to be performed at #finish
   end
 
@@ -36,6 +35,8 @@ class Morrow::Loader
 
       load_error!("id and update are mutually exclusive", file, map) if
           entity['id'] and entity['update']
+
+      source = "#{file}:#{map.start_line + 1}"
 
       create = {}
       create[:id] = entity['id'] if entity.has_key?('id')
@@ -85,11 +86,12 @@ class Morrow::Loader
         end
       end
 
+      create[:remove] = entity['remove'] || []
+
       # defer the action if we're not able to do it at the moment
       begin
         create_or_update(**create)
       rescue Morrow::EntityManager::UnknownId
-        source = "#{file}:#{map.start_line + 1}"
         defer(source: source, entity: create)
       end
     end
@@ -120,7 +122,7 @@ class Morrow::Loader
       raise RuntimeError, 'unable to create deferred entities'
     end
 
-    @em.flush_updates
+    Morrow.em.flush_updates
   end
 
   private
@@ -142,16 +144,20 @@ class Morrow::Loader
 
   # create or update an entity.  This is an awful interface that grew out of
   # multiple changes; it needs to be cleaned up.
-  def create_or_update(id: nil, update: nil, base: [], components: [])
+  def create_or_update(id: nil, update: nil, base: [], components: [],
+      remove: [])
     if update
-      @em.entity_exists!(update)
-      tmp = @em.create_entity(base: base, components: components)
-      @em.merge_entity(update, tmp)
-      @em.destroy_entity(tmp)
+      entity_exists!(update)
+      tmp = Morrow.em.create_entity(base: base, components: components)
+      Morrow.em.merge_entity(update, tmp)
+      Morrow.em.destroy_entity(tmp)
+      remove.each { |c| remove_component(update, c.to_sym) }
       debug "updated entity #{update}"
     else
-      entity = @em.create_entity(id: id, base: base, components: components)
+      entity = create_entity(id: id, base: base, components: components)
+      remove.each { |c| remove_component(entity, c.to_sym) }
       debug "created entity #{entity}"
+      entity
     end
   end
 
