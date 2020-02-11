@@ -45,6 +45,10 @@ class Morrow::Configuration
   #   Morrow.config.components[:shadow] = ShadowComponent
   attr_accessor :components
 
+  # Hash of command name to Command definitions.  All commands that are defined
+  # in the world appear in this Hash.
+  attr_accessor :commands
+
   # Directory that contains runtime data for Morrow.  Used as the default
   # prefix for world_dir and player_dir
   attr_accessor :data_dir
@@ -96,6 +100,10 @@ class Morrow::Configuration
       teleport: Morrow::TeleportComponent,
       affect: Morrow::AffectComponent,
     }
+
+    # Note: this hash is populated dynamically by modules that extend the
+    # Command module.
+    @commands = {}
   end
 
   def development?

@@ -43,11 +43,15 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'facets', '~> 3'
   spec.add_dependency 'parser', '~> 2.7'
   spec.add_dependency 'thor'
+  spec.add_dependency 'bcrypt'
+  spec.add_dependency 'method_source'
 
   spec.add_dependency 'pry'
   spec.add_dependency 'pry-rescue'
   spec.add_dependency 'pry-stack_explorer'
 
+  # breaking change in 2.2 of rack; thin server won't start
+  spec.add_dependency 'rack', '~> 2.0.8'
   spec.add_dependency 'thin', '~> 1'
   spec.add_dependency 'sinatra', '~> 2'
   spec.add_dependency 'rack-contrib', '~> 2'

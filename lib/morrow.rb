@@ -115,7 +115,6 @@ module Morrow
           TelnetServer.start(config.host, config.telnet_port)
         rescue Exception => ex
           log_exception(ex)
-          Pry.rescued(ex)
         end
       end
     end
@@ -172,6 +171,7 @@ end
 
 require_relative 'morrow/component'
 require_relative 'morrow/components'
+require_relative 'morrow/command'
 require_relative 'morrow/configuration'
 require_relative 'morrow/web_server'
 require_relative 'morrow/entity_manager'

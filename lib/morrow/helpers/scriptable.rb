@@ -240,6 +240,22 @@ module Morrow::Helpers::Scriptable
     nil
   end
 
+  # Run a command as the given actor
+  def run_cmd(actor, buf)
+    name, arg = buf.split(/\s+/, 2)
+    name.downcase!
+
+    cmds = Morrow.config.commands
+    cmd = cmds[name] || begin
+        cmds.values
+            .select { |c| c.name.starts_with?(name) }
+            .max_by { |c| c.priority }
+    end
+
+    cmd ? cmd.handler.call(actor, arg) :
+        send_to_char(char: actor, buf: "unknown command: #{name}\n")
+  end
+
   # entity_contents
   #
   # Array of entities within an entity's ContainerComponent

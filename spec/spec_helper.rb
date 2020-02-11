@@ -10,6 +10,11 @@ module Helpers
     File.join(Dir.tmpdir,
         "rspec-morrow-#{$$}-#{ts}-#{rand(0xffffffff).to_s(16)}")
   end
+
+  # get the player output
+  def player_output(entity)
+    get_component!(entity, :connection).buf
+  end
 end
 
 RSpec.configure do |config|
