@@ -3,6 +3,7 @@
 # for another Entity, these are just the most generic among them.
 - id: morrow:room
   components:
+  - exits
   - environment
   - viewable:
       formatter: room

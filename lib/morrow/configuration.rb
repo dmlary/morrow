@@ -64,6 +64,10 @@ class Morrow::Configuration
   # loaded.  Default: true
   attr_accessor :load_morrow_base
 
+  # Time, in seconds, before an idle connection is disconnected.  Default: 15
+  # minutes
+  attr_accessor :disconnect_timeout
+
   def initialize
 
     @env = ENV['APP_ENV']&.to_sym || :development
@@ -79,6 +83,8 @@ class Morrow::Configuration
     @data_dir = File.join(base_dir, 'data')
     @world_dir = nil    #
     @load_morrow_base = true
+
+    @disconnect_timeout = 15 * 60
 
     @components = {
       view_exempt: Morrow::ViewExemptComponent,
@@ -107,6 +113,7 @@ class Morrow::Configuration
     @systems = [
       Morrow::System::Spawner,
       Morrow::System::Input,
+      Morrow::System::Connection,
     ]
 
     # Note: this hash is populated dynamically by modules that extend the

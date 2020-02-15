@@ -243,7 +243,7 @@ module Morrow::Helpers::Scriptable
   # Run a command as the given actor
   def run_cmd(actor, buf)
     name, arg = buf.split(/\s+/, 2)
-    name.downcase!
+    name = name.strip.chomp.downcase
 
     cmds = Morrow.config.commands
     cmd = cmds[name] || begin
@@ -253,7 +253,7 @@ module Morrow::Helpers::Scriptable
     end
 
     cmd ? cmd.handler.call(actor, arg) :
-        send_to_char(char: actor, buf: "unknown command: #{name}\n")
+        send_to_char(char: actor, buf: "unknown command: #{name}")
   rescue Morrow::Command::Error => ex
     send_to_char(char: actor, buf: ex.message)
   end

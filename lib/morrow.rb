@@ -6,7 +6,6 @@ require 'find'
 module Morrow; end
 require_relative 'morrow/version'
 require_relative 'morrow/logging'
-require_relative 'morrow/telnet_server'
 
 # Morrow MUD server
 #
@@ -128,6 +127,7 @@ module Morrow
         view = (@views[system] ||= @em.get_view(system.view))
         view.each { |a| system.update(*a) }
       end
+      em.flush_updates
     end
 
     private
@@ -184,6 +184,7 @@ require_relative 'morrow/component'
 require_relative 'morrow/components'
 require_relative 'morrow/helpers'
 require_relative 'morrow/system'
+require_relative 'morrow/telnet_server'
 require_relative 'morrow/configuration'
 require_relative 'morrow/command'
 require_relative 'morrow/web_server'

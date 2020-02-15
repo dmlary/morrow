@@ -243,6 +243,10 @@ class ConnectionComponent < Component
   no_save
   field :conn, desc: 'TelnetServer::Connection instance'
   field :buf, default: '', type: String, desc: 'String of pending output'
+
+  # Last time any input was received on this connection; updated by whichever
+  # server is handling conn.
+  field :last_recv, type: Time
 end
 
 class TeleporterComponent < Component

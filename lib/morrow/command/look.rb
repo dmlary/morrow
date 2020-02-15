@@ -11,7 +11,7 @@ module Morrow::Command::Look
       room = entity_location(actor) or fault("actor has no location: #{actor}")
       into = false
 
-      dir, target = get_component(room, :exits)&.each.find do |dir, dest|
+      dir, target = get_component(room, :exits)&.each&.find do |dir, dest|
         dir.to_s.start_with?(arg)
       end if arg
 

@@ -70,7 +70,7 @@ class Morrow::TelnetServer::Connection < EventMachine::Connection
     # when the encoding is UTF-8
     buf.force_encoding("ASCII-8BIT").gsub(COLOR_CODE_REGEX) do |code|
       code = COLOR_MAP.keys.sample if code == '&.'
-      active_handler.color? ? "\e[%sm" % [ COLOR_MAP[code] ] : ''
+      handler.color? ? "\e[%sm" % [ COLOR_MAP[code] ] : ''
     end
   end
 end

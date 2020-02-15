@@ -7,3 +7,4 @@ end
 
 require_relative 'system/spawner'
 require_relative 'system/input'
+require_relative 'system/connection'
