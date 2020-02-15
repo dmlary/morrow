@@ -63,18 +63,32 @@ class LocationComponent < Component
   field :entity, type: :entity, desc: 'Entity that this Entity is within'
 end
 
+# Denotes the visibility of the component in the world, and which of it's
+# peer Components are visible to 'look'.
+#
+# | type | short | long | desc | contents | exits | keywords |
+# | ---- | ----- | ---- | ---- | -------- | ----- | -------- |
+# | room | yes   | nil  | yes  | :long    | true  | false    |
+# | char | yes   | yes  | yes  | nil      | false | true     |
+# | obj  | yes   | yes  | yes  | :short   | false | true     |
+# | extra| nil   | nil  | yes  | nil      | false | false    |
+# | exit | yes   | nil  | yes  | nil      | false | false    |
+#
 class ViewableComponent < Component
   desc 'Entity is viewable within the world'
 
-  field :format, freeze: true, type: String,
-      valid: %w{ room object character extra_desc exit },
-      desc: 'How the "look" command should show this entity'
   field :short, freeze: true, type: String,
       desc: 'char name, object name, room title'
   field :long, freeze: true, type: String,
       desc: 'object resting on the ground; npc standing'
   field :desc, freeze: true, type: String,
       desc: 'character, item, or room desc'
+
+  # Formatter to use when looked at.
+  field :formatter, type: String, valid: %s{ room obj char exit desc_only }
+
+  # Container contents are viewable
+  field :contents, type: :boolean, default: false
 end
 
 class AnimateComponent < Component

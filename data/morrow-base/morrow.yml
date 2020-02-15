@@ -5,7 +5,7 @@
   components:
   - environment
   - viewable:
-      format: room
+      formatter: room
       short: An indescribable room
       desc: |-
         There is space here.
@@ -25,7 +25,7 @@
   - keywords:
     - [ char ]
   - viewable:
-      format: character
+      formatter: char
       short: a non-descript character
       long: |-
         You see nothing special about them.
@@ -36,7 +36,7 @@
   - keywords:
     - [ obj ]
   - viewable:
-      format: object
+      formatter: obj
       short: an object
       long: You see nothing special...
 
@@ -76,7 +76,7 @@
 - id: morrow:exit
   components:
   - viewable:
-      format: exit
+      formatter: desc_only
       desc: You see nothing special...
   - destination:
 
@@ -86,7 +86,7 @@
   - keywords:
     - [ door ]
   - viewable:
-      format: object
+      formatter: obj
       short: a door
       desc: A wooden door bars your way.
 
@@ -98,6 +98,7 @@
   - viewable:
       short: a small bag
       long: a small bag is here, collecting dust
+      contents: true
   - container:
       max_volume: 10
   - closable
@@ -110,6 +111,7 @@
   - viewable:
       short: a wooden chest
       long: a wooden chest rests on the floor
+      contents: true
   - container:
       max_volume: 100
   - closable

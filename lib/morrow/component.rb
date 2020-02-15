@@ -265,4 +265,10 @@ class Morrow::Component
         self.class.fields.has_key?(key)
     send("#{key}=", value)
   end
+
+  # Iterate through each field/value pair in the component.
+  def each
+    return enum_for(:each) unless block_given?
+    self.class.fields.each { |name, _| yield name, send(name) }
+  end
 end

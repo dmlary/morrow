@@ -135,7 +135,7 @@ module Morrow::Helpers::Scriptable
       tele = get_component!(entity, :teleport)
       delay = teleporter.delay
       delay = rand(teleporter.delay) if delay.is_a?(Range)
-      tele.time = Time.now + delay
+      tele.time = now + delay
       tele.teleporter = dest
     end
 
@@ -248,16 +248,16 @@ module Morrow::Helpers::Scriptable
     cmds = Morrow.config.commands
     cmd = cmds[name] || begin
         cmds.values
-            .select { |c| c.name.starts_with?(name) }
+            .select { |c| c.name.start_with?(name) }
             .max_by { |c| c.priority }
     end
 
     cmd ? cmd.handler.call(actor, arg) :
         send_to_char(char: actor, buf: "unknown command: #{name}\n")
+  rescue Morrow::Command::Error => ex
+    send_to_char(char: actor, buf: ex.message)
   end
 
-  # entity_contents
-  #
   # Array of entities within an entity's ContainerComponent
   def entity_contents(entity)
     comp = get_component(entity, :container) or return []
@@ -267,13 +267,11 @@ module Morrow::Helpers::Scriptable
   # Return the array of Entities within a Container Entity that are visibile to
   # the actor.
   def visible_contents(actor:, cont:)
-    c = get_component(cont, :container) or
-        raise Morrow::Error, "not a container: #{cont}"
-    c.contents&.select { |e| entity_has_component?(e, :viewable) } or []
+    get_component(cont, :container)
+        &.contents
+        &.select { |e| entity_has_component?(e, :viewable) } or []
   end
 
-  # entity_exits
-  #
   # Get all the exits in a room; most likely you want to use visible_exits
   # instead.
   def entity_exits(room)
@@ -281,23 +279,19 @@ module Morrow::Helpers::Scriptable
     exits.get_modified_fields.values
   end
 
-  # visible_exits
-  #
   # Return the array of exits visible to actor in room.
   def visible_exits(actor:, room:)
 
     # XXX handle visibility checks at some point
 
     exits = get_component(room, :exits) or return []
-    World::CARDINAL_DIRECTIONS.map do |dir|
+    exits.class.fields.map do |dir,_|
       ex = exits.send(dir) or next
       next if entity_closed?(ex) and entity_concealed?(ex)
       ex
     end.compact
   end
 
-  # entity_components(entity)
-  #
   # Returns array of Components for an entity.
   #
   # Note: Most likely you don't need this, and should be using get_view() or
@@ -385,11 +379,14 @@ module Morrow::Helpers::Scriptable
     false
   end
 
-  # entity_animate?
-  #
   # check if the entity is animate
   def entity_animate?(entity)
-    entity_has_component?(entity, :animate)
+    get_component(entity, :animate) != nil
+  end
+
+  # check if the entity is container
+  def entity_container?(entity)
+    get_component(entity, :container) != nil
   end
 
   # entity_short

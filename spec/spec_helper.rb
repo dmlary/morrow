@@ -15,6 +15,18 @@ module Helpers
   def player_output(entity)
     get_component!(entity, :connection).buf
   end
+
+  # reset the world, load the test world, and populate it
+  def reset_world
+    Morrow.reset!
+    Morrow.load_world
+    Morrow.update
+  end
+
+  # strip our color codes from a string
+  def strip_color_codes(str)
+    str.gsub(Morrow::TelnetServer::Connection::COLOR_CODE_REGEX, '')
+  end
 end
 
 RSpec.configure do |config|

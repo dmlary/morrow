@@ -44,10 +44,9 @@ describe Morrow::Helpers do
 
   describe '.visible_contents(actor: nil, cont: nil)' do
     context 'when the container does not have the ContainerComponent' do
-      it 'will raise an exception' do
+      it 'will return an empty array' do
         entity = create_entity
-        expect { visible_contents(actor: leo, cont: entity) }
-            .to raise_error(Morrow::Error)
+        expect(visible_contents(actor: leo, cont: entity)).to eq([])
       end
     end
 
@@ -57,6 +56,7 @@ describe Morrow::Helpers do
         expect(visible_contents(actor: leo, cont: bag)).to eq([])
       end
     end
+
     context 'when an item in the container is visible to the actor' do
       it 'will be in included in the results' do
         bag = create_entity(base: 'morrow:obj/bag/small')
@@ -297,7 +297,7 @@ describe Morrow::Helpers do
             expect(teleport.teleporter).to eq(dest)
           end
           it 'will set the time' do
-            expect(teleport.time).to be > Time.now
+            expect(teleport.time).to be > now
           end
         else
           it 'will remove any teleport component' do
@@ -313,7 +313,7 @@ describe Morrow::Helpers do
 
       it 'will set time to delay seconds in the future' do
         move_entity(dest: dest, entity: leo)
-        expect(teleport.time).to be_within(1).of(Time.now + 10)
+        expect(teleport.time).to be_within(1).of(now + 10)
       end
     end
     context 'teleporter has Range delay' do
@@ -322,7 +322,7 @@ describe Morrow::Helpers do
 
       it 'will set time to random seconds in the future' do
         move_entity(dest: dest, entity: leo)
-        expect(teleport.time - Time.now).to be_between(60, 90)
+        expect(teleport.time - now).to be_between(60, 90)
       end
     end
   end

@@ -32,6 +32,7 @@ module Morrow
   class Error < StandardError; end
 
   @exceptions = []
+  @views = {}
 
   class << self
 
@@ -105,8 +106,8 @@ module Morrow
         EventMachine.error_handler { |ex| log_exception(ex) }
 
         begin
-          # Set up a periodic timer to update the world
-          # EventMachine::PeriodicTimer.new(World::PULSE) { World.update }
+          # Set up a periodic timer to update the world every quarter second.
+          EventMachine::PeriodicTimer.new(0.25) { Morrow.update }
 
           Rack::Handler.get('thin').run(WebServer.app,
               Host: config.host, Port: config.http_port, signals: false) if
@@ -116,6 +117,16 @@ module Morrow
         rescue Exception => ex
           log_exception(ex)
         end
+      end
+    end
+
+    # Run all the registered systems
+    def update
+      @update_start_time = Time.now
+
+      @config.systems.each do |system|
+        view = (@views[system] ||= @em.get_view(system.view))
+        view.each { |a| system.update(*a) }
       end
     end
 
@@ -171,10 +182,16 @@ end
 
 require_relative 'morrow/component'
 require_relative 'morrow/components'
-require_relative 'morrow/command'
+require_relative 'morrow/helpers'
+require_relative 'morrow/system'
 require_relative 'morrow/configuration'
+require_relative 'morrow/command'
 require_relative 'morrow/web_server'
 require_relative 'morrow/entity_manager'
-require_relative 'morrow/helpers'
 require_relative 'morrow/loader'
 require_relative 'morrow/script'
+
+# dynamically load all the commands
+Dir.glob(File.expand_path('../morrow/command/**.rb', __FILE__)).each do |file|
+  require file
+end

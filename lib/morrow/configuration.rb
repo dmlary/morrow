@@ -45,6 +45,9 @@ class Morrow::Configuration
   #   Morrow.config.components[:shadow] = ShadowComponent
   attr_accessor :components
 
+  # Array of System modules that should be run each Morrow.update()
+  attr_accessor :systems
+
   # Hash of command name to Command definitions.  All commands that are defined
   # in the world appear in this Hash.
   attr_accessor :commands
@@ -100,6 +103,10 @@ class Morrow::Configuration
       teleport: Morrow::TeleportComponent,
       affect: Morrow::AffectComponent,
     }
+
+    @systems = [
+      Morrow::System::Spawner
+    ]
 
     # Note: this hash is populated dynamically by modules that extend the
     # Command module.

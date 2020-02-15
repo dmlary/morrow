@@ -2,10 +2,18 @@ require 'method_source'
 require 'ostruct'
 
 module Morrow::Command
-  class SyntaxError < Morrow::Error; end
+  class Error < Morrow::Error; end
 
-  def self.extended(base)
-    base.extend(Morrow::Helpers)
+  class << self
+    def extended(base)
+      base.extend(Morrow::Helpers)
+    end
+  end
+
+  # raises a Morrow::Command::Error, with the associated message to send to
+  # the actor.
+  def command_error(msg)
+    raise Error, msg
   end
 
   # Any public singleton methods added to a module that extends this module

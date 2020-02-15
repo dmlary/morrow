@@ -118,6 +118,11 @@ module Morrow::Helpers
     loader.load_file(path)
     loader.finalize
   end
+
+  # Get the full list of entities present in the world.
+  def entities
+    Morrow.em.entities.keys
+  end
 end
 
 # Also pull in all the scriptable helpers, and add them to Helpers
