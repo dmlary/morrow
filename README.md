@@ -16,6 +16,10 @@ should not use this gem, but feel free to poke around.
     * TODO: Player's Interface
 * Scripting in sandboxed ruby
 
+## Gem Requirements
+
+* Ruby 2.6
+
 ## Installation
 
 Add this line to your application's Gemfile:
