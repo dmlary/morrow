@@ -52,7 +52,7 @@
   components:
   - player_config
   - connection
-  - command_queue
+  - input
 
 - id: morrow:race/human
   base: morrow:char

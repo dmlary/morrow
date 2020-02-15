@@ -27,6 +27,21 @@ module Helpers
   def strip_color_codes(str)
     str.gsub(Morrow::TelnetServer::Connection::COLOR_CODE_REGEX, '')
   end
+
+  # Toggle logging output.  Useful for tests that raise exceptions that go into
+  # log_exception(), otherwise the rspec output would get very noisy.
+  def toggle_logging
+    logger = Morrow.config.logger
+
+    @logger_orig_level ||= logger.level
+
+    # If the logging level is set to debug, assume the test-runner wanted all
+    # the logging output
+    return if @logger_orig_level < Logger::INFO
+
+    logger.level = @logger_orig_level == logger.level ?
+        Logger::FATAL : @logger_orig_level
+  end
 end
 
 RSpec.configure do |config|

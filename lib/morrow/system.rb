@@ -6,3 +6,4 @@ module Morrow::System
 end
 
 require_relative 'system/spawner'
+require_relative 'system/input'

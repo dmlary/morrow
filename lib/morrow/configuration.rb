@@ -97,7 +97,7 @@ class Morrow::Configuration
       closable: Morrow::ClosableComponent,
       spawn_point: Morrow::SpawnPointComponent,
       spawn: Morrow::SpawnComponent,
-      command_queue: Morrow::CommandQueueComponent,
+      input: Morrow::InputComponent,
       connection: Morrow::ConnectionComponent,
       teleporter: Morrow::TeleporterComponent,
       teleport: Morrow::TeleportComponent,
@@ -105,7 +105,8 @@ class Morrow::Configuration
     }
 
     @systems = [
-      Morrow::System::Spawner
+      Morrow::System::Spawner,
+      Morrow::System::Input,
     ]
 
     # Note: this hash is populated dynamically by modules that extend the

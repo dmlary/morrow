@@ -228,7 +228,7 @@ class SpawnComponent < Component
       desc: 'next spawn event; Time instance'
 end
 
-class CommandQueueComponent < Component
+class InputComponent < Component
   desc' Command queue for characters'
 
   no_save
