@@ -50,8 +50,6 @@
   components:
   - keywords:
     - [ leonidas ]
-  - connection:
-      buf: '' # fake connection so send_to_char works
   - viewable:
       short: Leonidas
       long: Leonidas the Cursed
@@ -87,8 +85,6 @@
   - viewable:
       short: Generic Player
       long: Player the Generic of Springdale
-  - connection:
-      buf: '' # fake connection so send_to_char works
 
 - id: spec:room/1
   base: morrow:room

@@ -5,8 +5,15 @@ require 'morrow'
 require 'thor'
 require 'pry'
 
+# Create a namespace where we have access to all the helpers.  This will be
+# used by the pry session for serve & console.
+module Morrow::Console
+  extend Morrow::Helpers
+end
+
 class CLI < Thor
-  class_option(:config, aliases: 'c', type: :string, desc: 'configuration file')
+  class_option(:config, aliases: 'c', type: :string,
+      desc: 'configuration file')
   class_option(:env, aliases: 'e', type: :string, desc: 'environment')
   class_option(:data, type: :string, desc: 'data directory')
   class_option(:world, type: :string, desc: 'world directory or file')
@@ -15,15 +22,15 @@ class CLI < Thor
   def serve
     load_config
     t = Thread.new { Morrow.run }
-    sleep(0.5)  # because Morrow.run outputs stuff that hides the prompt
-    Morrow.pry
+    sleep(0.6)  # because Morrow.run outputs stuff that hides the prompt
+    Morrow::Console.pry
   end
 
   desc 'console', 'load morrow and run pry'
   def console
     load_config
     Morrow.load_world
-    Morrow.pry
+    Morrow::Console.pry
   end
 
   desc 'check', 'check world files for errors'

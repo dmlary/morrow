@@ -10,20 +10,14 @@ describe Morrow::Helpers do
             .to_not raise_error
       end
     end
-    context 'char is not connected' do
-      it 'will not error' do
-        char = create_entity(components: :connection)
-        expect { send_to_char(char: char, buf: 'blah') }
-            .to_not raise_error
-      end
-    end
     context 'char is connected' do
-      it 'will append the data to the output buffer' do
-        conn_comp = Morrow.config.components[:connection].new
-        conn_comp.conn = instance_double('Morrow::TelnetServer::Connection')
-        char = create_entity(components: conn_comp)
-        send_to_char(char: char, buf: 'passed')
-        expect(conn_comp.buf).to eq('passed')
+      it 'will append buf to connection.buf' do
+        conn = Morrow.config.components[:connection].new
+        buf = conn.buf
+        buf << 'pas'
+        char = create_entity(components: conn)
+        send_to_char(char: char, buf: 'sed')
+        expect(buf).to eq('passed')
       end
     end
   end

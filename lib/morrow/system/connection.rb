@@ -14,13 +14,12 @@ module Morrow::System::Connection
       if conn.error?
         info "client disconnected; #{conn.inspect}"
         conn.close_connection
-        comp.conn = nil
+        remove_component(actor, comp)
       elsif now > comp.last_recv + Morrow.config.disconnect_timeout
         info "client timed out; #{conn.inspect}"
         conn.send_data("timed out; closing connection\n")
         conn.close_connection_after_writing
-        comp.conn = nil
-        World.destroy_entity(actor)
+        remove_component(actor, comp)
       elsif buf = comp.buf and !buf.empty?
         conn.send_data(buf)
         buf.clear

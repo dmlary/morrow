@@ -93,6 +93,11 @@ class Morrow::Loader
         create_or_update(**create)
       rescue Morrow::EntityManager::UnknownId
         defer(source: source, entity: create)
+      rescue Exception => ex
+        raise Morrow::Error, <<~ERROR.chomp
+          error in entity file: #{source}: #{entity.pretty_inspect
+                                .chomp.gsub(/\n/, "\n" + ' ' * 16)}
+        ERROR
       end
     end
 

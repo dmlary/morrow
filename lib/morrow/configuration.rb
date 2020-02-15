@@ -87,7 +87,7 @@ class Morrow::Configuration
     @disconnect_timeout = 15 * 60
 
     @components = {
-      view_exempt: Morrow::ViewExemptComponent,
+      template: Morrow::TemplateComponent,
       keywords: Morrow::KeywordsComponent,
       container: Morrow::ContainerComponent,
       location: Morrow::LocationComponent,

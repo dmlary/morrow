@@ -13,7 +13,7 @@
 
 - id: morrow:template
   components:
-  - view_exempt
+  - template
 
 - id: morrow:char
   base: morrow:template
@@ -52,7 +52,6 @@
   base: morrow:char
   components:
   - player_config
-  - connection
   - input
 
 - id: morrow:race/human

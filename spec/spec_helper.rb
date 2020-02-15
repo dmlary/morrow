@@ -20,6 +20,7 @@ module Helpers
   def reset_world
     Morrow.reset!
     Morrow.load_world
+    Morrow.send(:init_views)
     Morrow.update
   end
 

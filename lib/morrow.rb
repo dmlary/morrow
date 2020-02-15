@@ -83,6 +83,7 @@ module Morrow
 
       info 'Loading the world'
       load_world
+      init_views
 
       info 'Morrow starting in %s mode' % config.env
       WebServer::Backend.set :environment, config.env
@@ -124,9 +125,21 @@ module Morrow
       @update_start_time = Time.now
 
       @config.systems.each do |system|
-        view = (@views[system] ||= @em.get_view(system.view))
+        unless view = @views[system]
+          @config.systems.delete(system)
+
+          error <<~ERROR.gsub(/\n/, ' ').chomp
+            no view found for #{system}; removed.  This may have occurred if
+            the system was added to Morrow.config.systems after Morrow.run was
+            called; runtime addition of systems is not supported.
+          ERROR
+
+          next
+        end
+
         view.each { |a| system.update(*a) }
       end
+
       em.flush_updates
     end
 
@@ -176,6 +189,23 @@ module Morrow
         loader.load_file(path)
       end
       loader.finalize
+    end
+
+    # For all configured systems, let's create the required views.
+    def init_views
+      @views = @config.systems.inject({}) do |o,system|
+        view_args = system.view
+
+        # Add { excl: :template } to the args unless the system already put
+        # :template somewhere in the args.
+        unless view_args.values.flatten.include?(:template)
+          view_args[:excl] ||= []
+          view_args[:excl] << :template
+        end
+
+        o[system] = @em.get_view(**view_args)
+        o
+      end
     end
   end
 end

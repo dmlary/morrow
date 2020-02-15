@@ -1,13 +1,10 @@
 require_relative 'component'
 
 module Morrow
-class ViewExemptComponent < Component
-  desc <<~DESC
-    This Component is to mark those Entity instances that should not be visible
-    to Systems via EntityManager::View.  This primarily applies to mob & object
-    entities loaded from disk, and used as templates to spawn other Entity
-    instances into the world.
-  DESC
+
+# This component is added to entities that should not be acted upon by most
+# systems.
+class TemplateComponent < Component
   no_save
 end
 
@@ -242,6 +239,8 @@ class ConnectionComponent < Component
   desc 'Connection for players'
   no_save
   field :conn, desc: 'TelnetServer::Connection instance'
+
+  # pending output buffer; will be sent by Morrow::System::Connection
   field :buf, default: '', type: String, desc: 'String of pending output'
 
   # Last time any input was received on this connection; updated by whichever
