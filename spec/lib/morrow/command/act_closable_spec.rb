@@ -76,4 +76,74 @@ describe Morrow::Command::ActClosable do
       end
     end
   end
+
+  describe 'close' do
+    describe 'exit' do
+      context 'that is open' do
+        before(:each) do
+          get_component('spec:room/1/exit/west-to-cupboard', :closable)
+              .closed = false
+          run_cmd(leo, 'close hidden-cupboard')
+        end
+
+        it 'will closed the exit' do
+          expect(entity_closed?('spec:room/1/exit/west-to-cupboard'))
+              .to be(true)
+        end
+
+        it 'will output "You close the hidden-cupboard."' do
+          expect(output).to include("You close the hidden-cupboard.")
+        end
+      end
+
+      context 'that is closed' do
+        it 'will output "It is already closed."' do
+          run_cmd(leo, 'close hidden-cupboard')
+          expect(output).to include('It is already closed.')
+        end
+      end
+    end
+
+    describe 'obj in room' do
+      context 'that is open' do
+        before(:each) { run_cmd(leo, 'close chest-open-empty') }
+
+        it 'will closed the chest' do
+          expect(entity_closed?('spec:obj/chest_open_empty')) .to be(true)
+        end
+
+        it 'will output "You close an wooden chest."' do
+          expect(output).to include("You close an open wooden chest.")
+        end
+      end
+      context 'that is closed' do
+        it 'will output "It is already closed."' do
+          run_cmd(leo, 'close chest-closed')
+          expect(output).to include('It is already closed.')
+        end
+      end
+    end
+
+    describe 'carried obj' do
+      context 'that is open' do
+        before(:each) { run_cmd(leo, 'close leo-bag-open') }
+
+        it 'will closed the bag' do
+          expect(entity_closed?('spec:mob/leo/bag_open'))
+              .to be(true)
+        end
+
+        it 'will output "You closed a small bag."' do
+          expect(output).to include("You close a small bag.")
+        end
+      end
+      context 'that is closed' do
+        it 'will output "It is already closed."' do
+          run_cmd(leo, 'close leo-bag-closed')
+          expect(output).to include('It is already closed.')
+        end
+      end
+    end
+  end
+
 end
