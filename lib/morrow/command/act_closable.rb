@@ -6,8 +6,8 @@ module Morrow::Command::ActClosable
     #
     # Syntax: open <door>, open <container>
     #
-    def open(actor, arg=nil)
-      command_error 'What would you like to open?' if arg.nil? || arg.empty?
+    def open(actor, arg)
+      command_error 'What would you like to open?' unless arg
 
       target = match_keyword(arg, closable_entities(actor)) or
           command_error 'You do not see that here.'
@@ -27,8 +27,8 @@ module Morrow::Command::ActClosable
     #
     # Syntax: close <door>, close <container>
     #
-    def close(actor, arg=nil)
-      return "Close what?\n" if arg.nil? || arg.empty?
+    def close(actor, arg)
+      return "Close what?\n" unless arg
 
       target = match_keyword(arg, closable_entities(actor)) or
           return "Unable to find anything named '#{arg}' to close."

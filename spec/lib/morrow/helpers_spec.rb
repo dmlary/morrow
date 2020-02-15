@@ -29,9 +29,9 @@ describe Morrow::Helpers do
     end
   end
 
-  describe '.spawn(base: nil, area: nil)' do
+  describe '.spawn(base:, area: nil)' do
     it 'will set Metadata.area to the area provided' do
-      entity = spawn(area: :passed)
+      entity = spawn(base: [], area: :passed)
       expect(get_component(entity, :metadata).area).to eq(:passed)
     end
   end

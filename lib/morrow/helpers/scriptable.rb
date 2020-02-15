@@ -212,10 +212,10 @@ module Morrow::Helpers::Scriptable
   # spawn
   #
   # Create a new instance of an entity from a base entity
-  def spawn(base: [], area: nil)
+  def spawn(base:, area: nil)
     entity = create_entity(base: base)
     debug("spawning #{entity} from #{base}")
-    remove_component(entity, :view_exempt)
+    remove_component(entity, :template)
     get_component!(entity, :metadata).area = area
 
     if container = get_component(entity, :container)
@@ -243,6 +243,7 @@ module Morrow::Helpers::Scriptable
   # Run a command as the given actor
   def run_cmd(actor, buf)
     name, arg = buf.split(/\s+/, 2)
+    arg = nil if arg && arg.empty?
     name = name.strip.chomp.downcase
 
     cmds = Morrow.config.commands

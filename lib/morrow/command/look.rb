@@ -74,6 +74,7 @@ module Morrow::Command::Look
         out << "%s\n" % viewable.desc
       end
 
+      out.chomp!
       send_to_char(char: actor, buf: out)
     end
 

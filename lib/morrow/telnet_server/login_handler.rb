@@ -16,7 +16,7 @@ class Morrow::TelnetServer::LoginHandler
     move_entity(entity: @char, dest: 'morrow:room/void')
     input_line('look')
 
-    remove_component(@char, :view_exempt)
+    remove_component(@char, :template)
   end
 
   def input_line(line)
