@@ -128,7 +128,7 @@ module Morrow::Helpers::Scriptable
 
     # perform the look for the entity if it was requested
     # XXX kludge for right now
-    send_to_char(char: entity, buf: Command.run(entity, 'look')) if look
+    run_cmd(entity, 'look') if look
 
     # schedule the teleport if the dest is a teleporter
     if teleporter = get_component(dest, :teleporter)

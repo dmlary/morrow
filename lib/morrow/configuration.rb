@@ -114,6 +114,7 @@ class Morrow::Configuration
       Morrow::System::Spawner,
       Morrow::System::Input,
       Morrow::System::Connection,
+      Morrow::System::Teleport,
     ]
 
     # Note: this hash is populated dynamically by modules that extend the
