@@ -235,7 +235,7 @@ module Morrow::Helpers::Scriptable
   # Send output to entity if they have a connected ConnectionComponent
   def send_to_char(char:, buf:)
     conn_comp = get_component(char, :connection) or return
-    return unless conn_comp.conn
+    return unless conn_comp.buf
     conn_comp.buf << buf.to_s
     nil
   end

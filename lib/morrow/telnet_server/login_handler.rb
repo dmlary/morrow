@@ -9,6 +9,7 @@ class Morrow::TelnetServer::LoginHandler
     @conn_comp = get_component!(@char, :connection)
     @conn_comp.conn = conn
     @conn_comp.last_recv = now
+    @conn_comp.buf = ''
     get_component!(@char, :input).queue = @input
     @config = get_component!(@char, :player_config)
     @config.color = true
