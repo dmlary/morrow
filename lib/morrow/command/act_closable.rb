@@ -17,9 +17,7 @@ module Morrow::Command::ActClosable
       command_error 'It is already open.' if !comp.closed
 
       comp.closed = false
-
       desc = entity_short(target) || "the #{entity_keywords(target)}"
-
       send_to_char(char: actor, buf: 'You open %s.' % desc)
     end
 
@@ -28,16 +26,17 @@ module Morrow::Command::ActClosable
     # Syntax: close <door>, close <container>
     #
     def close(actor, arg)
-      return "Close what?\n" unless arg
+      command_error 'What would you like to close?' unless arg
 
       target = match_keyword(arg, closable_entities(actor)) or
-          return "Unable to find anything named '#{arg}' to close."
+          command_error 'You do not see that here.'
 
       comp = get_component(target, :closable)
-      return "It is already closed." if comp.closed
+      command_error 'It is already closed.' if comp.closed
 
       comp.closed = true
-      return "You close #{entity_short(target) || arg}"
+      desc = entity_short(target) || "the #{entity_keywords(target)}"
+      send_to_char(char: actor, buf: 'You close %s.' % desc)
     end
 
     private
