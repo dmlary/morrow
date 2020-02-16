@@ -152,7 +152,7 @@
 - id: spec:room/1/exit/up-to-void
   base: morrow:exit
   components:
-  - destination: base:room/void
+  - destination: morrow:room/void
 
 # Used in testing for open/close exit
 - id: spec:room/1/exit/east-to-2
@@ -247,26 +247,28 @@
 - id: spec:exit/open
   base: morrow:exit
   components:
-  - destination: base:room/void
+  - destination: morrow:room/void
 
 - id: spec:exit/door/open
   base: morrow:exit
   components:
-  - destination: base:room/void
+  - destination: morrow:room/void
   - closable:
       closed: false
 
 - id: spec:exit/door/closed
   base: morrow:exit
   components:
-  - destination: base:room/void
+  - destination: morrow:room/void
   - closable:
       closed: true
+  - keywords:
+    - [ door ]
 
 - id: spec:exit/door/open/hidden
   base: morrow:exit
   components:
-  - destination: base:room/void
+  - destination: morrow:room/void
   - closable:
       closed: false
   - concealed
@@ -274,10 +276,12 @@
 - id: spec:exit/door/closed/hidden
   base: morrow:exit
   components:
-  - destination: base:room/void
+  - destination: morrow:room/void
   - closable:
       closed: true
   - concealed
+  - keywords:
+    - [ door ]
 
 # Used for movement tests, specifically into a full room
 - id: spec:room/full

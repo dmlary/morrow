@@ -80,8 +80,6 @@ module Morrow::Helpers::Scriptable
     (keywords & World::CARDINAL_DIRECTIONS).first or keywords.first
   end
 
-  # move_entity
-  #
   # Move an entity into the ContainerComponent of another entity.  If the
   # entity being moved already resides within another entity's
   # ContainerComponent, first remove it from it's existing container.
