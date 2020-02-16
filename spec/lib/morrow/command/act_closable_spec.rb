@@ -145,5 +145,4 @@ describe Morrow::Command::ActClosable do
       end
     end
   end
-
 end

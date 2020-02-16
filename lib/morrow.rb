@@ -2,6 +2,7 @@ require 'eventmachine'
 require 'rack'
 require 'yaml'
 require 'find'
+require 'benchmark'
 
 module Morrow; end
 require_relative 'morrow/version'
@@ -137,7 +138,11 @@ module Morrow
           next
         end
 
-        view.each { |a| system.update(*a) }
+        bm = Benchmark.measure do
+          view.each { |a| system.update(*a) }
+        end
+        system.append_system_perf(bm)
+
       end
 
       em.flush_updates
