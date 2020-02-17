@@ -4,7 +4,6 @@ class Morrow::EntityManager
 
   class UnsupportedFileType < Morrow::Error; end
   class DuplicateId < Morrow::Error; end
-  class UnknownId < Morrow::Error; end
   class ComponentPresent < Morrow::Error; end
   class UnknownComponent < Morrow::Error; end
 
@@ -70,8 +69,8 @@ class Morrow::EntityManager
       # merge any requested bases into the new entity
       base.each do |b|
         merge_entity(id, b)
-      rescue UnknownId
-        raise UnknownId, "unknown base entity: #{b}"
+      rescue Morrow::UnknownEntity
+        raise Morrow::UnknownEntity, "unknown base entity: #{b}"
       end
 
       # clear the modified flags on all of our components; they came from the
@@ -99,9 +98,10 @@ class Morrow::EntityManager
     @entities.has_key?(id)
   end
 
-  # Ensure a given entity id exists, or raise an UnknownId error
+  # Ensure a given entity id exists, or raise an Morrow::UnknownEntity error
   def entity_exists!(id)
-    @entities.has_key?(id) or raise UnknownId, "unknown entity: #{id}"
+    @entities.has_key?(id) or
+        raise Morrow::UnknownEntity, "unknown entity: #{id}"
   end
 
   # merge_entity
@@ -110,9 +110,9 @@ class Morrow::EntityManager
   # Component, the Component will be merged into dest.
   def merge_entity(dest_id, other_id)
     dest_id = dest_id.to_s unless dest_id.is_a?(String)
-    raise UnknownId, "unknown dest entity: #{dest_id}" unless
+    raise Morrow::UnknownEntity, "unknown dest entity: #{dest_id}" unless
         dest = @entities[dest_id]
-    raise UnknownId, "unknown other entity: #{other_id}" unless
+    raise Morrow::UnknownEntity, "unknown other entity: #{other_id}" unless
         others = @entities[other_id.to_s]
 
     others.each_with_index do |other,i|
@@ -163,7 +163,8 @@ class Morrow::EntityManager
   #   add_component('player', instance)
   #
   def add_component(id, *components)
-    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
+    raise Morrow::UnknownEntity,
+        "unknown entity #{id}" unless entity = @entities[id]
 
     out = components.map do |component|
       type, args, instance = case component
@@ -209,7 +210,8 @@ class Morrow::EntityManager
   #
   # Get a component for an entity.
   def get_component(id, type)
-    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
+    raise Morrow::UnknownEntity,
+        "unknown entity #{id}" unless entity = @entities[id]
 
     index, klass = @comp_map[type]
 
@@ -228,7 +230,8 @@ class Morrow::EntityManager
   #
   # Get all instances of a Component for the Entity.
   def get_components(id, comp)
-    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
+    raise Morrow::UnknownEntity,
+        "unknown entity #{id}" unless entity = @entities[id]
 
     index, _ = @comp_map[comp]
     return [] unless index
@@ -248,7 +251,8 @@ class Morrow::EntityManager
   # Returns:
   #   Array of component instances removed
   def remove_component(id, type)
-    raise UnknownId, "unknown entity #{id}" unless entity = @entities[id]
+    raise Morrow::UnknownEntity,
+        "unknown entity #{id}" unless entity = @entities[id]
 
     # Massage our type to handle someone passing in a component instance
     type, instance = type.is_a?(Morrow::Component) ?

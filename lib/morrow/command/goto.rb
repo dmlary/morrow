@@ -13,7 +13,7 @@ module Morrow::Command::Goto
       dest ||= arg
 
       move_entity(entity: actor, dest: dest, look: true)
-    rescue Morrow::EntityManager::UnknownId
+    rescue Morrow::UnknownEntity
       command_error 'That does not exist in the world'
     end
   end

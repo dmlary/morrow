@@ -19,7 +19,7 @@ module Morrow::System::Teleport
 
       teleporter = begin
         get_component(teleport.teleporter, :teleporter)
-      rescue Morrow::EntityManager::UnknownId
+      rescue Morrow::UnknownEntity
         remove_component(entity, teleport)
         warn('%s: teleporter id invalid; %s; removed' %
             [ entity, teleport.to_h ])

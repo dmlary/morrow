@@ -24,8 +24,8 @@
           :hide-default-footer="true"
           :hide-default-header="true"
           :disable-pagination="true"
-          :disable-sort="true"
           :search="search"
+          :sort-by="[ '_comp_name', '_field' ]"
           dense
         >
           <template #group.header="{ group: comp_id, toggle: toggle }">
@@ -33,7 +33,7 @@
               <v-tooltip top transition="fade-transition">
                 <template v-slot:activator="{ on }">
                   <span v-on="on">
-                    {{ components[comp_id].name }}
+                    {{ components[comp_id].type }}
                   </span>
                 </template>
                 {{ components[comp_id].desc }}
@@ -181,6 +181,7 @@ export default {
     components: {},
     component_fields: [],
     edit: { active: false },
+    entity: null,
     snack: false,
     snack_color: "info",
     snack_text: "",
@@ -194,24 +195,25 @@ export default {
     }
   },
   mounted: async function() {
-    var entity = await this.$morrow.get_entity(this.id);
-    var components = entity.components.sort((a, b) => {
-      return a.name > b.name ? 1 : -1;
-    });
+    this.entity = await this.$morrow.get_entity(this.id);
 
-    components.forEach(comp => {
-      this.components[comp.id] = comp;
-      for (let name of Object.keys(comp.fields)) {
-        let field = comp.fields[name];
-        this.component_fields.push(
-          this._.merge(field, {
-            _comp_id: comp.id,
-            _comp_name: comp.name,
-            _key: comp.id + "." + name,
-            _field: name
-          })
-        );
-      }
+    this.entity.components.forEach(cid => {
+      this.$morrow.get_component(cid).then(comp => {
+        this.components[comp.component] = comp;
+
+        for (let name of Object.keys(comp.fields)) {
+          let field = comp.fields[name];
+
+          this.component_fields.push(
+            this._.merge(field, {
+              _comp_id: comp.component,
+              _comp_name: comp.type,
+              _key: comp.component + "." + name,
+              _field: name
+            })
+          );
+        }
+      });
     });
   },
   methods: {
@@ -240,6 +242,7 @@ export default {
           this.components[comp_id].fields[field].value = value;
         })
         .catch(e => {
+          console.log(e)
           this.show_snack("error", e.response.data);
         });
     },

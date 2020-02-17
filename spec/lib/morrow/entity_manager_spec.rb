@@ -219,7 +219,7 @@ describe Morrow::EntityManager do
       it 'will raise EntityManager::UnknownId' do
         other = em.create_entity
         expect { em.merge_entity('missing', other) }
-            .to raise_error(described_class::UnknownId)
+            .to raise_error(Morrow::UnknownEntity)
       end
     end
 
@@ -355,7 +355,7 @@ describe Morrow::EntityManager do
     context 'entity does not exist' do
       it 'will raise EntityManager::UnknownId' do
         expect { em.get_component('missing', :wolf) }
-            .to raise_error(described_class::UnknownId)
+            .to raise_error(Morrow::UnknownEntity)
       end
     end
 
@@ -450,7 +450,7 @@ describe Morrow::EntityManager do
     context 'entity does not exist' do
       it 'will raise EntityManager::UnknownId' do
         expect { em.get_components('missing', :noop) }
-            .to raise_error(described_class::UnknownId)
+            .to raise_error(Morrow::UnknownEntity)
       end
     end
 
@@ -542,7 +542,7 @@ describe Morrow::EntityManager do
     context 'entity does not exist' do
       it 'will raise EntityManager::UnknownId' do
         expect { em.remove_component('missing', :comp) }
-            .to raise_error(described_class::UnknownId)
+            .to raise_error(Morrow::UnknownEntity)
       end
     end
 
@@ -714,7 +714,7 @@ describe Morrow::EntityManager do
       it 'will raise EntityManager::UnknownId' do
         other = em.create_entity
         expect { em.merge_entity('missing', other) }
-            .to raise_error(described_class::UnknownId)
+            .to raise_error(Morrow::UnknownEntity)
       end
     end
 
@@ -722,7 +722,7 @@ describe Morrow::EntityManager do
       it 'will raise EntityManager::UnknownId' do
         base = em.create_entity
         expect { em.merge_entity(base, 'missing') }
-            .to raise_error(described_class::UnknownId)
+            .to raise_error(Morrow::UnknownEntity)
       end
     end
 

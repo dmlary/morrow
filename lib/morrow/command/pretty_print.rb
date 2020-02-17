@@ -18,7 +18,7 @@ module Morrow::Command::PrettyPrint
         ].compact.flatten
 
         target = match_keyword(target, all) or
-            raise Morrow::EntityManager::UnknownId
+            raise Morrow::UnknownEntity
       end
 
       buf = { entity: target, components: entity_components(target) }
@@ -26,7 +26,7 @@ module Morrow::Command::PrettyPrint
       buf = CodeRay.scan(buf, :ruby).term if player_config(actor, :color)
 
       send_to_char(char: actor, buf: buf.chomp)
-    rescue Morrow::EntityManager::UnknownId
+    rescue Morrow::UnknownEntity
       command_error 'That does not exist in the world'
     end
   end

@@ -49,7 +49,7 @@ module Morrow::Helpers::Scriptable
         spawn.active -= 1
         spawn.next_spawn ||= now + spawn.frequency
       end
-    rescue Morrow::EntityManager::UnknownId
+    rescue Morrow::UnknownEntity
       # spawn entity has already been destroyed; continue
     end
 
@@ -59,7 +59,7 @@ module Morrow::Helpers::Scriptable
           cont = get_component(location, :container)
         cont.contents.delete(entity)
       end
-    rescue Morrow::EntityManager::UnknownId
+    rescue Morrow::UnknownEntity
       # container entity has already been destroyed; continue
     end
 
@@ -296,7 +296,8 @@ module Morrow::Helpers::Scriptable
   # Note: Most likely you don't need this, and should be using get_view() or
   # get_component() which are both faster.
   def entity_components(entity)
-    Morrow.em.entities[entity].compact
+    Morrow.em.entities[entity]&.compact&.flatten or
+        raise Morrow::UnknownEntity, entity
   end
 
   # entity_location(entity)

@@ -11,7 +11,7 @@ module Morrow::Command::Spawn
       id = Morrow::Helpers.spawn_at(dest: entity_location(actor), base: arg)
       send_to_char(char: actor,
           buf: 'You wave your hand and %s appears.' % entity_short(id))
-    rescue Morrow::EntityManager::UnknownId
+    rescue Morrow::UnknownEntity
       command_error 'That is not a valid id.'
     end
   end

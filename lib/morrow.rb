@@ -30,6 +30,7 @@ module Morrow
   extend Logging
 
   class Error < StandardError; end
+  class UnknownEntity < Error; end
 
   @exceptions = []
   @views = {}

@@ -12,7 +12,7 @@ module Morrow::System::Spawner
       point.list.each do |spawn_entity|
         spawn = begin
           get_component(spawn_entity, :spawn)
-        rescue Morrow::EntityManager::UnknownId => ex
+        rescue Morrow::UnknownEntity => ex
           point.list.delete(spawn_entity)
           warn 'unknown entity (%s) in spawn_point.list for %s; removed' %
               [ spawn_entity, dest ]

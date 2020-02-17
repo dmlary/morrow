@@ -28,7 +28,7 @@ describe Morrow::Command::Look do
     before(:each) do
       get_component!(room, :exits).down = 'invalid entity'
       expect { run_cmd(leo, 'down') }
-          .to raise_error(Morrow::EntityManager::UnknownId)
+          .to raise_error(Morrow::UnknownEntity)
     end
 
     it 'will not move the actor' do
