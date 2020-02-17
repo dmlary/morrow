@@ -44,14 +44,17 @@ class CLI < Thor
 
   def load_config
     if options[:config]
-      YAML.load_file(path).each_pair do |key,value|
+      YAML.load_file(options[:config]).each_pair do |key,value|
+        value = File.expand_path(value) if key.end_with?('_dir')
         Morrow.config.send(key + '=', value)
       end
     end
 
     Morrow.config.env = options[:env].to_sym if options[:env]
-    Morrow.config.data_dir = options[:data] if options[:data]
-    Morrow.config.world_dir = options[:world] if options[:world]
+    Morrow.config.data_dir = File.expand_path(options[:data]) if
+        options[:data]
+    Morrow.config.world_dir = File.expand_path(options[:world]) if
+        options[:world]
   end
 end
 
