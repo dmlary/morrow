@@ -78,7 +78,7 @@ export default {
     entity.components.forEach(cid => {
       this.$morrow.get_component(cid).then(comp => {
         this.components.push(comp);
-      })
+      });
     });
   },
   methods: {

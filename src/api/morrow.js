@@ -10,7 +10,7 @@ export default url => {
     async execute(method, path, data) {
       return client({
         method,
-        url: '/api/v1' + path,
+        url: "/api/v1" + path,
         data
       }).then(req => {
         return req.data;

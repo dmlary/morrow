@@ -25,7 +25,7 @@
           :hide-default-header="true"
           :disable-pagination="true"
           :search="search"
-          :sort-by="[ '_comp_name', '_field' ]"
+          :sort-by="['_comp_name', '_field']"
           dense
         >
           <template #group.header="{ group: comp_id, toggle: toggle }">
