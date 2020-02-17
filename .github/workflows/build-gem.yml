@@ -1,0 +1,19 @@
+name: build-gem
+on: pull_request
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-ruby@v1
+      with:
+        ruby-version: 2.6.x
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 13.x
+    - name: install dependencies
+      run: ./bin/setup
+    - name: build gem
+      run: rake build

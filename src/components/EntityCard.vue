@@ -242,7 +242,6 @@ export default {
           this.components[comp_id].fields[field].value = value;
         })
         .catch(e => {
-          console.log(e)
           this.show_snack("error", e.response.data);
         });
     },
