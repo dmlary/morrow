@@ -31,7 +31,7 @@
                     :key="id + component.id + field_name"
                   >
                     <td class="component-field">
-                      {{ component.name }}.{{ field_name }}
+                      {{ component.type }}.{{ field_name }}
                     </td>
                     <td>
                       <pre>{{ field.value }}</pre>
@@ -72,11 +72,14 @@ export default {
       return metadata ? metadata.fields.area.value : null;
     }
   },
-  async created() {
-    var data = await this.$morrow.get_entity(this.id);
-    this.components = data.components.sort((a, b) =>
-      a.name > b.name ? 1 : -1
-    );
+  async mounted() {
+    var entity = await this.$morrow.get_entity(this.id);
+
+    entity.components.forEach(cid => {
+      this.$morrow.get_component(cid).then(comp => {
+        this.components.push(comp);
+      });
+    });
   },
   methods: {
     get_component(name) {

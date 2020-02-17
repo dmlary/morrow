@@ -1,0 +1,7 @@
+---
+- update: entity
+  base: base
+  components:
+  - exits:
+      east: passed
+  - spawn

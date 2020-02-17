@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+set -vx
+
+bundle install --jobs 4 --retry 3
+
+# do all the npm install only if they have npm.  It's possible to only want to
+# work on the ruby side of things.
+which npm > /dev/null && npm install

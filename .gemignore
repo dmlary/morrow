@@ -1,0 +1,14 @@
+src/*
+spec/*
+bin/setup
+.gemignore
+.gitignore
+.rspec*
+.travis.yml
+.eslintrc.js
+.browserslistrc
+.env.development
+babel.config.js
+package.json
+package-lock.json
+Rakefile

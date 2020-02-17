@@ -1,2 +1,0 @@
-mud-server: ./bin/run-server.rb
-vue-server: npm run serve

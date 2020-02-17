@@ -1,36 +1,9 @@
-require 'yaml'
-require 'facets/kernel/deep_clone'
+require "bundler/setup"
+require "morrow"
 require 'pry-rescue'
 require 'pry-rescue/rspec'
 
-$:.unshift(File.expand_path(__FILE__, '../lib'))
-require 'world'
-require 'telnet_server'
-
 module Helpers
-  def load_yaml_entities(buf)
-    YAML.load(buf).map do |config|
-      components = config['components'].map do |comp|
-        key, value = comp.first
-        Component.new(key, value)
-      end
-      Entity.new(config['type'], *components)
-    end
-  end
-
-  def load_test_world
-    World.reset!
-    World.load(File.join(File.dirname(__FILE__), '../data/world/base.yml'))
-    World.load(File.join(File.dirname(__FILE__), 'test-world.yml'))
-  end
-
-  # spawn_entities
-  #
-  # Kick off the spawning system one time
-  def spawn_entities
-    World.update
-  end
-
   # generate a temporary filename
   def tmppath
     ts = Time.now.strftime('%Y%m%d')
@@ -42,10 +15,39 @@ module Helpers
   def player_output(entity)
     get_component!(entity, :connection).buf
   end
+
+  # reset the world, load the test world, and populate it
+  def reset_world
+    Morrow.reset!
+    Morrow.load_world
+    Morrow.send(:init_views)
+    Morrow.update
+  end
+
+  # strip our color codes from a string
+  def strip_color_codes(str)
+    str.gsub(Morrow::TelnetServer::Connection::COLOR_CODE_REGEX, '')
+  end
+
+  # Toggle logging output.  Useful for tests that raise exceptions that go into
+  # log_exception(), otherwise the rspec output would get very noisy.
+  def toggle_logging
+    logger = Morrow.config.logger
+
+    @logger_orig_level ||= logger.level
+
+    # If the logging level is set to debug, assume the test-runner wanted all
+    # the logging output
+    return if @logger_orig_level < Logger::INFO
+
+    logger.level = @logger_orig_level == logger.level ?
+        Logger::FATAL : @logger_orig_level
+  end
 end
 
 RSpec.configure do |config|
-  config.include(Helpers)
+  # Enable flags like --only-failures and --next-failure
+  config.example_status_persistence_file_path = ".rspec_status"
 
   config.mock_with :rspec do |mocks|
     # This option should be set when all dependencies are being loaded
@@ -55,14 +57,14 @@ RSpec.configure do |config|
     mocks.verify_doubled_constant_names = true
   end
 
-  config.before(:suite) do
-    Helpers::Logging.logger.level = Logger::ERROR
+  config.expect_with :rspec do |c|
+    c.syntax = :expect
   end
-end
 
-# Helper for testing, add a method to strip our custom color codes
-class String
-  def strip_color_codes
-    gsub(TelnetServer::Connection::COLOR_CODE_REGEX, '')
-  end
+  Morrow.config.logger.level = Logger::ERROR
+  Morrow.config.world_dir =
+      File.expand_path('../../data/morrow-test', __FILE__)
+
+  config.include Morrow::Helpers
+  config.include Helpers
 end

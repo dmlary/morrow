@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'morrow'
+require 'thor'
+require 'pry'
+
+# Create a namespace where we have access to all the helpers.  This will be
+# used by the pry session for serve & console.
+module Morrow::Console
+  extend Morrow::Helpers
+end
+
+class CLI < Thor
+  class_option(:config, aliases: 'c', type: :string,
+      desc: 'configuration file')
+  class_option(:env, aliases: 'e', type: :string, desc: 'environment')
+  class_option(:data, type: :string, desc: 'data directory')
+  class_option(:world, type: :string, desc: 'world directory or file')
+
+  desc 'serve', 'run morrow server'
+  def serve
+    load_config
+    t = Thread.new { Morrow.run }
+    sleep(0.6)  # because Morrow.run outputs stuff that hides the prompt
+    Morrow::Console.pry
+  end
+
+  desc 'console', 'load morrow and run pry'
+  def console
+    load_config
+    Morrow.load_world
+    Morrow::Console.pry
+  end
+
+  desc 'check', 'check world files for errors'
+  def check
+    load_config
+    Morrow.load_world
+    puts "World loaded successfully"
+  end
+
+  private
+
+  def load_config
+    if options[:config]
+      YAML.load_file(path).each_pair do |key,value|
+        Morrow.config.send(key + '=', value)
+      end
+    end
+
+    Morrow.config.env = options[:env].to_sym if options[:env]
+    Morrow.config.data_dir = options[:data] if options[:data]
+    Morrow.config.world_dir = options[:world] if options[:world]
+  end
+end
+
+CLI.start(ARGV)

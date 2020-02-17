@@ -1,8 +1,0 @@
-module System
-end
-
-require_relative 'system/base'
-require_relative 'system/command_queue'
-require_relative 'system/connections'
-require_relative 'system/spawner'
-require_relative 'system/teleport'

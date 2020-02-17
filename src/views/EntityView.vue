@@ -7,7 +7,7 @@
 <script>
 export default {
   data: () => ({
-    id: null,
-  }),
+    id: null
+  })
 };
 </script>
