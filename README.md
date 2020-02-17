@@ -78,6 +78,8 @@ Additional Components, Systems and Commands can be easily added to Morrow.  The
 following example implements a basic poison skill, along with supporting
 Component & System.
 
+**NOTE: Currently not up to date**
+
 ```ruby
 module Poison
 
@@ -133,21 +135,6 @@ module Poison
     if rand(100) < 10   # or, you know, do a real skill check
       send_to_char(actor, "You failed to poison them!")
       send_to_char(victim, "You feel momentarily ill, but the feeling passes.")
-
-      send_to_char(actor,
-          "You attempt to poison %{victim}, but %{victim:pronoun} recover
-
-      act("$act attempts to poison $vict, but $vict_pronoun recover.",
-          actor: actor, victim: victom)
-
-      # room: Actor attempts to poison Victim, but they recover.
-      # room: Actor attempts to poison Victim, but he recovers.
-      # room: Actor attempts to poison Victim, but she recovers.
-      # actor: You attempt to poison Victim, but they recover.
-      # actor: You attempt to poison Victim, but he recovers.
-      # actor: You attempt to poison Victim, but she recovers.
-      # victom: Actor attempts to poison you, but you recover.
-      act("$a attempt$sa to poison $b, but $pb recover$sb", actor, victim)
       return
     end
 
