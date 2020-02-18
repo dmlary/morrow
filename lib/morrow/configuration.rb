@@ -108,6 +108,7 @@ class Morrow::Configuration
       teleporter: Morrow::TeleporterComponent,
       teleport: Morrow::TeleportComponent,
       affect: Morrow::AffectComponent,
+      help: Morrow::HelpComponent,
     }
 
     @systems = [

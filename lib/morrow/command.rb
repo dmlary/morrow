@@ -16,6 +16,21 @@ module Morrow::Command
     raise Error, msg
   end
 
+  # Create a help document for the following command.
+  def help(keywords, body)
+    keywords = [ keywords ] unless keywords.is_a?(Array)
+    keywords.map! { |w| w.to_s.downcase }
+    keywords.unshift('command') unless keywords.include?('command')
+    @help = { keywords: keywords, body: body.chomp }
+  end
+
+  # Define the priority of the following command.  When two commands match the
+  # same substring ('s' matching 'spawn' and 'south'), the command with the
+  # higher priority will be executed.
+  def priority(priority)
+    @priority = priority.to_i
+  end
+
   # Any public singleton methods added to a module that extends this module
   # will automatically be added to the command list for Morrow.
   def singleton_method_added(name)
@@ -24,10 +39,15 @@ module Morrow::Command
     return unless public_methods.include?(name)
 
     handler = method(name)
-    help = handler.comment
     name = name.to_s
 
     Morrow.config.commands[name] =
-        OpenStruct.new(name: name, priority: 0, help: help, handler: handler)
+        OpenStruct.new(name: name,
+            priority: @priority || 0,
+            handler: handler,
+            help: @help)
+
+    @help = nil
+    @priority = nil
   end
 end

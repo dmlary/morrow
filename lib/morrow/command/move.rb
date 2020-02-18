@@ -1,7 +1,16 @@
 module Morrow::Command::Move
   extend Morrow::Command
 
-  Morrow.config.components[:exits].fields.each do |dir,_|
+  dirs = Morrow.config.components[:exits].fields.keys
+
+  help(%w{movement} + dirs, <<~HELP)
+    Syntax: #{dirs.join(", ")}
+
+    These commands are used to move from room to room in the world.
+  HELP
+
+  dirs.each do |dir|
+    priority 100
     define_singleton_method(dir) do |actor,_|
       room = entity_location(actor) or
           fault("actor has not location: #{actor}")
