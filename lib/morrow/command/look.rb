@@ -45,13 +45,13 @@ module Morrow::Command::Look
         command_error 'It is closed.' if entity_closed?(target)
 
         out << "&W%s&0:\n" % viewable.short
-        out << format_contents(actor, target, :short)
+        out << (format_contents(actor, target, :short) || 'It is empty.')
 
       when :room
         out << "&W%s&0\n" % viewable.short
         out << "%s\n" % viewable.desc
         out << format_exits(target)
-        out << format_contents(actor, target, :long)
+        out << (format_contents(actor, target, :long) || '')
 
       when :char, :obj
         out << "%s\n" % viewable.desc if viewable.desc
@@ -120,10 +120,10 @@ module Morrow::Command::Look
           .inject('') do |out,entity|
         next out if entity == actor or
             !line = get_component(entity, :viewable)[method]
-        out << "&%s%s&0\n" % [ entity_animate?(target) ? 'C' : 'c', line ]
+        out << "&%s%s&0\n" % [ entity_animate?(entity) ? 'C' : 'c', line ]
       end
 
-      buf.empty? ? 'It is empty.' : buf
+      buf.empty? ? nil : buf
     end
 
     # construct the string shown by autoexit when looking at a room
@@ -135,7 +135,7 @@ module Morrow::Command::Look
           next unless dest
           closed = entity_closed?(dest)
           next if closed and entity_concealed?(dest)
-          buf << (closed ? '[ %s ] ' : '%s ') % dir
+          buf << (closed ? '&B[ %s ]&W ' : '%s ') % dir
         end
       end
 

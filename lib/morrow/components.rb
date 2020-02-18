@@ -303,4 +303,11 @@ class AffectComponent < Component
   field :type         # Affect type; :set, :delta, :push
   field :value        # value to use for affect
 end
+
+# Help documents are also entities, we store the details of the help in this
+# component.
+class HelpComponent < Component
+  # body of the help document
+  field :body
+end
 end
