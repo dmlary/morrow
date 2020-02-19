@@ -278,17 +278,15 @@ module Morrow::Helpers::Scriptable
     exits.get_modified_fields.values
   end
 
-  # Return the array of exits visible to actor in room.
-  def visible_exits(actor:, room:)
-
-    # XXX handle visibility checks at some point
-
+  # get all doors in this entity
+  def entity_doors(room)
     exits = get_component(room, :exits) or return []
-    exits.class.fields.map do |dir,_|
-      ex = exits.send(dir) or next
-      next if entity_closed?(ex) and entity_concealed?(ex)
-      ex
-    end.compact
+    exit_directions.inject([]) do |o, dir|
+      if exits[dir] && door = exits["#{dir}_door"]
+        o << door
+      end
+      o
+    end
   end
 
   # Returns array of Components for an entity.
@@ -389,11 +387,10 @@ module Morrow::Helpers::Scriptable
     get_component(entity, :container) != nil
   end
 
-  # entity_short
-  #
-  # Get the short description for an entity
+  # Get the short description for an entity; falls back to entity_keyword if no
+  # short was defined.
   def entity_short(entity)
-    get_component(entity, :viewable)&.short
+    get_component(entity, :viewable)&.short or "the #{entity_keywords(entity)}"
   end
 
   # entity_desc
@@ -415,5 +412,10 @@ module Morrow::Helpers::Scriptable
   # Get the weight for an entity
   def entity_weight(entity)
     get_component(entity, :corporeal)&.weight || 0
+  end
+
+  # Get the list of possible exit directions from any room.
+  def exit_directions
+    @exit_directions ||= %w{ north south east west up down }
   end
 end

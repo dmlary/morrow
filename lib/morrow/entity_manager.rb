@@ -211,7 +211,7 @@ class Morrow::EntityManager
   # Get a component for an entity.
   def get_component(id, type)
     raise Morrow::UnknownEntity,
-        "unknown entity #{id}" unless entity = @entities[id]
+        "unknown entity '#{id}'" unless entity = @entities[id]
 
     index, klass = @comp_map[type]
 

@@ -73,22 +73,18 @@
       weight: 70    # kg
       volume: 78    # lighter than human, but still take up the same space
 
-- id: morrow:exit
-  components:
-  - viewable:
-      formatter: desc_only
-      desc: You see nothing special...
-  - destination:
-
 - id: morrow:door/closed
-  base: morrow:exit
   components:
   - keywords:
     - [ door ]
-  - viewable:
-      formatter: obj
-      short: a door
-      desc: A wooden door bars your way.
+  - closable:
+      closed: true
+
+- id: morrow:door/open
+  base: morrow:door/closed
+  components:
+  - closable:
+      closed: false
 
 - id: morrow:obj/bag/small
   base: morrow:obj

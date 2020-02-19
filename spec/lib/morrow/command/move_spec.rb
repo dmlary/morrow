@@ -1,4 +1,4 @@
-describe Morrow::Command::Look do
+describe Morrow::Command::Move do
   let(:room) { 'spec:room/movement' }
   let(:void) { 'morrow:room/void' }
   let(:leo) { 'spec:mob/leonidas' }
@@ -10,103 +10,68 @@ describe Morrow::Command::Look do
     player_output(leo).clear
   end
 
-  context 'no exit' do
-    before(:each) do
-      get_component!(room, :exits).down = nil
-      run_cmd(leo, 'down')
-    end
+  [ { context: 'move through an exit with no destination',
+      room: 'spec:room/no_exits',
+      cmd: 'east',
+      move: false,
+      output: 'Alas, you cannot go that way ...' },
+    { context: 'move through an exit that has no door',
+      room: 'spec:room/with_exit',
+      cmd: 'east',
+      move: true,
+      output: :look },
+    { context: 'move through a closed door',
+      room: 'spec:room/door/closed',
+      cmd: 'east',
+      move: false,
+      output: 'The door is closed.' },
+    { context: 'move through an open door',
+      room: 'spec:room/door/open',
+      cmd: 'east',
+      move: true,
+      output: :look },
+    { context: 'move through a closed, concealed door',
+      room: 'spec:room/door/concealed/closed',
+      cmd: 'east',
+      move: false,
+      output: 'Alas, you cannot go that way ...' },
+    { context: 'move through an open, concealed door',
+      room: 'spec:room/door/concealed/open',
+      cmd: 'east',
+      move: true,
+      output: :look } ].each do |p|
 
-    it 'will not move the actor' do
-      expect(entity_location(leo)).to eq(room)
-    end
-    it 'will output an error to the actor' do
-      expect(output).to include('Alas, you cannot go that way ...')
+    context p[:context] do
+      let(:room) { p[:room] }
+      let(:dest) { get_component(room, :exits)&.send(p[:cmd]) }
+
+      before(:each) { run_cmd(leo, p[:cmd]) }
+
+      if p[:move]
+        it 'will move the actor to the next room' do
+          expect(entity_location(leo)).to eq(dest)
+        end
+      else
+        it 'will not move the actor' do
+          expect(entity_location(leo)).to eq(room)
+        end
+      end
+
+      if p[:output] == :look
+        it 'will run "look" in the new room' do
+          expect(output).to include(entity_desc(dest))
+        end
+      else
+        it "will output '#{p[:output]}'" do
+          expect(output).to include(p[:output])
+        end
+      end
     end
   end
 
-  context 'invalid exit entity' do
-    before(:each) do
-      get_component!(room, :exits).down = 'invalid entity'
-      expect { run_cmd(leo, 'down') }
-          .to raise_error(Morrow::UnknownEntity)
-    end
 
-    it 'will not move the actor' do
-      expect(entity_location(leo)).to eq(room)
-    end
-  end
 
-  context 'unclosable passage' do
-    before(:each) do
-      get_component!(room, :exits).down = 'spec:exit/open'
-      run_cmd(leo, 'down')
-    end
 
-    it 'will move the actor' do
-      expect(entity_location(leo)).to eq(void)
-    end
-    it 'will run look in the next room' do
-      expect(output).to include(entity_desc(void))
-    end
-  end
-
-  context 'closed door' do
-    before(:each) do
-      get_component!(room, :exits).down = 'spec:exit/door/closed'
-      run_cmd(leo, 'down')
-    end
-
-    it 'will not move the actor' do
-      expect(entity_location(leo)).to eq(room)
-    end
-    it 'will output an error with the door name to the actor' do
-      expect(output).to include(entity_keywords('spec:exit/door/closed'))
-    end
-  end
-
-  context 'open door' do
-    before(:each) do
-      get_component!(room, :exits).down = 'spec:exit/door/open'
-      run_cmd(leo, 'down')
-    end
-
-    it 'will move the actor' do
-      expect(entity_location(leo)).to eq(void)
-    end
-    it 'will run look in the next room' do
-      expect(output).to include(entity_desc(void))
-    end
-  end
-
-  context 'closed concealed door' do
-    before(:each) do
-      get_component!(room, :exits).down = 'spec:exit/door/closed/hidden'
-      run_cmd(leo, 'down')
-    end
-
-    it 'will not move the actor' do
-      expect(entity_location(leo)).to eq(room)
-    end
-
-    it 'will output an error with the door name to the actor' do
-      expect(output)
-          .to_not include(entity_keywords('spec:exit/door/closed/hidden'))
-    end
-  end
-
-  context 'open concealed door' do
-    before(:each) do
-      get_component!(room, :exits).down = 'spec:exit/door/open/hidden'
-      run_cmd(leo, 'down')
-    end
-
-    it 'will move the actor' do
-      expect(entity_location(leo)).to eq(void)
-    end
-    it 'will run look in the next room' do
-      expect(output).to include(entity_desc(void))
-    end
-  end
 
   context 'destination room is full' do
     it 'will output an error to the actor' do

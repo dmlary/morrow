@@ -1,7 +1,7 @@
 module Morrow::Command::Move
   extend Morrow::Command
 
-  dirs = Morrow.config.components[:exits].fields.keys
+  dirs = Morrow::Helpers.exit_directions
 
   help(%w{movement} + dirs, <<~HELP)
     Syntax: #{dirs.join(", ")}
@@ -17,20 +17,18 @@ module Morrow::Command::Move
 
       exits = get_component(room, :exits) or
           command_error('Alas, you cannot go that way ...')
-      passage = exits[dir] or
+      dest = exits[dir] or
           command_error('Alas, you cannot go that way ...')
+      door = exits["#{dir}_door"]
 
-      if entity_closed?(passage)
-        if entity_concealed?(passage)
+      if door && entity_closed?(door)
+        if entity_concealed?(door)
           command_error('Alas, you cannot go that way ...')
         else
-          door = entity_short(passage) || entity_keywords(passage)
-          command_error("The #{door} is closed.")
+          command_error("#{entity_short(door).capitalize} is closed.")
         end
       else
-        dest = get_component(passage, :destination) or
-            fault("passage #{passage} has no destination")
-        error = move_entity(entity: actor, dest: dest.entity, look: true)
+        error = move_entity(entity: actor, dest: dest, look: true)
         command_error('It\'s too crowded for you to fit.') if error
       end
     end

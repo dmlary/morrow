@@ -125,13 +125,6 @@ class ConcealedComponent < Component
       desc: 'If this entity has been revealed in the room'
 end
 
-class ExitsComponent < Component
-  desc 'Exits from a room; one for each cardinal direction'
-  %w{ north south east west up down }.each do |dir|
-    field dir, type: :entity, desc: "exit to the #{dir}"
-  end
-end
-
 class EnvironmentComponent < Component
   desc <<~DESC
     Environmental details for a room/container.  These things impact the
@@ -311,3 +304,5 @@ class HelpComponent < Component
   field :body
 end
 end
+
+require_relative 'component/exits.rb'

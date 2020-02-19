@@ -15,7 +15,7 @@ class Morrow::Loader
 
     # parse the document into a Psych tree; we don't load here because we want
     # the file/line info while creating our entities.
-    doc = YAML.parse(buf)
+    doc = YAML.parse(buf, filename: file)
 
     # Document should be an Array of Hashes
     seq = doc.children.first or return    # ignore empty documents
@@ -49,7 +49,7 @@ class Morrow::Loader
       # Construct an Array of component arguments that will be sent to
       # Morrow::EntityManager#create_entity
       entity['components'] ||= []
-      loader_error!('The `components` field must be an Array; %s' %
+      load_error!('The `components` field must be an Array; %s' %
           [ entity['components'].inspect ], file, map) unless
               entity['components'].is_a?(Array)
 
@@ -60,7 +60,7 @@ class Morrow::Loader
         when String
           conf.to_sym
         when Hash
-          loader_error!(<<~ERROR, file, map) unless conf.size == 1
+          load_error!(<<~ERROR, file, map) unless conf.size == 1
             Multiple keys found in single component configuration.  Note that
             the `components` field is an Array.  Perhaps you missed a '-'
             before the next component after this one.
@@ -91,7 +91,7 @@ class Morrow::Loader
       # defer the action if we're not able to do it at the moment
       begin
         create_or_update(**create)
-      rescue Morrow::EntityManager::UnknownId
+      rescue Morrow::UnknownEntity
         defer(source: source, entity: create)
       rescue Exception => ex
         raise Morrow::Error, <<~ERROR.chomp
@@ -180,7 +180,7 @@ class Morrow::Loader
 
       @tasks.delete_if do |task|
         create_or_update(**task[:entity])
-      rescue Morrow::EntityManager::UnknownId => ex
+      rescue Morrow::UnknownEntity => ex
         task[:last_error] = ex
         false
       end

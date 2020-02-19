@@ -11,9 +11,7 @@ module Morrow::Command::Look
       room = entity_location(actor) or fault("actor has no location: #{actor}")
       into = false
 
-      dir, target = get_component(room, :exits)&.each&.find do |dir, dest|
-        dir.to_s.start_with?(arg)
-      end if arg
+      dir = exit_directions.find { |d| d.start_with?(arg) } if arg
 
       target ||= case arg
         when nil, ''
@@ -28,7 +26,7 @@ module Morrow::Command::Look
         else
           match_keyword(arg,
               visible_contents(actor: actor, cont: room),
-              visible_exits(actor: actor, room: room),
+              entity_doors(room),
               visible_contents(actor: actor, cont: actor))
         end
 
@@ -59,17 +57,7 @@ module Morrow::Command::Look
             [ viewable.short, entity_keywords(target) ]
 
       when :exit
-        # patch up direction for better output
-        dir = case dir
-            when :up, :down
-              "#{dir}ward"
-            else
-              "to the #{dir}"
-            end
-
-        command_error "You look #{dir}, but see nothing special." unless target
-
-        out << format_exit(dir: dir, passage: target, actor: actor)
+        out << format_exit(room: room, dir: dir, actor: actor)
       else
         out << "%s\n" % viewable.desc
       end
@@ -82,22 +70,33 @@ module Morrow::Command::Look
 
     # return a String representing what a given actor sees when looking at a
     # specific exit.
-    def format_exit(dir:, passage:, actor:)
-      door = entity_keywords(passage)
+    def format_exit(dir:, room:, actor:)
 
-      if closable = get_component(passage, :closable)
-        if closable.closed
-          if entity_concealed?(passage)
-            "You look #{dir}, but see nothing special."
+      # patch up direction for better output
+      dirward = case dir
+          when 'up', 'down'
+            "#{dir}ward"
           else
-            "The #{door} #{dir} is closed."
+            "to the #{dir}"
           end
+
+      return "You look #{dirward}, but see nothing special." unless
+          exits = get_component(room, :exits) and exits[dir]
+
+      return "You can travel #{dirward}." unless
+          door = exits["#{dir}_door"] and
+              closable = get_component(door, :closable)
+
+      door_short = entity_short(door).capitalize
+
+      if closable.closed
+        if entity_concealed?(door)
+          "You look #{dirward}, but see nothing special."
         else
-          "The #{door} #{dir} is open."
+          "#{door_short} #{dirward} is closed."
         end
       else
-        dir = 'upward' if dir == :up
-        "You can travel #{dir}."
+        "#{door_short} #{dirward} is open."
       end
     end
 
@@ -131,10 +130,15 @@ module Morrow::Command::Look
       buf = ''
 
       if exits = get_component(room, :exits)
-        exits.to_h.each do |dir, dest|
-          next unless dest
-          closed = entity_closed?(dest)
-          next if closed and entity_concealed?(dest)
+        exit_directions.each do |dir|
+          next unless exits[dir]
+
+          if door = exits["#{dir}_door"]
+            closed = entity_closed?(door)
+            hidden = entity_concealed?(door)
+          end
+
+          next if closed and hidden
           buf << (closed ? '&B[ %s ]&W ' : '%s ') % dir
         end
       end

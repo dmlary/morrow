@@ -86,6 +86,11 @@
       short: Generic Player
       long: Player the Generic of Springdale
 
+- update: morrow:room/void
+  components:
+  - exits:
+      down: spec:room/1
+
 - id: spec:room/1
   base: morrow:room
   components:
@@ -96,10 +101,13 @@
         against hapless, helpess, and hopeless victims.  Oddly, this room is
         not yet covered in blood.
   - exits:
-      up: spec:room/1/exit/up-to-void
-      east: spec:room/1/exit/east-to-2
-      west: spec:room/1/exit/west-to-cupboard
-      north: spec:passage/hidden/open
+      up: morrow:room/void
+      east: spec:room/2
+      east_door: spec:door/1-to-2
+      west: spec:room/cupboard
+      west_door: spec:door/1-to-cupboard
+      north: spec:room/1
+      north_door: spec:door/1-to-1
   - container:
       contents:
       - spec:obj/chest_open_empty
@@ -107,25 +115,15 @@
       - spec:obj/chest_closed
       - spec:player
 
-- id: spec:passage/hidden/open
-  base: morrow:exit
+- id: spec:door/1-to-1
+  base: morrow:door/open
   components:
-  - destination: spec:room/1
-  - closable:
-      closed: false
   - keywords:
     - [ hidden, clapping ]
   - concealed
 
-- id: spec:passage/to-1
-  base: morrow:exit
-  components:
-  - destination: spec:room/1
-
-- update: morrow:room/void
-  components:
-  - exits:
-      west: spec:passage/to-1
+- id: spec:door/1-to-2
+  base: morrow:door/closed
 
 - id: spec:room/2
   base: morrow:room
@@ -136,7 +134,15 @@
         This room is oddly serene, despite the bits of gore that have been
         tracked in from the west.  Oh look, there's a ficus!
   - exits:
-      west: spec:room/2/exit/west-to-1
+      west: spec:room/1
+      west_door: spec:door/1-to-2
+
+- id: spec:door/1-to-cupboard
+  base: morrow:door/closed
+  components:
+  - keywords:
+    - [ hidden, cupboard ]
+  - concealed
 
 - id: spec:room/cupboard
   base: morrow:room
@@ -146,52 +152,8 @@
       desc: |
         Darkness, shelves, no cobwebs though.
   - exits:
-      east: spec:room/cupboard/exit/east-to-1
-
-# Used in testing for regular exits
-- id: spec:room/1/exit/up-to-void
-  base: morrow:exit
-  components:
-  - destination: morrow:room/void
-
-# Used in testing for open/close exit
-- id: spec:room/1/exit/east-to-2
-  base: morrow:exit
-  components:
-  - destination: spec:room/2
-  - keywords:
-    - [ door ]
-  - closable:
-      closed: true
-
-# Used in testing for concealed exits
-- id: spec:room/1/exit/west-to-cupboard
-  base: morrow:exit
-  components:
-  - destination: spec:room/cupboard
-  - closable:
-      closed: true
-  - keywords:
-    - [ hidden, cupboard ]
-  - concealed
-
-- id: spec:room/2/exit/west-to-1
-  base: morrow:exit
-  components:
-  - destination: spec:room/1
-  - closable:
-      closed: true
-  - keywords:
-    - [ west, door ]
-
-- id: spec:room/cupboard/exit/east-to-1
-  base: morrow:exit
-  components:
-  - destination: spec:room/1
-  - keywords:
-    - [ east, door ]
-  - closable:
-      closed: true
+      east: spec:room/1
+      east_door: spec:door/1-to-cupboard
 
 # Spawn testing
 - id: spec:obj/spawn-bag
@@ -244,45 +206,6 @@
       up:    fail
       down:  fail
 
-- id: spec:exit/open
-  base: morrow:exit
-  components:
-  - destination: morrow:room/void
-
-- id: spec:exit/door/open
-  base: morrow:exit
-  components:
-  - destination: morrow:room/void
-  - closable:
-      closed: false
-
-- id: spec:exit/door/closed
-  base: morrow:exit
-  components:
-  - destination: morrow:room/void
-  - closable:
-      closed: true
-  - keywords:
-    - [ door ]
-
-- id: spec:exit/door/open/hidden
-  base: morrow:exit
-  components:
-  - destination: morrow:room/void
-  - closable:
-      closed: false
-  - concealed
-
-- id: spec:exit/door/closed/hidden
-  base: morrow:exit
-  components:
-  - destination: morrow:room/void
-  - closable:
-      closed: true
-  - concealed
-  - keywords:
-    - [ door ]
-
 # Used for movement tests, specifically into a full room
 - id: spec:room/full
   base: morrow:room
@@ -296,7 +219,107 @@
   - exits:
       east: spec:passage/to-full
 
-- id: spec:passage/to-full
-  base: morrow:exit
+- id: spec:room/no_exits
+  base: morrow:room
+
+- id: spec:room/with_exit
+  base: morrow:room
   components:
-  - destination: spec:room/full
+  - exits:
+      east: morrow:room/void
+
+- id: spec:room/door/closed
+  base: morrow:room
+  components:
+  - exits:
+      east: morrow:room/void
+      east_door: spec:room/door/closed/target
+
+- id: spec:room/door/closed/target
+  base: morrow:door/closed
+
+- id: spec:room/door/open
+  base: morrow:room
+  components:
+  - exits:
+      east: morrow:room/void
+      east_door: spec:room/door/open/target
+
+- id: spec:room/door/open/target
+  base: morrow:door/open
+
+- id: spec:room/door/concealed/closed
+  base: morrow:room
+  components:
+  - exits:
+      east: morrow:room/void
+      east_door: spec:room/door/concealed/closed/target
+
+- id: spec:room/door/concealed/closed/target
+  base: morrow:door/closed
+  components:
+  - concealed
+
+- id: spec:room/door/concealed/open
+  base: morrow:room
+  components:
+  - exits:
+      east: morrow:room/void
+      east_door: spec:room/door/concealed/open/target
+
+- id: spec:room/door/concealed/open/target
+  base: morrow:door/open
+  components:
+  - concealed
+
+- id: spec:room/room_item/closed
+  base: morrow:room
+  components:
+  - container:
+      contents:
+      - spec:room/room_item/closed/target
+
+- id: spec:room/room_item/closed/target
+  base: morrow:obj/chest/wooden
+  components:
+  - closable:
+      closed: true
+
+- id: spec:room/room_item/open
+  base: morrow:room
+  components:
+  - container:
+      contents:
+      - spec:room/room_item/open/target
+
+- id: spec:room/room_item/open/target
+  base: morrow:obj/chest/wooden
+  components:
+  - closable:
+      closed: false
+
+- id: spec:player/inventory_item/closed
+  base: morrow:player
+  components:
+  - container:
+      contents:
+      - spec:player/inventory_item/closed/target
+
+- id: spec:player/inventory_item/closed/target
+  base: morrow:obj/bag/small
+  components:
+  - closable:
+      closed: true
+
+- id: spec:player/inventory_item/open
+  base: morrow:player
+  components:
+  - container:
+      contents:
+      - spec:player/inventory_item/open/target
+
+- id: spec:player/inventory_item/open/target
+  base: morrow:obj/bag/small
+  components:
+  - closable:
+      closed: false

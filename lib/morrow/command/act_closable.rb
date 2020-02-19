@@ -17,8 +17,7 @@ module Morrow::Command::ActClosable
       command_error 'It is already open.' if !comp.closed
 
       comp.closed = false
-      desc = entity_short(target) || "the #{entity_keywords(target)}"
-      send_to_char(char: actor, buf: 'You open %s.' % desc)
+      send_to_char(char: actor, buf: 'You open %s.' % entity_short(target))
     end
 
     # close something in the world
@@ -35,15 +34,14 @@ module Morrow::Command::ActClosable
       command_error 'It is already closed.' if comp.closed
 
       comp.closed = true
-      desc = entity_short(target) || "the #{entity_keywords(target)}"
-      send_to_char(char: actor, buf: 'You close %s.' % desc)
+      send_to_char(char: actor, buf: 'You close %s.' % entity_short(target))
     end
 
     private
 
     def closable_entities(actor)
       room = entity_location(actor)  or fault "actor has no location", actor
-      [ entity_exits(room),
+      [ entity_doors(room),
         visible_contents(actor: actor, cont: room),
         visible_contents(actor: actor, cont: actor) ]
           .flatten
