@@ -95,7 +95,7 @@ class Morrow::Configuration
       animate: Morrow::AnimateComponent,
       corporeal: Morrow::CorporealComponent,
       concealed: Morrow::ConcealedComponent,
-      exits: Morrow::ExitsComponent,
+      exits: Morrow::Component::Exits,
       environment: Morrow::EnvironmentComponent,
       destination: Morrow::DestinationComponent,
       player_config: Morrow::PlayerConfigComponent,

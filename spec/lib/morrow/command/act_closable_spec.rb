@@ -11,138 +11,82 @@ describe Morrow::Command::ActClosable do
     player_output(leo).clear
   end
 
-  describe 'open' do
-    describe 'exit' do
-      context 'that is closed' do
-        before(:each) { run_cmd(leo, 'open hidden-cupboard') }
+  [ { desc: 'open a closed door',
+      room: 'spec:room/door/closed',
+      cmd: 'open door',
+      closed: false,
+      output: 'You open the door.' },
+    { desc: 'open an open door',
+      room: 'spec:room/door/open',
+      cmd: 'open door',
+      closed: false,
+      output: 'It is already open.' },
+    { desc: 'open closed object in the room',
+      room: 'spec:room/room_item/closed',
+      cmd: 'open chest',
+      closed: false,
+      output: 'You open a wooden chest.' },
+    { desc: 'open an open object in the room',
+      room: 'spec:room/room_item/open',
+      cmd: 'open chest',
+      closed: false,
+      output: 'It is already open.' },
+    { desc: 'open a closed inventory item',
+      actor: 'spec:player/inventory_item/closed',
+      cmd: 'open bag',
+      closed: false,
+      output: 'You open a small bag.' },
+    { desc: 'open an open inventory item',
+      actor: 'spec:player/inventory_item/open',
+      cmd: 'open bag',
+      closed: false,
+      output: 'It is already open.' },
 
-        it 'will open the exit' do
-          expect(entity_closed?('spec:room/1/exit/west-to-cupboard'))
-              .to be(false)
-        end
+    { desc: 'close a closed door',
+      room: 'spec:room/door/closed',
+      cmd: 'close door',
+      closed: true,
+      output: 'It is already closed.' },
+    { desc: 'close an open door',
+      room: 'spec:room/door/open',
+      cmd: 'close door',
+      closed: true,
+      output: 'You close the door.' },
+    { desc: 'close closed object in the room',
+      room: 'spec:room/room_item/closed',
+      cmd: 'close chest',
+      closed: true,
+      output: 'It is already closed.' },
+    { desc: 'close an open object in the room',
+      room: 'spec:room/room_item/open',
+      cmd: 'close chest',
+      closed: true,
+      output: 'You close a wooden chest.' },
+    { desc: 'close a closed inventory item',
+      actor: 'spec:player/inventory_item/closed',
+      cmd: 'close bag',
+      closed: true,
+      output: 'It is already closed.' },
+    { desc: 'close an open inventory item',
+      actor: 'spec:player/inventory_item/open',
+      cmd: 'close bag',
+      closed: true,
+      output: 'You close a small bag.' },
+    ].each do |p|
+      describe "#{p[:desc]}" do
+        let(:room) { p[:room] } if p[:room]
+        let(:leo) { p[:actor] } if p[:actor]
+        let(:target) { "#{p[:room] || p[:actor]}/target" }
 
-        it 'will output "You open the hidden-cupboard."' do
-          expect(output).to include("You open the hidden-cupboard.")
-        end
-      end
-      context 'that is open' do
-        it 'will output "It is already open."' do
-          get_component('spec:room/1/exit/west-to-cupboard', :closable)
-              .closed = false
-          run_cmd(leo, 'open hidden-cupboard')
-          expect(output).to include('It is already open.')
-        end
-      end
-    end
-    describe 'obj in room' do
-      context 'that is closed' do
-        before(:each) { run_cmd(leo, 'open chest-closed') }
+        before(:each) { run_cmd(leo, p[:cmd]) }
 
-        it 'will open the chest' do
-          expect(entity_closed?('spec:obj/chest_closed'))
-              .to be(false)
-        end
-
-        it 'will output "You open a wooden chest."' do
-          expect(output).to include("You open a wooden chest.")
-        end
-      end
-      context 'that is open' do
-        it 'will output "It is already open."' do
-          run_cmd(leo, 'open chest-open')
-          expect(output).to include('It is already open.')
-        end
-      end
-    end
-
-    describe 'carried obj' do
-      context 'that is closed' do
-        before(:each) { run_cmd(leo, 'open leo-bag-closed') }
-
-        it 'will open the bag' do
-          expect(entity_closed?('spec:mob/leo/bag_closed'))
-              .to be(false)
-        end
-
-        it 'will output "You open a small bag."' do
-          expect(output).to include("You open a small bag.")
-        end
-      end
-      context 'that is open' do
-        it 'will output "It is already open."' do
-          run_cmd(leo, 'open leo-bag-open')
-          expect(output).to include('It is already open.')
-        end
-      end
-    end
-  end
-
-  describe 'close' do
-    describe 'exit' do
-      context 'that is open' do
-        before(:each) do
-          get_component('spec:room/1/exit/west-to-cupboard', :closable)
-              .closed = false
-          run_cmd(leo, 'close hidden-cupboard')
+        it 'the target will be %s' % [ p[:closed] ? 'closed' : 'open' ] do
+          expect(entity_closed?(target)).to be(p[:closed])
         end
 
-        it 'will closed the exit' do
-          expect(entity_closed?('spec:room/1/exit/west-to-cupboard'))
-              .to be(true)
-        end
-
-        it 'will output "You close the hidden-cupboard."' do
-          expect(output).to include("You close the hidden-cupboard.")
-        end
-      end
-
-      context 'that is closed' do
-        it 'will output "It is already closed."' do
-          run_cmd(leo, 'close hidden-cupboard')
-          expect(output).to include('It is already closed.')
+        it "will output '#{p[:output]}'" do
+          expect(output).to include(p[:output])
         end
       end
     end
-
-    describe 'obj in room' do
-      context 'that is open' do
-        before(:each) { run_cmd(leo, 'close chest-open-empty') }
-
-        it 'will closed the chest' do
-          expect(entity_closed?('spec:obj/chest_open_empty')) .to be(true)
-        end
-
-        it 'will output "You close an wooden chest."' do
-          expect(output).to include("You close an open wooden chest.")
-        end
-      end
-      context 'that is closed' do
-        it 'will output "It is already closed."' do
-          run_cmd(leo, 'close chest-closed')
-          expect(output).to include('It is already closed.')
-        end
-      end
-    end
-
-    describe 'carried obj' do
-      context 'that is open' do
-        before(:each) { run_cmd(leo, 'close leo-bag-open') }
-
-        it 'will closed the bag' do
-          expect(entity_closed?('spec:mob/leo/bag_open'))
-              .to be(true)
-        end
-
-        it 'will output "You closed a small bag."' do
-          expect(output).to include("You close a small bag.")
-        end
-      end
-      context 'that is closed' do
-        it 'will output "It is already closed."' do
-          run_cmd(leo, 'close leo-bag-closed')
-          expect(output).to include('It is already closed.')
-        end
-      end
-    end
-  end
 end

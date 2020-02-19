@@ -217,8 +217,8 @@ module Morrow
 end
 
 require_relative 'morrow/component'
-require_relative 'morrow/components'
 require_relative 'morrow/helpers'
+require_relative 'morrow/components'
 require_relative 'morrow/system'
 require_relative 'morrow/telnet_server'
 require_relative 'morrow/configuration'
