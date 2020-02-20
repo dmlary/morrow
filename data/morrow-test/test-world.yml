@@ -323,3 +323,24 @@
   components:
   - closable:
       closed: false
+
+- id: spec:char/actor
+  base: morrow:player
+  components:
+  - viewable:
+      short: Actor
+      long: The actor stands ready to perform some action.
+
+- id: spec:char/victim
+  base: morrow:player
+  components:
+  - viewable:
+      short: Victim
+      long: A victim is crouched here, flinching at the slightest movement.
+
+- id: spec:char/observer
+  base: morrow:player
+  components:
+  - viewable:
+      short: The Observer
+      long: The observer waits in the corner; eyes red and unblinking.

@@ -17,7 +17,7 @@ module Morrow::Command::ActClosable
       command_error 'It is already open.' if !comp.closed
 
       comp.closed = false
-      send_to_char(char: actor, buf: 'You open %s.' % entity_short(target))
+      act('%{actor} %{v:open} %{door}.', actor: actor, door: target)
     end
 
     # close something in the world
@@ -34,7 +34,7 @@ module Morrow::Command::ActClosable
       command_error 'It is already closed.' if comp.closed
 
       comp.closed = true
-      send_to_char(char: actor, buf: 'You close %s.' % entity_short(target))
+      act('%{actor} %{v:close} %{door}.', actor: actor, door: target)
     end
 
     private

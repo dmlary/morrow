@@ -46,6 +46,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'bcrypt'
   spec.add_dependency 'method_source'
 
+  # used in Morrow::Helpers::Scriptable.act() to conjugate verbs
+  spec.add_dependency 'linguistics'
+
   spec.add_dependency 'pry'
   spec.add_dependency 'pry-rescue'
   spec.add_dependency 'pry-stack_explorer'
