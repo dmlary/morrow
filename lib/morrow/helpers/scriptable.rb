@@ -1,5 +1,9 @@
 require 'forwardable'
 
+# For #act() to conjugate verbs
+require 'linguistics'
+Linguistics.use :en
+
 # Morrow::Helpers::Scriptable
 #
 # This file contains helpers that are **SAFE** to use within scripts.  Every
@@ -15,8 +19,6 @@ module Morrow::Helpers::Scriptable
   def_delegators 'Morrow.em', :add_component, :remove_component, :get_component,
       :get_components, :entity_exists?, :entity_exists!
 
-  # get_component!
-  #
   # Get a unique component for the entity.  If one does not yet exist, it
   # will create the component.  Will raise an exception if ++type++ is a
   # non-unique component.
@@ -35,8 +37,6 @@ module Morrow::Helpers::Scriptable
     entity
   end
 
-  # destroy_entity
-  #
   # Destroy an entity, and update whatever SpawnComponent it may have come
   # from.
   def destroy_entity(entity)
@@ -66,8 +66,6 @@ module Morrow::Helpers::Scriptable
     Morrow.em.destroy_entity(entity)
   end
 
-  # now
-  #
   # Get the current time according to the engine.  Note, this is **only**
   # updated each time Morrow#update() is called.
   def now
@@ -159,7 +157,8 @@ module Morrow::Helpers::Scriptable
   #
   def match_keyword(buf, *pool, multiple: false)
 
-    fault "unparsable keyword; #{buf}" unless buf =~ /^(?:(all|\d+)\.)?(.*)$/
+    raise Morrow::Error, "unparsable keyword; #{buf}" unless
+        buf =~ /^(?:(all|\d+)\.)?(.*)$/
     index = $1
     keywords = $2.split('-').uniq
 
@@ -228,14 +227,77 @@ module Morrow::Helpers::Scriptable
     entity
   end
 
-  # send_to_char
-  #
   # Send output to entity if they have a connected ConnectionComponent
   def send_to_char(char:, buf:)
     conn_comp = get_component(char, :connection) or return
     return unless conn_comp.buf
     conn_comp.buf << buf.to_s
     nil
+  end
+
+  # Send custom messages to each observer of an action in a room.  This
+  # function only supports English in the present tense for the more
+  # complicated things.
+  #
+  # The complexity of this method is that for any act in a room, there are
+  # three possible view-points:
+  # * The actor (first person; 'You smile at Victim')
+  # * A victim (third person; 'Actor smiles at you')
+  # * A neutral observer (also, third person; 'Actor smiles at Victim')
+  #
+  # This method constructs each of these view-points and sends them to the
+  # appropriate entities in the room.
+  #
+  # The format string uses the following syntax:
+  # * `%{actor}` short name of the entity in the `:actor` parameter
+  # * `%{<param>}` short name for the entity in the named parameter
+  # * `%{v:<verb>}` proper conjugation of the verb for the observer.
+  #
+  # Arguments:
+  # * fmt: format string to output to everyone in the room
+  #
+  # Parameters:
+  # * actor: required entity performing the action
+  # * Any other parameters referenced in format string
+  #
+  # Examples:
+  #   # show an actor picking up a given item
+  #   act("%{actor} %{v:pick} up %{item}", actor: actor, item: item)
+  #
+  #   # an actor smiling at nobody in particular
+  #   act("%{actor} %{v:smile} broadly.")
+  #
+  #   # an actor hugging someone else
+  #   act("%{actor} %{v:hug} %{victim} fiercely!", actor: actor,
+  #       victim: victim)
+  #
+  #   # an actor hugging themselves
+  #   act("%{actor} %{v:hug} %{victim} fiercely!", actor: actor,
+  #       victim: actor)
+  def act(fmt, **p)
+    raise ArgumentError, 'missing keyword: actor' unless p.has_key?(:actor)
+
+    room_observers(entity_location(p[:actor])).each do |observer|
+      out = fmt.gsub(/%{(?:([^:}]+):)?([^}]+)}/) do
+        op, arg = $1, $2
+        first_person = (observer == p[arg.to_sym])
+
+        case op
+        when nil
+          arg = arg.to_sym
+          observer == p[arg.to_sym] ? 'you' : entity_short(p[arg.to_sym])
+        when 'v'
+          arg.en.conjugate(:present, observer == p[:actor] ?
+              :first_person_singular : :third_person_singular)
+        else
+          raise Morrow::Error, "unknown format operator '#{op}' in '#{fmt}'"
+        end
+      end
+
+      out.gsub!(/^./) { |c| c.upcase }
+
+      send_to_char(char: observer, buf: out)
+    end
   end
 
   # Run a command as the given actor
@@ -269,6 +331,12 @@ module Morrow::Helpers::Scriptable
     get_component(cont, :container)
         &.contents
         &.select { |e| entity_has_component?(e, :viewable) } or []
+  end
+
+  # return an array of entities in a given room that can observe actions
+  # occuring within them.
+  def room_observers(room)
+    entity_contents(room).select { |e| entity_animate?(e) }
   end
 
   # Get all the exits in a room; most likely you want to use visible_exits
