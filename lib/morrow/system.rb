@@ -9,6 +9,12 @@ module Morrow::System
     end
   end
 
+  # How frequently this system will run in seconds.  The default frequency for
+  # all systems is to run each update interval.
+  def frequency
+    Morrow.config.update_interval
+  end
+
   # Update the performance data for this Module.  Called from Morrow.update.
   def append_system_perf(bm)
     @system_perf << [now, bm]
@@ -35,3 +41,4 @@ require_relative 'system/spawner'
 require_relative 'system/input'
 require_relative 'system/connection'
 require_relative 'system/teleport'
+require_relative 'system/combat'

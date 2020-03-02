@@ -1,4 +1,4 @@
-describe 'Morrow::Helpers::Scriptable#act' do
+describe 'Morrow::Helpers.act' do
   let(:room) { 'spec:room/1' }
   let(:actor) { 'spec:char/actor' }
   let(:victim) { 'spec:char/victim' }
@@ -31,7 +31,7 @@ describe 'Morrow::Helpers::Scriptable#act' do
       %i{ actor victim observer }.each do |entity|
         next unless p[entity]
         it "will output '#{p[entity]}' to #{entity}" do
-          expect(output(send(entity))).to eq(p[entity])
+          expect(output(send(entity))).to include(p[entity])
         end
       end
     end

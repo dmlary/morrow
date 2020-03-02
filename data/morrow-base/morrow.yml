@@ -30,6 +30,9 @@
       short: a non-descript character
       long: |-
         You see nothing special about them.
+  - resources:
+      health: 20
+      health_max: 20
 
 - id: morrow:obj
   base: morrow:template
@@ -86,6 +89,19 @@
   - closable:
       closed: false
 
+- id: morrow:obj/remains/corpse
+  base: morrow:obj
+  components:
+  - keywords:
+    - [ remains, corpse ]
+  - container
+  - viewable:
+      short: a decaying corpse
+      long: a corpse is crumpled on the ground, releasing foul scents.
+      contents: true
+  - decay:
+      act: '%{actor} decays into the soil.'
+
 - id: morrow:obj/bag/small
   base: morrow:obj
   components:
@@ -128,3 +144,4 @@
 - id: morrow:act/river
   components:
   - teleporter
+

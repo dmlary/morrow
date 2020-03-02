@@ -45,8 +45,17 @@
       short: a red rubber ball
       long: a red rubber ball is on the floor
 
-- id: spec:mob/leonidas
+- id: spec:char
   base: morrow:player
+  remove:
+  - template
+  components:
+  - resources:
+      health: 25
+      health_max: 25
+
+- id: spec:mob/leonidas
+  base: spec:char
   components:
   - keywords:
     - [ leonidas ]
@@ -149,11 +158,22 @@
   components:
   - viewable:
       short: In the cupboard
-      desc: |
+      desc: |-
         Darkness, shelves, no cobwebs though.
   - exits:
       east: spec:room/1
       east_door: spec:door/1-to-cupboard
+
+- id: spec:room/empty
+  base: morrow:room
+  components:
+  - viewable:
+      short: An Empty Space
+      desc: |-
+        The hard-packed, bare ground stretches far into the horizon in every
+        direction.  No landmarks can be seen to distinguish one direction from
+        another.  The only feature of note are a series of scuff marks, and
+        maroon stains in the dirt.
 
 # Spawn testing
 - id: spec:obj/spawn-bag
@@ -325,22 +345,44 @@
       closed: false
 
 - id: spec:char/actor
-  base: morrow:player
+  base: spec:char
   components:
+  - keywords:
+      words: [ actor ]
   - viewable:
       short: Actor
       long: The actor stands ready to perform some action.
 
 - id: spec:char/victim
-  base: morrow:player
+  base: spec:char
   components:
+  - keywords:
+      words: [ victim ]
   - viewable:
       short: Victim
       long: A victim is crouched here, flinching at the slightest movement.
 
 - id: spec:char/observer
-  base: morrow:player
+  base: spec:char
   components:
+  - keywords:
+      words: [ observer ]
   - viewable:
       short: The Observer
-      long: The observer waits in the corner; eyes red and unblinking.
+      long: The observer waits in the corner; eyes bloodshot and unblinking.
+
+- id: spec:char/attacker
+  base: spec:char
+  components:
+  - keywords:
+      words: [ attacker ]
+  - viewable:
+      short: Attacker
+      long: An additional attacker is poised to join the melee.
+
+- id: spec:char/absent
+  base: spec:char
+  components:
+  - viewable:
+      short: Johep the Absent
+      long: A rangy form can be seen retreating into the distance.

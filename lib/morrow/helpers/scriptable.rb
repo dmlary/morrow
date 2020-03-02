@@ -63,7 +63,7 @@ module Morrow::Helpers::Scriptable
       # container entity has already been destroyed; continue
     end
 
-    Morrow.em.destroy_entity(entity)
+    Morrow.entities_to_be_destroyed << entity
   end
 
   # Get the current time according to the engine.  Note, this is **only**
@@ -192,8 +192,6 @@ module Morrow::Helpers::Scriptable
     multiple ? [ matches[index] ].compact : matches[index]
   end
 
-  # spawn_at
-  #
   # Create a new instance of an entity from a base entity, and move it to dest.
   #
   # Arguments:
@@ -277,6 +275,8 @@ module Morrow::Helpers::Scriptable
   def act(fmt, **p)
     raise ArgumentError, 'missing keyword: actor' unless p.has_key?(:actor)
 
+    fmt << "\n" unless fmt[-1] == "\n"
+
     room_observers(entity_location(p[:actor])).each do |observer|
       out = fmt.gsub(/%{(?:([^:}]+):)?([^}]+)}/) do
         op, arg = $1, $2
@@ -303,6 +303,7 @@ module Morrow::Helpers::Scriptable
   # Run a command as the given actor
   def run_cmd(actor, buf)
     name, arg = buf.split(/\s+/, 2)
+    return if name.nil?
     arg = nil if arg && arg.empty?
     name = name.strip.chomp.downcase
 
@@ -323,6 +324,18 @@ module Morrow::Helpers::Scriptable
   def entity_contents(entity)
     comp = get_component(entity, :container) or return []
     comp.contents
+  end
+
+  # check to see if two entities have the same location
+  def entity_present?(actor:, entity:)
+    entity_location(actor) == entity_location(entity)
+  end
+
+  # raise EntityNotPresent if two entities do not have the same location
+  def entity_present!(actor:, entity:)
+    raise Morrow::EntityNotPresent,
+        "entity not present: #{entity}, actor: #{actor}" unless
+            entity_present?(actor: actor, entity: entity)
   end
 
   # Return the array of Entities within a Container Entity that are visibile to
@@ -408,6 +421,34 @@ module Morrow::Helpers::Scriptable
     meta.area
   end
 
+  # Get the health of an entity; will return nil if the entity does not have
+  # health.
+  def entity_health(entity)
+    get_component(entity, :resources)&.health
+  end
+
+  # Check if an entity has health as a resource
+  def entity_has_health?(entity)
+    entity_health(entity) != nil
+  end
+
+  # ensure the entity has health
+  def entity_has_health!(entity)
+    raise Morrow::InvalidEntity,
+        'entity does not have health: %s' % [ entity ] unless
+            entity_has_health?(entity)
+  end
+
+  # check if the entity is unconscious
+  def entity_unconscious?(entity)
+    get_component(entity, :animate)&.unconscious == true
+  end
+
+  # get the position of an animate entity
+  def entity_position(entity)
+    get_component(entity, :animate)&.position
+  end
+
   # entity_has_component?
   #
   # Check to see if the entity has a specific component
@@ -461,6 +502,11 @@ module Morrow::Helpers::Scriptable
     get_component(entity, :viewable)&.short or "the #{entity_keywords(entity)}"
   end
 
+  # get the long description of an entity
+  def entity_long(entity)
+    get_component(entity, :viewable)&.long
+  end
+
   # entity_desc
   #
   # Get the desc description for an entity
@@ -485,5 +531,94 @@ module Morrow::Helpers::Scriptable
   # Get the list of possible exit directions from any room.
   def exit_directions
     @exit_directions ||= %w{ north south east west up down }
+  end
+
+  # Begin combat between an actor and a target.
+  def enter_combat(actor:, target:)
+    entity_present!(actor: actor, entity: target)
+    entity_has_health!(target)
+
+    # If the actor isn't already in combat with a target, set them to be
+    # targeting the target.
+    get_component!(actor, :combat).target ||= target
+
+    # Grab the target's entity, add the actor to the attackers list, and if the
+    # target isn't engaged with anyone already, have them target the actor.
+    t = get_component!(target, :combat)
+    attackers = t.attackers
+    attackers << actor unless attackers.include?(actor)
+    t.target ||= actor
+  end
+
+  # Damage an entity, and do all the other housekeeping involved with one
+  # entity harming another.
+  def damage_entity(entity:, actor:, amount:)
+
+    # Entity must have a health resource to be damaged.
+    resources = get_component(entity, :resources)
+    raise Morrow::InvalidEntity, "entity does not have health: #{entity}" if
+        resources.health.nil?
+
+    modifier = 1.0
+    case entity_position(entity)
+    when :sitting
+      modifier += 0.5
+    when :lying
+      modifier += 1
+    end
+
+    health = resources.health -= amount * modifier
+    act('%{actor} %{v:hit} %{victim}.', actor: actor, victim: entity)
+
+    # If health dropped below 1, set the position to lying down if the entity
+    # is animate
+    if health < -20
+      act('%{victim} is dead!', actor: actor, victim: entity)
+      spawn_corpse(entity)
+      destroy_entity(entity)
+    elsif health < 1 && animate = get_component(entity, :animate)
+      animate.position = :lying
+      animate.unconscious = true
+    end
+  end
+
+  # Attempt to hit another entity with an auto-attack
+  def hit_entity(actor:, entity:)
+    enter_combat(actor: actor, target: entity)
+
+    if rand(100) < 5
+      act("%{actor} %{v:miss} %{victim}.", actor: actor, victim: entity)
+    else
+      damage_entity(actor: actor, entity: entity, amount: 10)
+    end
+  end
+
+  # Spawn a corpse for the given entity
+  def spawn_corpse(entity)
+    return unless get_component(entity, :animate)
+
+    corpse = spawn_at(dest: entity_location(entity),
+        base: 'morrow:obj/remains/corpse')
+    remove_component(corpse, :animate)
+    get_component(corpse, :keywords)
+        .words
+        .push(*get_component(entity, :keywords).words)
+
+    entity_contents(entity).each do |item|
+      move_entity(dest: corpse, entity: item)
+    end
+
+    viewable = get_component(corpse, :viewable)
+    viewable.long = 'The corpse of %s is lying here.' % entity_short(entity)
+
+    # corpse will decay in 5 minutes; XXX need longer decay for player corpses.
+    get_component!(corpse, :decay).at = now + 5 * 60
+
+    destroy_entity(entity)
+  end
+
+  # get the combat target for an entity
+  def entity_target(entity)
+    get_component(entity, :combat)&.target
   end
 end

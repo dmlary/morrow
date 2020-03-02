@@ -29,18 +29,47 @@ require_relative 'morrow/logging'
 module Morrow
   extend Logging
 
+  # All exceptions from Morrow will be subclassed from this
   class Error < StandardError; end
+
+  # An entity id, unknown to the EntityManager was used
   class UnknownEntity < Error; end
 
+  # The requested resource is set to nil on the entity
+  class MissingResource < Error; end
+
+  # The entity provided is an invalid target for method.  This is raised when
+  # an entity is missing a component or field needed to perform some action.
+  class InvalidEntity < Error; end
+
+  # This error is raised when the actor entity and the target entity are not in
+  # the same room.
+  class EntityNotPresent < Error; end
+
   @exceptions = []
-  @views = {}
+  @systems = []
+  @cycle = 0
+  @entities_to_be_destroyed = []
 
   class << self
 
     # List of exceptions that have occurred in ths system.  When run in
     # development environment, Pry.rescued() can be used to debug these
     # exceptions.
-    attr_reader :exceptions, :em, :update_start_time
+    attr_reader :exceptions
+
+    # EntityManager instance containing all entities for the world.
+    attr_reader :em
+
+    # Time at which the latest Morrow.update ran.  This is used by
+    # Morrow::Helpers.now to provide a unified time across all systems/helpers
+    # to make it easier to schedule things without worrying about millisecond
+    # delays caused by other systems.
+    attr_reader :update_start_time
+
+    # This is the list of entities that need to be destroyed in this update.
+    # Don't access this directly, use Morrow::Helpers.destroy_entity
+    attr_reader :entities_to_be_destroyed
 
     # Get the server configuration.
     def config
@@ -64,6 +93,9 @@ module Morrow
     # This will wipe the world entirely clean.  Used for testing
     def reset!
       @em = EntityManager.new(components: config.components)
+      @systems.clear
+      @cycle = 0
+      @entities_to_be_destroyed.clear
     end
 
     # Run the server.  More advanced configuration can be done using the block
@@ -85,7 +117,7 @@ module Morrow
 
       info 'Loading the world'
       load_world
-      init_views
+      prepare_systems
 
       info 'Morrow starting in %s mode' % config.env
       WebServer::Backend.set :environment, config.env
@@ -109,7 +141,9 @@ module Morrow
 
         begin
           # Set up a periodic timer to update the world every quarter second.
-          EventMachine::PeriodicTimer.new(0.25) { Morrow.update }
+          EventMachine::PeriodicTimer.new(@config.update_interval) do
+            Morrow.update
+          end
 
           Rack::Handler.get('thin').run(WebServer.app,
               Host: config.host, Port: config.http_port, signals: false) if
@@ -126,27 +160,31 @@ module Morrow
     def update
       @update_start_time = Time.now
 
-      @config.systems.each do |system|
-        unless view = @views[system]
-          @config.systems.delete(system)
+      # Flush the updates right before we run the systems.  This makes writing
+      # tests easier, otherwise we have to run update twice after modifying a
+      # test entity.
+      # XXX need to benchmark this also
+      @em.flush_updates
 
-          error <<~ERROR.gsub(/\n/, ' ').chomp
-            no view found for #{system}; removed.  This may have occurred if
-            the system was added to Morrow.config.systems after Morrow.run was
-            called; runtime addition of systems is not supported.
-          ERROR
-
-          next
-        end
-
+      @systems.each do |system, interval, view|
         bm = Benchmark.measure do
+
+          # don't update the system unless it's supposed to run this cycle.  We
+          # still store benchmark data for skipped systems to keep the math
+          # simple in the `show sys` command.
+          next if interval != 1 && (@cycle % interval != 0)
+
           view.each { |a| system.update(*a) }
         end
         system.append_system_perf(bm)
-
       end
 
-      em.flush_updates
+      # Destroy the requested entities and clear the list
+      @entities_to_be_destroyed
+          .each { |e| @em.destroy_entity(e) }
+          .clear
+
+      @cycle += 1
     end
 
     private
@@ -197,9 +235,9 @@ module Morrow
       loader.finalize
     end
 
-    # For all configured systems, let's create the required views.
-    def init_views
-      @views = @config.systems.inject({}) do |o,system|
+    # Pepare the array of systems for periodic execution in .update
+    def prepare_systems
+      @systems = @config.systems.map do |system|
         view_args = system.view
 
         # Add { excl: :template } to the args unless the system already put
@@ -209,8 +247,12 @@ module Morrow
           view_args[:excl] << :template
         end
 
-        o[system] = @em.get_view(**view_args)
-        o
+        view = @em.get_view(**view_args)
+
+        # determine on which cycle this system should be run
+        interval = (system.frequency / @config.update_interval).to_i
+
+        [ system, interval, view ]
       end
     end
   end
