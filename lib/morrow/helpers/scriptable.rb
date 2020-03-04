@@ -446,6 +446,21 @@ module Morrow::Helpers::Scriptable
     get_component(entity, :animate)&.unconscious == true
   end
 
+  # check if the entity is incapacitated
+  def entity_incapacitated?(entity)
+    entity_health(entity) < -5
+  end
+
+  # check if the entity is mortally wounded
+  def entity_mortally_wounded?(entity)
+    entity_health(entity) < -10
+  end
+
+  # check if the entity is dead
+  def entity_dead?(entity)
+    entity_health(entity) < -20
+  end
+
   # get the position of an animate entity
   def entity_position(entity)
     get_component(entity, :animate)&.position
@@ -574,7 +589,7 @@ module Morrow::Helpers::Scriptable
 
     # If health dropped below 1, set the position to lying down if the entity
     # is animate
-    if health < -20
+    if entity_dead?(entity)
       act('%{victim} is dead!', actor: actor, victim: entity)
       spawn_corpse(entity)
       destroy_entity(entity)

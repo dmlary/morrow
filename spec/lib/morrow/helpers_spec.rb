@@ -16,8 +16,16 @@ describe Morrow::Helpers do
         buf = conn.buf
         buf << 'pas'
         char = create_entity(components: conn)
-        send_to_char(char: char, buf: 'sed')
-        expect(buf).to eq('passed')
+        send_to_char(char: char, buf: "sed\n")
+        expect(buf).to eq("passed\n")
+      end
+
+      it 'will append a trailing newline if one is not provided' do
+        conn = Morrow.config.components[:connection].new
+        buf = conn.buf
+        char = create_entity(components: conn)
+        send_to_char(char: char, buf: 'passed')
+        expect(buf).to eq("passed\n")
       end
     end
   end

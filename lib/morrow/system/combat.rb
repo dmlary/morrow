@@ -18,7 +18,21 @@ module Morrow::System::Combat
     end
 
     def update(actor, combat)
-      return if entity_unconscious?(actor)
+      if entity_dead?(actor)
+        return
+      elsif entity_mortally_wounded?(actor)
+        act("&r%{actor} %{v:be} mortally wounded," +
+            " and will die if not aided soon.&0", actor: actor)
+        return
+      elsif entity_incapacitated?(actor)
+        act("&r%{actor} %{v:be} incapacitated," +
+            " and will die slowly if not aided.&0", actor: actor)
+        return
+      elsif entity_unconscious?(actor)
+        act("&r%{actor} %{v:be} stunned, but will regain consciousness.&0",
+            actor: actor)
+        return
+      end
 
       target = combat.target
       room = entity_location(actor)

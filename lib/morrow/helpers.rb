@@ -56,7 +56,7 @@ module Morrow::Helpers
 
     buf = ''
     buf << "\n" unless config && config.compact
-    if target = entity_target(entity)
+    if target = entity_target(entity) and !entity_dead?(target)
       buf << "%s %s.\n" %
           [ entity_short(target), entity_health_status(target) ]
     end

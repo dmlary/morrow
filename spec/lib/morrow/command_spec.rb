@@ -23,8 +23,7 @@ describe Morrow::Command do
       after(:each) { Morrow.config.commands.delete('test') }
 
       it 'will register a new command' do
-        run_cmd(leo, 'test')
-        expect(output).to eq('passed')
+        expect(cmd_output(leo, 'test')).to include('passed')
       end
     end
 
