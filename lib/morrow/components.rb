@@ -247,7 +247,11 @@ class ConnectionComponent < Component
 
   # Last time any input was received on this connection; updated by whichever
   # server is handling conn.
-  field :last_recv, type: Time
+  field :last_recv, type: Time, default: proc { Time.now }
+
+  # Last time this connection sent data to the client; updated by
+  # Morrow::System::Connection.
+  field :last_send, type: Time, default: proc { Time.now }
 end
 
 class TeleporterComponent < Component

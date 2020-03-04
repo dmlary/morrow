@@ -239,6 +239,22 @@ describe Morrow::Component do
         end
       end
     end
+
+    context 'when the field is declared with default: Proc' do
+      let(:comp) do
+        Class.new(described_class) do
+          field :value, default: lambda { |v| @args = v; :passed }
+        end
+      end
+
+      it 'will evaluate Proc to set the value' do
+        expect(comp.new.value).to eq(:passed)
+      end
+      it 'will call the Proc with self' do
+        c = comp.new
+        expect(comp.instance_variable_get(:@args)).to eq(c)
+      end
+    end
   end
 
   describe 'field getters' do

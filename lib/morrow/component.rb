@@ -127,7 +127,9 @@ class Morrow::Component
         if arg.has_key?(key)
           send("#{key}=", arg[key])
         else
-          send("#{key}=", field[:default], set_modified: false)
+          default = field[:default]
+          default = default.call(self) if default.respond_to?(:call)
+          send("#{key}=", default, set_modified: false)
         end
       end
     else

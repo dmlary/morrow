@@ -45,7 +45,8 @@ class Morrow::Configuration
   #   Morrow.config.components[:shadow] = ShadowComponent
   attr_accessor :components
 
-  # Array of System modules that should be run each Morrow.update()
+  # Array of System modules that should be run each Morrow.update().  Ensure
+  # that the last system in this array is the connection handler.
   attr_accessor :systems
 
   # Hash of command name to Command definitions.  All commands that are defined

@@ -8,6 +8,7 @@ describe Morrow::System::Connection do
 
   before(:each) do
     comp.last_recv = Time.now
+    comp.last_send = now - 1
     comp.conn = instance_double('Morrow::TelnetServer::Connection')
     allow(comp.conn).to receive(:error?).and_return(false)
     allow(comp.conn).to receive(:close_connection)
@@ -50,7 +51,7 @@ describe Morrow::System::Connection do
     it 'will send any pending output' do
       comp.buf << 'passed'
       run_update
-      expect(@output).to start_with('passed')
+      expect(@output).to include('passed')
     end
 
     it 'will send a timeout message' do
@@ -73,31 +74,61 @@ describe Morrow::System::Connection do
     context 'when there is pending output' do
       before(:each) { comp.buf << 'passed' }
 
-      it 'will send the pending output' do
-        run_update
-        expect(@output).to start_with('passed')
+      shared_examples 'will output' do
+        it 'will send the pending output' do
+          run_update
+          expect(@output).to include('passed')
+        end
+
+        it 'will clear the pending output' do
+          buf = comp.buf
+          run_update
+          expect(buf).to be_empty
+        end
+
+        it 'will send the prompt' do
+          run_update
+          expect(@output).to end_with(player_prompt(leo))
+        end
+
+        it 'will not close the session' do
+          expect(conn).to_not receive(:close_connection_after_writing)
+          expect(conn).to_not receive(:close_connection)
+          run_update
+        end
+
+        it 'will not remove the connection component' do
+          run_update
+          expect(entity_has_component?(leo, :connection)).to be(true)
+        end
       end
 
-      it 'will clear the pending output' do
-        buf = comp.buf
-        run_update
-        expect(buf).to be_empty
+      context 'when the client sent input' do
+        before(:each) do
+          comp.last_recv = now
+          comp.last_send = now - 10
+        end
+
+        include_examples 'will output'
+
+        it 'will not prefix the output with a newline' do
+          run_update
+          expect(@output).to_not match(/\A\n/m)
+        end
       end
 
-      it 'will send the prompt' do
-        run_update
-        expect(@output).to end_with(player_prompt(leo))
-      end
+      context 'when the client has not sent input' do
+        before(:each) do
+          comp.last_recv = now - 10
+          comp.last_send = now - 10
+        end
 
-      it 'will not close the session' do
-        expect(conn).to_not receive(:close_connection_after_writing)
-        expect(conn).to_not receive(:close_connection)
-        run_update
-      end
+        include_examples 'will output'
 
-      it 'will not remove the connection component' do
-        run_update
-        expect(entity_has_component?(leo, :connection)).to be(true)
+        it 'will prefix the output with a newline' do
+          run_update
+          expect(@output).to match(/\A\n/m)
+        end
       end
     end
 
@@ -120,5 +151,6 @@ describe Morrow::System::Connection do
         expect(entity_has_component?(leo, :connection)).to be(true)
       end
     end
+
   end
 end
