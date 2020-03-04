@@ -24,6 +24,10 @@ describe 'Morrow::Helpers.act' do
       actor: 'You smile at Victim.',
       victim: 'Actor smiles at you.',
       observer: 'Actor smiles at Victim.' },
+    { fmt: '%{actor} %{v:be} incapacitated, and may not recover.',
+      actor: 'You are incapacitated, and may not recover.',
+      victim: 'Actor is incapacitated, and may not recover.',
+      observer: 'Actor is incapacitated, and may not recover.' },
   ].each do |p|
     describe p[:fmt].inspect do
       before(:each) { act(p[:fmt], actor: actor, victim: victim) }

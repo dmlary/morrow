@@ -229,7 +229,9 @@ module Morrow::Helpers::Scriptable
   def send_to_char(char:, buf:)
     conn_comp = get_component(char, :connection) or return
     return unless conn_comp.buf
-    conn_comp.buf << buf.to_s
+    out = conn_comp.buf
+    out << buf.to_s
+    out << "\n" unless out[-1] == "\n"
     nil
   end
 
@@ -288,7 +290,7 @@ module Morrow::Helpers::Scriptable
           observer == p[arg.to_sym] ? 'you' : entity_short(p[arg.to_sym])
         when 'v'
           arg.en.conjugate(:present, observer == p[:actor] ?
-              :first_person_singular : :third_person_singular)
+              nil : :third_person_singular)
         else
           raise Morrow::Error, "unknown format operator '#{op}' in '#{fmt}'"
         end
