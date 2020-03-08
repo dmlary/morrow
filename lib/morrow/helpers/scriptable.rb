@@ -252,6 +252,7 @@ module Morrow::Helpers::Scriptable
   # * `%{actor}` short name of the entity in the `:actor` parameter
   # * `%{<param>}` short name for the entity in the named parameter
   # * `%{v:<verb>}` proper conjugation of the verb for the observer.
+  # * `%{poss:<param>}` possessive form of the entity in the named parameter
   #
   # Arguments:
   # * fmt: format string to output to everyone in the room
@@ -276,8 +277,6 @@ module Morrow::Helpers::Scriptable
   #       victim: actor)
   def act(fmt, **p)
     raise ArgumentError, 'missing keyword: actor' unless p.has_key?(:actor)
-
-    fmt << "\n" unless fmt[-1] == "\n"
 
     room_observers(entity_location(p[:actor])).each do |observer|
       first = nil
@@ -493,8 +492,6 @@ module Morrow::Helpers::Scriptable
   # check if the entity is dead
   def entity_dead?(entity)
     entity_health(entity) < -20
-  rescue Morrow::UnknownEntity
-    true
   end
 
   # get the position of an animate entity
@@ -626,7 +623,7 @@ module Morrow::Helpers::Scriptable
     # If health dropped below 1, set the position to lying down if the entity
     # is animate
     if entity_dead?(entity)
-      act('%{victim} is dead!', actor: actor, victim: entity)
+      act('%{victim} %{v:be} dead!', actor: actor, victim: entity)
       spawn_corpse(entity)
       destroy_entity(entity)
     elsif health < 1 && animate = get_component(entity, :animate)

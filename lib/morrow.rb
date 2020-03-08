@@ -3,6 +3,7 @@ require 'rack'
 require 'yaml'
 require 'find'
 require 'benchmark'
+require 'facets/string/indent'
 
 module Morrow; end
 require_relative 'morrow/version'
@@ -174,7 +175,17 @@ module Morrow
           # simple in the `show sys` command.
           next if interval != 1 && (@cycle % interval != 0)
 
-          view.each { |a| system.update(*a) }
+          view.each do |args|
+            system.update(*args)
+          rescue
+            entity, *components = args;
+            error('system update exception: %s' % system)
+            error('    entity: %s' % entity)
+            error('    components:')
+            components.pretty_inspect.indent(8).lines
+                .each { |l| error(l.chomp) }
+            log_exception($!)
+          end
         end
         system.append_system_perf(bm)
       end

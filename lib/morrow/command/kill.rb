@@ -1,4 +1,4 @@
-module Morrow::Command::Look
+module Morrow::Command::Kill
   extend Morrow::Command
 
   class << self

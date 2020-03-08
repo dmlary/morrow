@@ -53,6 +53,9 @@ module Morrow::Command::Look
 
       when :char, :obj
         out << "%s\n" % viewable.desc if viewable.desc
+        out << "%s %s.\n" %
+            [ entity_short(target), entity_health_status(target) ] if
+                entity_animate?(target)
         out << "%s may be referred to as '&W%s&0'." %
             [ viewable.short, entity_keywords(target) ]
 
