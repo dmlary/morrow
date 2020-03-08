@@ -10,8 +10,7 @@ module Morrow::Command::Look
       command_error 'What would you like to attack?' unless target
 
       room = entity_location(actor) or fault("actor has no location: #{actor}")
-      target = match_keyword(target,
-          visible_contents(actor: actor, cont: room)) or
+      target = match_keyword(target, visible_chars(actor)) or
               command_error 'You do not see that here.'
 
       hit_entity(actor: actor, entity: target)

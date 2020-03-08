@@ -120,7 +120,7 @@ module Morrow::Helpers::Scriptable
 
     # move the entity
     location.entity = dest
-    container.contents << entity
+    container.contents.unshift(entity)
 
     # perform the look for the entity if it was requested
     # XXX kludge for right now
@@ -280,17 +280,23 @@ module Morrow::Helpers::Scriptable
     fmt << "\n" unless fmt[-1] == "\n"
 
     room_observers(entity_location(p[:actor])).each do |observer|
+      first = nil
       out = fmt.gsub(/%{(?:([^:}]+):)?([^}]+)}/) do
         op, arg = $1, $2
-        first_person = (observer == p[arg.to_sym])
+        second_person = (observer == p[arg.to_sym])
 
         case op
         when nil
           arg = arg.to_sym
-          observer == p[arg.to_sym] ? 'you' : entity_short(p[arg.to_sym])
+          first ||= p[arg]
+          observer == p[arg] ? 'you' : entity_short(p[arg])
         when 'v'
-          arg.en.conjugate(:present, observer == p[:actor] ?
+          arg.en.conjugate(:present, observer == first ?
               nil : :third_person_singular)
+        when 'p'
+          second_person ? 'you' : 'they'
+        when 'poss'
+          second_person ? 'your' : entity_short(p[arg.to_sym]) + "'s"
         else
           raise Morrow::Error, "unknown format operator '#{op}' in '#{fmt}'"
         end
@@ -341,11 +347,34 @@ module Morrow::Helpers::Scriptable
   end
 
   # Return the array of Entities within a Container Entity that are visibile to
-  # the actor.
+  # the actor.  This method also supports a block argument to allow further
+  # refinement of which entities should be returned.
+  #
+  # Examples:
+  #   # get the visible items in a chest
+  #   visible_contents(actor: leo, cont: chest)
+  #
+  #   # get the visible entities in a room
+  #   visible_contents(actor: leo, cont: entity_location(leo))
+  #
+  #   # get the visible characters in a room
+  #   visible_contents(actor: leo, cont: entity_location(leo)) do |entity|
+  #     entity_animate?(entity)
+  #   end
   def visible_contents(actor:, cont:)
     get_component(cont, :container)
         &.contents
-        &.select { |e| entity_has_component?(e, :viewable) } or []
+        &.select do |entity|
+          entity_has_component?(entity, :viewable) and
+              (block_given? ? yield(entity) : true)
+        end or []
+  end
+
+  # return an array of animate entities within a container that are visible to
+  # the actor.
+  def visible_chars(actor, room: nil)
+    room ||= entity_location(actor)
+    visible_contents(actor: actor, cont: room) { |e| entity_animate?(e) }
   end
 
   # return an array of entities in a given room that can observe actions
@@ -446,6 +475,11 @@ module Morrow::Helpers::Scriptable
     get_component(entity, :animate)&.unconscious == true
   end
 
+  # check if the entity is conscious
+  def entity_conscious?(entity)
+    !entity_unconscious?(entity)
+  end
+
   # check if the entity is incapacitated
   def entity_incapacitated?(entity)
     entity_health(entity) < -5
@@ -459,6 +493,8 @@ module Morrow::Helpers::Scriptable
   # check if the entity is dead
   def entity_dead?(entity)
     entity_health(entity) < -20
+  rescue Morrow::UnknownEntity
+    true
   end
 
   # get the position of an animate entity
@@ -605,6 +641,11 @@ module Morrow::Helpers::Scriptable
 
     if rand(100) < 5
       act("%{actor} %{v:miss} %{victim}.", actor: actor, victim: entity)
+    elsif entity_conscious?(entity) and
+        entity_ability_check?(entity, :dodge) and
+        rand(100) < 20
+      act('%{victim} %{v:dodge} %{poss:actor} attack!',
+          actor: actor, victim: entity)
     else
       damage_entity(actor: actor, entity: entity, amount: 10)
     end
@@ -637,5 +678,16 @@ module Morrow::Helpers::Scriptable
   # get the combat target for an entity
   def entity_target(entity)
     get_component(entity, :combat)&.target
+  end
+
+  # get an entity's proficiency at an ability
+  def entity_proficiency(entity, ability)
+    ab = get_component(entity, :abilities)&.send(ability) or return 0
+    [ ab[:proficiency] + ab[:proficiency_mod], ab[:proficiency_max] ].min
+  end
+
+  # perform a proficiency check for an entity with a given ability
+  def entity_ability_check?(entity, ability)
+    rand(100) < entity_proficiency(entity, ability)
   end
 end

@@ -118,6 +118,7 @@ class Morrow::Configuration
       combat: Morrow::Component::Combat,
       resources: Morrow::Component::Resources,
       decay: Morrow::Component::Decay,
+      abilities: Morrow::Component::Abilities,
     }
 
     @systems = [

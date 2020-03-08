@@ -51,6 +51,7 @@ class Morrow::Component
     #   valid: Array or Proc to check validity of values
     #   type: Value type
     #   desc: description of the value
+    #
     def field(name, default: nil, freeze: false, clone: true, valid: nil,
         type: String, desc: nil)
       name = name.to_sym

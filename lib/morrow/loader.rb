@@ -3,7 +3,7 @@ require 'facets/hash/rekey'
 class Morrow::Loader
   include Morrow::Helpers
 
-  SUPPORTED_KEYS = %w{ id base components update remove }
+  SUPPORTED_KEYS = %i{ id base components update remove }
 
   def initialize
     @tasks = []   # Array of tasks to be performed at #finish
@@ -26,7 +26,7 @@ class Morrow::Loader
 
       # Make sure it's a mapping before we convert it to a ruby Hash
       load_error!('not a yaml mapping (Hash)', file, map) unless map.mapping?
-      entity = map.to_ruby
+      entity = YAML.send(:symbolize_names!, map.to_ruby)
 
       # Ensure they're not using some unknown keys
       unknown_keys = entity.keys - SUPPORTED_KEYS
@@ -34,26 +34,26 @@ class Morrow::Loader
           unknown_keys.empty?
 
       load_error!("id and update are mutually exclusive", file, map) if
-          entity['id'] and entity['update']
+          entity[:id] and entity[:update]
 
       source = "#{file}:#{map.start_line + 1}"
 
       create = {}
-      create[:id] = entity['id'] if entity.has_key?('id')
-      create[:update] = entity['update'] if entity.has_key?('update')
+      create[:id] = entity[:id] if entity.has_key?(:id)
+      create[:update] = entity[:update] if entity.has_key?(:update)
 
       # Create an Array of the various base Entities that will be layered into
       # this Entity
-      create[:base] = [entity['base']].flatten.compact
+      create[:base] = [entity[:base]].flatten.compact
 
       # Construct an Array of component arguments that will be sent to
       # Morrow::EntityManager#create_entity
-      entity['components'] ||= []
+      entity[:components] ||= []
       load_error!('The `components` field must be an Array; %s' %
-          [ entity['components'].inspect ], file, map) unless
-              entity['components'].is_a?(Array)
+          [ entity[:components].inspect ], file, map) unless
+              entity[:components].is_a?(Array)
 
-      create[:components] = entity['components'].map do |conf|
+      create[:components] = entity[:components].map do |conf|
         case conf
         when Symbol
           conf
@@ -86,7 +86,7 @@ class Morrow::Loader
         end
       end
 
-      create[:remove] = entity['remove'] || []
+      create[:remove] = entity[:remove] || []
 
       # defer the action if we're not able to do it at the moment
       begin
