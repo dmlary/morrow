@@ -27,15 +27,47 @@ module Morrow::Helpers
     base.include(Morrow::Helpers::Scriptable)
   end
 
-  # player_prompt
-  #
-  # Generate a player prompt
+  def entity_health_status(entity)
+    res = get_component(entity, :resources)
+    ratio = res.health.to_f/res.health_max
+    if ratio >= 1
+      'is in excellent condition'
+    elsif ratio >= 0.9
+      'has a few scratches'
+    elsif ratio >= 0.75
+      'has some small wounds and bruises'
+    elsif ratio >= 0.50
+      'has quite a few wounds'
+    elsif ratio >= 0.30
+      'has some big nasty wounds and scratches'
+    elsif ratio >= 0.15
+      'looks pretty hurt'
+    elsif ratio >= 0
+      'is in awful condition'
+    else
+      'is bleeding awfully from big wounds'
+    end
+  end
+
+  # construct the player prompt
   def player_prompt(entity)
     config = get_component(entity, :player_config)
+    resources = get_component(entity, :resources)
 
     buf = ''
     buf << "\n" unless config && config.compact
-    buf << '> '
+    if target = entity_target(entity) and
+        entity_exists?(target) and
+        !entity_dead?(target)
+      buf << "%s %s.\n" %
+          [ entity_short(target), entity_health_status(target) ]
+    end
+    if resources
+      buf << '&C%d&0/&c%d&Whp&0> ' %
+          [ resources.health, resources.health_max ]
+    else
+      buf << '> '
+    end
     buf << "\xff\xf9" if config && config.send_go_ahead
     buf
   end

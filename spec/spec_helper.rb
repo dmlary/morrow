@@ -20,8 +20,8 @@ module Helpers
   def reset_world
     Morrow.reset!
     Morrow.load_world
-    Morrow.send(:init_views)
-    Morrow.update
+    Morrow.send(:prepare_systems)
+    Morrow.instance_variable_set(:@update_start_time, Time.now)
   end
 
   # strip our color codes from a string
@@ -42,6 +42,19 @@ module Helpers
 
     logger.level = @logger_orig_level == logger.level ?
         Logger::FATAL : @logger_orig_level
+  end
+
+  # run a command as an actor and capture the output
+  def cmd_output(actor, cmd)
+    player_output(actor).clear
+    Morrow::Helpers.run_cmd(actor, cmd)
+    strip_color_codes(player_output(actor))
+  end
+
+  # check if an entity has been, or is scheduled to be destroyed
+  def entity_destroyed?(entity)
+    !entity_exists?(entity) or
+        Morrow.entities_to_be_destroyed.include?(entity)
   end
 end
 

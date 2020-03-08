@@ -91,8 +91,17 @@ end
 class AnimateComponent < Component
   desc <<~DESC
     This Entity is animated.  Representing any sort of player or non-player
-    character.  Anything that can move on it's own, perform actions, etc.
+    character.  Anything that can move on it's own, perform actions, fight
+    back, etc.
   DESC
+
+  # position of the entity.  Affects ability to do specific commands,
+  # resource regeneration, damage received.
+  field :position, valid: %i{ standing sitting lying }, default: :standing
+
+  # flag to denote the entity is unconscious, and unable to perform any
+  # actions.
+  field :unconscious, type: :boolean, default: false
 end
 
 class CorporealComponent < Component
@@ -238,7 +247,11 @@ class ConnectionComponent < Component
 
   # Last time any input was received on this connection; updated by whichever
   # server is handling conn.
-  field :last_recv, type: Time
+  field :last_recv, type: Time, default: proc { Time.now }
+
+  # Last time this connection sent data to the client; updated by
+  # Morrow::System::Connection.
+  field :last_send, type: Time, default: proc { Time.now }
 end
 
 class TeleporterComponent < Component
@@ -305,4 +318,8 @@ class HelpComponent < Component
 end
 end
 
-require_relative 'component/exits.rb'
+require_relative 'component/exits'
+require_relative 'component/combat'
+require_relative 'component/resources'
+require_relative 'component/decay'
+require_relative 'component/abilities'

@@ -62,6 +62,10 @@ describe Morrow::Command::Look do
       expect(output).to include(entity_short(leo))
     end
 
+    it 'will show the condition of the character' do
+      expect(output).to include(entity_health_status(leo))
+    end
+
     it 'will show the character keywords' do
       expect(output).to include(entity_keywords(leo))
     end

@@ -51,6 +51,7 @@ class Morrow::Component
     #   valid: Array or Proc to check validity of values
     #   type: Value type
     #   desc: description of the value
+    #
     def field(name, default: nil, freeze: false, clone: true, valid: nil,
         type: String, desc: nil)
       name = name.to_sym
@@ -127,7 +128,9 @@ class Morrow::Component
         if arg.has_key?(key)
           send("#{key}=", arg[key])
         else
-          send("#{key}=", field[:default], set_modified: false)
+          default = field[:default]
+          default = default.call(self) if default.respond_to?(:call)
+          send("#{key}=", default, set_modified: false)
         end
       end
     else

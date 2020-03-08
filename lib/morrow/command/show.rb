@@ -41,7 +41,7 @@ module Morrow::Command::Show
           utime = perf[1].average
           stime = perf[2].average
           real  = perf[-1].average
-          out << "  %6s: real: %0.04f, utime %0.04f, stime %0.04f\n" %
+          out << "  %6s: real %0.04f, utime %0.04f, stime %0.04f\n" %
               [ label, real, utime, stime ]
         end
 

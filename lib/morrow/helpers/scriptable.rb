@@ -63,7 +63,7 @@ module Morrow::Helpers::Scriptable
       # container entity has already been destroyed; continue
     end
 
-    Morrow.em.destroy_entity(entity)
+    Morrow.entities_to_be_destroyed << entity
   end
 
   # Get the current time according to the engine.  Note, this is **only**
@@ -120,7 +120,7 @@ module Morrow::Helpers::Scriptable
 
     # move the entity
     location.entity = dest
-    container.contents << entity
+    container.contents.unshift(entity)
 
     # perform the look for the entity if it was requested
     # XXX kludge for right now
@@ -192,8 +192,6 @@ module Morrow::Helpers::Scriptable
     multiple ? [ matches[index] ].compact : matches[index]
   end
 
-  # spawn_at
-  #
   # Create a new instance of an entity from a base entity, and move it to dest.
   #
   # Arguments:
@@ -231,7 +229,9 @@ module Morrow::Helpers::Scriptable
   def send_to_char(char:, buf:)
     conn_comp = get_component(char, :connection) or return
     return unless conn_comp.buf
-    conn_comp.buf << buf.to_s
+    out = conn_comp.buf
+    out << buf.to_s
+    out << "\n" unless out[-1] == "\n"
     nil
   end
 
@@ -252,6 +252,7 @@ module Morrow::Helpers::Scriptable
   # * `%{actor}` short name of the entity in the `:actor` parameter
   # * `%{<param>}` short name for the entity in the named parameter
   # * `%{v:<verb>}` proper conjugation of the verb for the observer.
+  # * `%{poss:<param>}` possessive form of the entity in the named parameter
   #
   # Arguments:
   # * fmt: format string to output to everyone in the room
@@ -278,17 +279,23 @@ module Morrow::Helpers::Scriptable
     raise ArgumentError, 'missing keyword: actor' unless p.has_key?(:actor)
 
     room_observers(entity_location(p[:actor])).each do |observer|
+      first = nil
       out = fmt.gsub(/%{(?:([^:}]+):)?([^}]+)}/) do
         op, arg = $1, $2
-        first_person = (observer == p[arg.to_sym])
+        second_person = (observer == p[arg.to_sym])
 
         case op
         when nil
           arg = arg.to_sym
-          observer == p[arg.to_sym] ? 'you' : entity_short(p[arg.to_sym])
+          first ||= p[arg]
+          observer == p[arg] ? 'you' : entity_short(p[arg])
         when 'v'
-          arg.en.conjugate(:present, observer == p[:actor] ?
-              :first_person_singular : :third_person_singular)
+          arg.en.conjugate(:present, observer == first ?
+              nil : :third_person_singular)
+        when 'p'
+          second_person ? 'you' : 'they'
+        when 'poss'
+          second_person ? 'your' : entity_short(p[arg.to_sym]) + "'s"
         else
           raise Morrow::Error, "unknown format operator '#{op}' in '#{fmt}'"
         end
@@ -303,6 +310,7 @@ module Morrow::Helpers::Scriptable
   # Run a command as the given actor
   def run_cmd(actor, buf)
     name, arg = buf.split(/\s+/, 2)
+    return if name.nil?
     arg = nil if arg && arg.empty?
     name = name.strip.chomp.downcase
 
@@ -325,12 +333,47 @@ module Morrow::Helpers::Scriptable
     comp.contents
   end
 
+  # check to see if two entities have the same location
+  def entity_present?(actor:, entity:)
+    entity_location(actor) == entity_location(entity)
+  end
+
+  # raise EntityNotPresent if two entities do not have the same location
+  def entity_present!(actor:, entity:)
+    raise Morrow::EntityNotPresent,
+        "entity not present: #{entity}, actor: #{actor}" unless
+            entity_present?(actor: actor, entity: entity)
+  end
+
   # Return the array of Entities within a Container Entity that are visibile to
-  # the actor.
+  # the actor.  This method also supports a block argument to allow further
+  # refinement of which entities should be returned.
+  #
+  # Examples:
+  #   # get the visible items in a chest
+  #   visible_contents(actor: leo, cont: chest)
+  #
+  #   # get the visible entities in a room
+  #   visible_contents(actor: leo, cont: entity_location(leo))
+  #
+  #   # get the visible characters in a room
+  #   visible_contents(actor: leo, cont: entity_location(leo)) do |entity|
+  #     entity_animate?(entity)
+  #   end
   def visible_contents(actor:, cont:)
     get_component(cont, :container)
         &.contents
-        &.select { |e| entity_has_component?(e, :viewable) } or []
+        &.select do |entity|
+          entity_has_component?(entity, :viewable) and
+              (block_given? ? yield(entity) : true)
+        end or []
+  end
+
+  # return an array of animate entities within a container that are visible to
+  # the actor.
+  def visible_chars(actor, room: nil)
+    room ||= entity_location(actor)
+    visible_contents(actor: actor, cont: room) { |e| entity_animate?(e) }
   end
 
   # return an array of entities in a given room that can observe actions
@@ -408,6 +451,54 @@ module Morrow::Helpers::Scriptable
     meta.area
   end
 
+  # Get the health of an entity; will return nil if the entity does not have
+  # health.
+  def entity_health(entity)
+    get_component(entity, :resources)&.health
+  end
+
+  # Check if an entity has health as a resource
+  def entity_has_health?(entity)
+    entity_health(entity) != nil
+  end
+
+  # ensure the entity has health
+  def entity_has_health!(entity)
+    raise Morrow::InvalidEntity,
+        'entity does not have health: %s' % [ entity ] unless
+            entity_has_health?(entity)
+  end
+
+  # check if the entity is unconscious
+  def entity_unconscious?(entity)
+    get_component(entity, :animate)&.unconscious == true
+  end
+
+  # check if the entity is conscious
+  def entity_conscious?(entity)
+    !entity_unconscious?(entity)
+  end
+
+  # check if the entity is incapacitated
+  def entity_incapacitated?(entity)
+    entity_health(entity) < -5
+  end
+
+  # check if the entity is mortally wounded
+  def entity_mortally_wounded?(entity)
+    entity_health(entity) < -10
+  end
+
+  # check if the entity is dead
+  def entity_dead?(entity)
+    entity_health(entity) < -20
+  end
+
+  # get the position of an animate entity
+  def entity_position(entity)
+    get_component(entity, :animate)&.position
+  end
+
   # entity_has_component?
   #
   # Check to see if the entity has a specific component
@@ -461,6 +552,11 @@ module Morrow::Helpers::Scriptable
     get_component(entity, :viewable)&.short or "the #{entity_keywords(entity)}"
   end
 
+  # get the long description of an entity
+  def entity_long(entity)
+    get_component(entity, :viewable)&.long
+  end
+
   # entity_desc
   #
   # Get the desc description for an entity
@@ -485,5 +581,110 @@ module Morrow::Helpers::Scriptable
   # Get the list of possible exit directions from any room.
   def exit_directions
     @exit_directions ||= %w{ north south east west up down }
+  end
+
+  # Begin combat between an actor and a target.
+  def enter_combat(actor:, target:)
+    entity_present!(actor: actor, entity: target)
+    entity_has_health!(target)
+
+    # If the actor isn't already in combat with a target, set them to be
+    # targeting the target.
+    get_component!(actor, :combat).target ||= target
+
+    # Grab the target's entity, add the actor to the attackers list, and if the
+    # target isn't engaged with anyone already, have them target the actor.
+    t = get_component!(target, :combat)
+    attackers = t.attackers
+    attackers << actor unless attackers.include?(actor)
+    t.target ||= actor
+  end
+
+  # Damage an entity, and do all the other housekeeping involved with one
+  # entity harming another.
+  def damage_entity(entity:, actor:, amount:)
+
+    # Entity must have a health resource to be damaged.
+    resources = get_component(entity, :resources)
+    raise Morrow::InvalidEntity, "entity does not have health: #{entity}" if
+        resources.health.nil?
+
+    modifier = 1.0
+    case entity_position(entity)
+    when :sitting
+      modifier += 0.5
+    when :lying
+      modifier += 1
+    end
+
+    health = resources.health -= amount * modifier
+    act('%{actor} %{v:hit} %{victim}.', actor: actor, victim: entity)
+
+    # If health dropped below 1, set the position to lying down if the entity
+    # is animate
+    if entity_dead?(entity)
+      act('%{victim} %{v:be} dead!', actor: actor, victim: entity)
+      spawn_corpse(entity)
+      destroy_entity(entity)
+    elsif health < 1 && animate = get_component(entity, :animate)
+      animate.position = :lying
+      animate.unconscious = true
+    end
+  end
+
+  # Attempt to hit another entity with an auto-attack
+  def hit_entity(actor:, entity:)
+    enter_combat(actor: actor, target: entity)
+
+    if rand(100) < 5
+      act("%{actor} %{v:miss} %{victim}.", actor: actor, victim: entity)
+    elsif entity_conscious?(entity) and
+        entity_ability_check?(entity, :dodge) and
+        rand(100) < 20
+      act('%{victim} %{v:dodge} %{poss:actor} attack!',
+          actor: actor, victim: entity)
+    else
+      damage_entity(actor: actor, entity: entity, amount: 10)
+    end
+  end
+
+  # Spawn a corpse for the given entity
+  def spawn_corpse(entity)
+    return unless get_component(entity, :animate)
+
+    corpse = spawn_at(dest: entity_location(entity),
+        base: 'morrow:obj/remains/corpse')
+    remove_component(corpse, :animate)
+    get_component(corpse, :keywords)
+        .words
+        .push(*get_component(entity, :keywords).words)
+
+    entity_contents(entity).each do |item|
+      move_entity(dest: corpse, entity: item)
+    end
+
+    viewable = get_component(corpse, :viewable)
+    viewable.long = 'The corpse of %s is lying here.' % entity_short(entity)
+
+    # corpse will decay in 5 minutes; XXX need longer decay for player corpses.
+    get_component!(corpse, :decay).at = now + 5 * 60
+
+    destroy_entity(entity)
+  end
+
+  # get the combat target for an entity
+  def entity_target(entity)
+    get_component(entity, :combat)&.target
+  end
+
+  # get an entity's proficiency at an ability
+  def entity_proficiency(entity, ability)
+    ab = get_component(entity, :abilities)&.send(ability) or return 0
+    [ ab[:proficiency] + ab[:proficiency_mod], ab[:proficiency_max] ].min
+  end
+
+  # perform a proficiency check for an entity with a given ability
+  def entity_ability_check?(entity, ability)
+    rand(100) < entity_proficiency(entity, ability)
   end
 end

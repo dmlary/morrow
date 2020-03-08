@@ -45,7 +45,8 @@ class Morrow::Configuration
   #   Morrow.config.components[:shadow] = ShadowComponent
   attr_accessor :components
 
-  # Array of System modules that should be run each Morrow.update()
+  # Array of System modules that should be run each Morrow.update().  Ensure
+  # that the last system in this array is the connection handler.
   attr_accessor :systems
 
   # Hash of command name to Command definitions.  All commands that are defined
@@ -68,6 +69,9 @@ class Morrow::Configuration
   # minutes
   attr_accessor :disconnect_timeout
 
+  # Update frequency in seconds; default 0.25
+  attr_accessor :update_interval
+
   def initialize
 
     @env = ENV['APP_ENV']&.to_sym || :development
@@ -85,6 +89,8 @@ class Morrow::Configuration
     @load_morrow_base = true
 
     @disconnect_timeout = 15 * 60
+
+    @update_interval = 0.25
 
     @components = {
       template: Morrow::TemplateComponent,
@@ -109,13 +115,18 @@ class Morrow::Configuration
       teleport: Morrow::TeleportComponent,
       affect: Morrow::AffectComponent,
       help: Morrow::HelpComponent,
+      combat: Morrow::Component::Combat,
+      resources: Morrow::Component::Resources,
+      decay: Morrow::Component::Decay,
+      abilities: Morrow::Component::Abilities,
     }
 
     @systems = [
       Morrow::System::Spawner,
       Morrow::System::Input,
-      Morrow::System::Connection,
       Morrow::System::Teleport,
+      Morrow::System::Combat,
+      Morrow::System::Connection,
     ]
 
     # Note: this hash is populated dynamically by modules that extend the

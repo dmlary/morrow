@@ -18,9 +18,11 @@ module Morrow::System::Connection
       end
 
       if buf = comp.buf and !buf.empty?
+        buf.prepend("\n") unless comp.last_recv > comp.last_send
         conn.send_data(buf)
         buf.clear
-        conn.send_data("\n" << player_prompt(actor))
+        conn.send_data(player_prompt(actor))
+        comp.last_send = now
       end
 
       if now > comp.last_recv + Morrow.config.disconnect_timeout
