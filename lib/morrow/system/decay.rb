@@ -15,13 +15,15 @@ module Morrow::System::Decay
       return if decay.at > now
       act(decay.act, actor: corpse) if decay.act
 
-      room = entity_location(corpse) or
-          warn 'decaying entity %s has no location; destroying contents' %
-              [ corpse ]
+      # Get the room, it will be ok if this is nil
+      room = entity_location(corpse)
 
+      # Loop through the contents of the corpse trying to move the items to the
+      # room.  If the move fails, just destroy the content items.
       entity_contents(corpse).each do |entity|
-        room ? move_entity(entity: entity, dest: room) :
-            destroy_entity(entity)
+        move_entity(entity: entity, dest: room)
+      rescue
+        destroy_entity(entity)
       end
 
       destroy_entity(corpse)

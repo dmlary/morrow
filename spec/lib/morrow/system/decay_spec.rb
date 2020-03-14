@@ -53,6 +53,7 @@ describe Morrow::System::Decay do
         expect(described_class).to_not receive(:act)
       end
     end
+
     context ':act is set' do
       before(:each) { decay.act = "%{actor} falls to pieces" }
 
@@ -64,6 +65,21 @@ describe Morrow::System::Decay do
         end
 
         run_update
+      end
+    end
+
+    context 'entity has no location' do
+      before(:each) { get_component!(corpse, :location).entity = nil }
+
+      it 'will destroy the entity' do
+        run_update
+        expect(entity_destroyed?(corpse)).to eq(true)
+      end
+
+      it 'will destroy entity contents' do
+        ball = spawn_at(dest: corpse, base: 'morrow:obj/junk/ball')
+        run_update
+        expect(entity_destroyed?(ball)).to be(true)
       end
     end
   end
