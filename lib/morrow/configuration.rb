@@ -126,6 +126,7 @@ class Morrow::Configuration
       Morrow::System::Input,
       Morrow::System::Teleport,
       Morrow::System::Combat,
+      Morrow::System::Decay,
       Morrow::System::Connection,
     ]
 
