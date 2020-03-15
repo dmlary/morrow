@@ -28,8 +28,11 @@ module Morrow::Command::Move
           command_error("#{entity_short(door).capitalize} is closed.")
         end
       else
-        error = move_entity(entity: actor, dest: dest, look: true)
-        command_error('It\'s too crowded for you to fit.') if error
+        begin
+          move_entity(entity: actor, dest: dest, look: true)
+        rescue Morrow::EntityWillNotFit
+          command_error('It\'s too crowded for you to fit.') if error
+        end
       end
     end
   end

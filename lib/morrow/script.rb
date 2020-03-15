@@ -50,7 +50,7 @@ class Morrow::Script
       lvasgn indexasgn masgn mlhs op_asgn and_asgn or_asgn
       if case when while until irange erange begin
       next break return block args arg or and not
-      lvar index
+      lvar index kwbegin rescue resbody retry
   }
 
   # InstanceMethodWhitelist

@@ -47,6 +47,12 @@ module Morrow
   # the same room.
   class EntityNotPresent < Error; end
 
+  # These errors are raised by move_entity() to note that the entity wouldn't
+  # fit in the destination
+  class EntityWillNotFit < Error; end
+  class EntityTooLarge < EntityWillNotFit; end
+  class EntityTooHeavy < EntityWillNotFit; end
+
   @exceptions = []
   @systems = []
   @cycle = 0

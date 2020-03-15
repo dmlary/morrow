@@ -21,7 +21,7 @@ module Morrow::System::Decay
       # Loop through the contents of the corpse trying to move the items to the
       # room.  If the move fails, just destroy the content items.
       entity_contents(corpse).each do |entity|
-        move_entity(entity: entity, dest: room)
+        move_entity(entity: entity, dest: room, force: true)
       rescue
         destroy_entity(entity)
       end

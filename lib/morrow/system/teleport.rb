@@ -33,11 +33,16 @@ module Morrow::System::Teleport
         return
       end
 
-      buf = teleporter.to_entity and send_to_char(char: entity, buf: buf)
+      # move the entity, which will remove the teleporter from the component,
+      # but does not stomp our data.
+      move_entity(entity: entity, dest: teleporter.dest)
 
-      move_entity(entity: entity, dest: teleporter.dest, look: teleporter.look)
-
+      msg = teleporter.to_entity and
+          send_to_char(char: entity, buf: msg)
       run_cmd(entity, 'look') if teleporter.look
+    rescue Morrow::EntityWillNotFit
+      # try teleporting again later
+      return
     end
   end
 end

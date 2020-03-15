@@ -1,5 +1,5 @@
 describe Morrow::Helpers do
-  before(:all) { Morrow.reset!; Morrow.load_world }
+  before(:each) { reset_world }
   let(:leo) { 'spec:mob/leonidas' }
 
   describe '.send_to_char(char: nil, buf: nil)' do
@@ -172,7 +172,6 @@ describe Morrow::Helpers do
     let(:script) { Morrow::Script.new('true', freeze: false) }
     let(:dest) { create_entity(base: 'morrow:room') }
     let(:src) { create_entity(base: 'morrow:room') }
-    let(:ghost) { create_entity }
 
     context 'when dest has on_enter hook' do
       it 'will call on_enter script after moving entity' do
@@ -194,71 +193,57 @@ describe Morrow::Helpers do
       e
     end
 
-    shared_examples 'will move' do
-      it 'will move entity' do
-        move_entity(dest: dest, entity: entity)
-        expect(entity_location(entity)).to eq(dest)
-      end
-      it 'will return nil' do
-        expect(move_entity(dest: dest, entity: entity)).to be(nil)
+    [ [ 'volume', Morrow::EntityTooLarge ],
+        [ 'weight', Morrow::EntityTooHeavy ] ].each do |attr, error|
+      [ [ 'unlimited', nil, 100 ],
+          [ 'full', 100, 100 ],
+          [ 'nearly full', 100, 99 ],
+          [ 'not full', 100, 50 ] ].each do |state, max, cur|
+        [ [ 'corporeal', 50 ],
+            [ 'non-corporeal', nil ] ].each do |entity_type, value|
+
+          context 'dest %s is %s, entity is %s' %
+              [ attr, state, entity_type, attr, value || 'nil' ] do
+
+            let(:entity) { create_entity(base: 'spec:char') }
+
+            before(:each) do
+              get_component!(dest, :container)['max_' + attr] = max
+              move_entity(dest: dest, entity: boxes(attr, cur))
+              if entity_type == 'corporeal'
+                get_component!(entity, :corporeal)[attr] = value
+              else
+                remove_component(entity, :corporeal)
+              end
+            end
+
+            if value && max && value + cur > max
+              it 'will not move the entity' do
+                before = entity_location(entity)
+                begin
+                  move_entity(entity: entity, dest: dest)
+                rescue
+                end
+                expect(entity_location(entity)).to eq(before)
+              end
+              it "will raise #{error}" do
+                expect { move_entity(entity: entity, dest: dest) }
+                    .to raise_error(error)
+              end
+            else
+              it 'will move the entity' do
+                move_entity(entity: entity, dest: dest)
+                expect(entity_location(entity)).to eq(dest)
+              end
+              it 'will not raise error' do
+                expect { move_entity(entity: entity, dest: dest) }
+                    .to_not raise_error
+              end
+            end
+          end
+        end
       end
     end
-
-    shared_examples 'room full' do
-      it 'will not move' do
-        before = entity_location(entity)
-        move_entity(dest: dest, entity: entity)
-        expect(entity_location(entity)).to eq(before)
-      end
-      it 'will return :full' do
-        expect(move_entity(dest: dest, entity: entity)).to be(:full)
-      end
-    end
-
-    shared_examples 'with entity types' do |full: nil, attr: nil|
-      context 'entity is corporeal' do
-        let(:entity) { leo }
-        before(:each) do
-          get_component!(entity, :corporeal)[attr] = 100
-        end
-        include_examples full ? 'room full' : 'will move'
-      end
-
-      context 'entity is not corporeal' do
-        let(:entity) { leo }
-        before(:each) { remove_component(entity, :corporeal) }
-        include_examples 'will move'
-      end
-    end
-
-    shared_examples 'with dest states' do |attr: nil|
-      context "dest max_#{attr} is nil" do
-        before(:each) do
-          get_component!(dest, :container)['max_' + attr] = nil
-        end
-        include_examples 'with entity types', full: false, attr: attr
-      end
-
-      context "dest #{attr} has space for entity" do
-        before(:each) do
-          move_entity(dest: dest, entity: boxes(attr, 100))
-          move_entity(dest: dest, entity: boxes(attr, 100))
-          get_component!(dest, :container)['max_' + attr] = 1000
-        end
-        include_examples 'with entity types', full: false, attr: attr
-      end
-
-      context "dest is near max_#{attr}" do
-        before(:each) do
-          move_entity(dest: dest, entity: boxes(attr, 99))
-          get_component!(dest, :container)['max_' + attr] = 100
-        end
-        include_examples 'with entity types', full: true, attr: attr
-      end
-    end
-
-    include_examples 'with dest states', attr: 'volume'
-    include_examples 'with dest states', attr: 'weight'
 
     [ { src: true,  dest: false, teleport: false },
       { src: true,  dest: true,  teleport: true },

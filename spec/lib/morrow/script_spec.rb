@@ -250,6 +250,21 @@ describe Morrow::Script do
           code: 'eval("File")',
           expect: 'method error' },
 
+        # try to rescue some stugg
+        { desc: 'begin/rescue block with retry',
+          expect: 'no error',
+          code: <<~'CODE'
+            begin
+              3
+            rescue
+              retry
+            end
+          CODE
+        },
+        { desc: 'raise an exception',
+          expect: 'no error',
+          code: 'raise "this is an error"' },
+
         # regression prevention
         { desc: 'Symbol#to_proc',
           expect: 'method error',
