@@ -381,6 +381,13 @@ module Morrow
       visible_contents(actor: actor, cont: room) { |e| entity_animate?(e) }
     end
 
+    # return the list of inanimate entities within a container that are visible
+    # to the actor.
+    def visible_items(actor, room: nil)
+      room ||= entity_location(actor)
+      visible_contents(actor: actor, cont: room) { |e| !entity_animate?(e) }
+    end
+
     # return an array of entities in a given room that can observe actions
     # occuring within them.
     def room_observers(room)
@@ -418,8 +425,12 @@ module Morrow
     #
     # Get the location for a given entity
     def entity_location(entity)
-      loc = get_component(entity, :location) or return nil
-      loc.entity
+      get_component(entity, :location)&.entity
+    end
+
+    def entity_location!(entity)
+      entity_location(entity) or raise Error,
+          "entity has no location: #{entity}"
     end
 
     # player_config
@@ -546,6 +557,11 @@ module Morrow
       get_component(entity, :animate) != nil
     end
 
+    # check if the entity is inanimate
+    def entity_inanimate?(entity)
+      get_component(entity, :animate) == nil
+    end
+
     # check if the entity is container
     def entity_container?(entity)
       get_component(entity, :container) != nil
@@ -567,6 +583,11 @@ module Morrow
     # Get the desc description for an entity
     def entity_desc(entity)
       get_component(entity, :viewable)&.desc
+    end
+
+    # Check to see if the entity is corporeal
+    def entity_corporeal?(entity)
+      entity_has_component?(entity, :corporeal)
     end
 
     # entity_volume

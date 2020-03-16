@@ -37,13 +37,7 @@
       - spec:obj/junk/ball
 
 - id: spec:obj/junk/ball
-  base: morrow:obj
-  components:
-  - keywords:
-    - [red, rubber, ball]
-  - viewable:
-      short: a red rubber ball
-      long: a red rubber ball is on the floor
+  base: morrow:obj/junk/ball
 
 - id: spec:char
   base: morrow:player
@@ -386,3 +380,18 @@
   - viewable:
       short: Johep the Absent
       long: A rangy form can be seen retreating into the distance.
+
+# Entities for use in object manipulation tests
+- id: spec:room/act_object
+  base: morrow:room
+
+- id: spec:obj/fountain
+  base: morrow:obj
+  components:
+  - viewable:
+      short: a marble fountain
+      long: A fountain carved from pale, pink marble sits in the square.
+  - keywords:
+      words: [ fountain ]
+  - corporeal:
+      weight: 1000
