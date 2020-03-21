@@ -90,33 +90,33 @@ module Morrow
     # * dest: destination entity
     # * entity: entity to be moved
     # * look: run 'look' after the entity has been moved
-    # * force: ignore container limits when moving
-    def move_entity(dest:, entity:, look: false, force: false)
+    # * ignore_limits: ignore container limits when moving
+    def move_entity(dest:, entity:, look: false, ignore_limits: false)
       container = get_component!(dest, :container)
       location = get_component!(entity, :location)
       src = location.entity
 
-      # I apologize, but this is gonna be ugly and may be premature
-      # optimization.
-      #
-      # For corporeal entities, we need to first check if the entity will fit
-      # in the destination (by volume & weight), but only if the container has
-      # a limit on at least one of volume or weight.  We only want to sweep
-      # through the entities once, so we do all of this at once.  Thus, ugly.
-      if corp = get_component(entity, :corporeal) and
-          (max_vol = container.max_volume or max_weight = container.max_weight)
+      if !ignore_limits and entity_corporeal?(entity)
 
-        vol, weight = container.contents
-            .inject([corp.volume || 0, corp.weight || 0]) do |(v,w),e|
-          if c = get_component(e, :corporeal)
-            v += c.volume || 0
-            w += c.weight || 0
-          end
-          [v, w]
+        # When considering volume, we only consider the volume of the entity,
+        # not it's contents;  just assume every container is the tardis.
+        if max_volume = container.max_volume
+          volume = entity_contents_volume(dest)
+          volume += entity_volume(entity)
+          raise EntityTooLarge if volume > max_volume
         end
 
-        raise EntityTooLarge if !force && max_vol && vol > max_vol
-        raise EntityTooHeavy if !force && max_weight && weight > max_weight
+        # When considering max weight, we use the cumulative weight of the
+        # entity and all of its contents (recursive).  Also, if the source
+        # container is inside the destination, don't consider weight limits;
+        # the destination is already holding the weight of the entity to
+        # be moved.
+        if max_weight = container.max_weight and
+            (src.nil? or entity_location(src) != dest)
+          weight = entity_contents_weight(dest)
+          weight += entity_cumulative_weight(entity)
+          raise EntityTooHeavy if weight > max_weight
+        end
       end
 
       # remove the entity from any existing location
@@ -205,7 +205,7 @@ module Morrow
     #   base: base Entity to spawn
     def spawn_at(dest:, base:)
       entity = spawn(base: base, area: entity_area(dest))
-      move_entity(entity: entity, dest: dest, force: true)
+      move_entity(entity: entity, dest: dest, ignore_limits: true)
       entity
     end
 
@@ -522,12 +522,16 @@ module Morrow
       get_components(entity, component).empty? == false
     end
 
-    # entity_closed?
-    #
     # Check if an entity has a ClosableComponent and is closed
     def entity_closed?(entity)
       closable = get_component(entity, :closable) or return false
       !!closable.closed
+    end
+
+    # close a closable entity
+    def close_entity(entity)
+      closable = get_component(entity, :closable) or raise ComponentNotPresent
+      closable.closed = true
     end
 
     # entity_locked?
@@ -686,7 +690,7 @@ module Morrow
           .push(*get_component(entity, :keywords).words)
 
       entity_contents(entity).each do |item|
-        move_entity(dest: corpse, entity: item, force: true)
+        move_entity(dest: corpse, entity: item, ignore_limits: true)
       end
 
       viewable = get_component(corpse, :viewable)
@@ -712,6 +716,38 @@ module Morrow
     # perform a proficiency check for an entity with a given ability
     def entity_ability_check?(entity, ability)
       rand(100) < entity_proficiency(entity, ability)
+    end
+
+    # get the weight of an entity
+    def entity_weight(entity)
+      get_component(entity, :corporeal)&.weight || 0
+    end
+
+    # Get the total weight of all entities within the container.  This
+    # includes the weight of any entities within containers inside the
+    # top-level container.
+    def entity_contents_weight(container)
+      entity_contents(container).inject(0) do |total,entity|
+        total + entity_weight(entity) + entity_contents_weight(entity)
+      end
+    end
+
+    # Get the cumulative weight of an entity along with the weight of its
+    # contents.
+    def entity_cumulative_weight(entity)
+      entity_weight(entity) + entity_contents_weight(entity)
+    end
+
+    # Get the volume of an entity
+    def entity_volume(entity)
+      get_component(entity, :corporeal)&.volume || 0
+    end
+
+    # Get the total volume of all entities within the container.
+    def entity_contents_volume(container)
+      entity_contents(container).inject(0) do |total,entity|
+        total + entity_volume(entity)
+      end
     end
   end
 end

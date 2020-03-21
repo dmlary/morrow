@@ -53,6 +53,10 @@ module Morrow
   class EntityTooLarge < EntityWillNotFit; end
   class EntityTooHeavy < EntityWillNotFit; end
 
+  # This error is raised by any helper method that attempts to maniuplate a
+  # component that is not present on the entity
+  class ComponentNotPresent < Error; end
+
   @exceptions = []
   @systems = []
   @cycle = 0

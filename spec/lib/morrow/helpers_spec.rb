@@ -303,6 +303,7 @@ describe Morrow::Helpers do
         expect(teleport.time).to be_within(1).of(now + 10)
       end
     end
+
     context 'teleporter has Range delay' do
       let(:teleport) { get_component(leo, :teleport) }
       before(:each) { get_component!(dest, :teleporter).delay = 60..90 }
@@ -310,6 +311,47 @@ describe Morrow::Helpers do
       it 'will set time to random seconds in the future' do
         move_entity(dest: dest, entity: leo)
         expect(teleport.time - now).to be_between(60, 90)
+      end
+    end
+
+    # This is the general case of taking an item out of a container the
+    # character is holding.  It's impossible for the item to be too heavy for
+    # them to remove it from the container because they're already carrying
+    # the container.
+    context 'entity is within a container in dest' +
+        ' and dest is at max weight' do
+      let(:bag) { spawn_at(dest: leo, base: 'spec:obj/bag') }
+      let(:ball) { spawn_at(dest: bag, base: 'spec:obj/junk/ball') }
+
+      before(:each) do
+        get_component!(bag, :corporeal).weight = 100
+        get_component!(ball, :corporeal).weight = 100
+        get_component!(leo, :container).max_weight = 100
+      end
+
+      it 'will not raise EntityTooHeavy' do
+        expect { move_entity(entity: ball, dest: leo) }
+            .to_not raise_error
+      end
+    end
+  end
+
+  describe '.entity_cumulative_weight' do
+    context 'with nested containers' do
+      let(:bag) do
+        outer = create_entity(base: 'spec:obj/bag/cumulative_weight')
+        outer_ball = spawn_at(dest: outer, base: 'spec:obj/junk/ball')
+        inner = spawn_at(dest: outer,
+            base: 'spec:obj/bag/cumulative_weight')
+        inner_ball = spawn_at(dest: inner, base: 'spec:obj/junk/ball')
+        [ outer, inner, outer_ball, inner_ball ].each do |entity|
+          get_component!(entity, :corporeal).weight = 5
+        end
+        outer
+      end
+
+      it 'will sum all container contents and weight of the containers' do
+        expect(entity_cumulative_weight(bag)).to eq(20)
       end
     end
   end
