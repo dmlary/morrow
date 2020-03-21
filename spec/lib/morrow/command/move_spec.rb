@@ -69,14 +69,10 @@ describe Morrow::Command::Move do
     end
   end
 
-
-
-
-
   context 'destination room is full' do
     it 'will output an error to the actor' do
       expect(Morrow::Command::Move)
-          .to receive(:move_entity).and_return(:full)
+          .to receive(:move_entity).and_raise(Morrow::EntityWillNotFit)
       get_component!(room, :exits).down = 'spec:exit/open'
       run_cmd(leo, 'down')
       expect(output).to include('It\'s too crowded')

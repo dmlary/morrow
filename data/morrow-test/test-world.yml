@@ -3,6 +3,8 @@
   base: morrow:obj/chest/wooden
   components:
   - viewable:
+      short: a wooden chest
+      long: a wooden chest rests on the floor
       desc: |-
         Upon closer examination, this chest is nothing more that a poorly made
         apple box, all rough and unaged wood, held together by bands of metal
@@ -37,13 +39,7 @@
       - spec:obj/junk/ball
 
 - id: spec:obj/junk/ball
-  base: morrow:obj
-  components:
-  - keywords:
-    - [red, rubber, ball]
-  - viewable:
-      short: a red rubber ball
-      long: a red rubber ball is on the floor
+  base: morrow:obj/junk/ball
 
 - id: spec:char
   base: morrow:player
@@ -72,8 +68,11 @@
       - spec:mob/leo/bag_closed
       - spec:mob/leo/bag_open
 
-- id: spec:mob/leo/bag_open
+- id: spec:obj/bag
   base: morrow:obj/bag/small
+
+- id: spec:mob/leo/bag_open
+  base: spec:obj/bag
   components:
   - keywords:
     - [ leo, bag, open ]
@@ -81,7 +80,7 @@
       closed: false
 
 - id: spec:mob/leo/bag_closed
-  base: morrow:obj/bag/small
+  base: spec:obj/bag
   components:
   - keywords:
     - [ leo, bag, closed ]
@@ -386,3 +385,24 @@
   - viewable:
       short: Johep the Absent
       long: A rangy form can be seen retreating into the distance.
+
+# Entities for use in object manipulation tests
+- id: spec:room/act_object
+  base: morrow:room
+
+- id: spec:obj/fountain
+  base: morrow:obj
+  components:
+  - viewable:
+      short: a marble fountain
+      long: A fountain carved from pale, pink marble sits in the square.
+  - keywords:
+      words: [ fountain ]
+  - corporeal:
+      weight: 1000
+
+- id: spec:obj/bag/cumulative_weight
+  base: spec:obj/bag
+  components:
+  - corporeal:
+      weight: 1

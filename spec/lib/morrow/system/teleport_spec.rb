@@ -137,5 +137,22 @@ describe Morrow::System::Teleport do
         expect(player_output(leo)).to include('PASSED')
       end
     end
+
+    context 'destination is full' do
+      before(:each) do
+        get_component!(dest, :container).max_volume = 0
+        run_update
+      end
+
+      it 'will not move the entity' do
+        expect(entity_location(leo)).to_not eq(dest)
+      end
+      it 'will not output anything to entity' do
+        expect(player_output(leo)).to be_empty
+      end
+      it 'will not remove the teleporter component' do
+        expect(get_component(leo, :teleport)).to_not eq(nil)
+      end
+    end
   end
 end

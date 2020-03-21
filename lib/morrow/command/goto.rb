@@ -12,7 +12,7 @@ module Morrow::Command::Goto
       dest = get_component(arg, :location)&.entity
       dest ||= arg
 
-      move_entity(entity: actor, dest: dest, look: true)
+      move_entity(entity: actor, dest: dest, look: true, ignore_limits: true)
     rescue Morrow::UnknownEntity
       command_error 'That does not exist in the world'
     end

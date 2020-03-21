@@ -155,6 +155,9 @@
   - viewable:
       short: a red rubber ball
       long: a red rubber ball is on the floor
+  - corporeal:
+      weight: 0.1
+      volume: 1
 
 - id: morrow:act/teleporter
   components:
