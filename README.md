@@ -1,6 +1,5 @@
 # Morrow
-
-![run rspec](https://github.com/dmlary/morrow-mud/workflows/run%20rspec/badge.svg)
+![rspec-2.6](https://github.com/dmlary/morrow/workflows/rspec-2.6/badge.svg)
 
 Ruby implementation of an ECS-based MUD server.
 
