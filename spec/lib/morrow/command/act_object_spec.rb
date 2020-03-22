@@ -273,4 +273,132 @@ describe Morrow::Command::ActObject do
       end
     end
   end
+
+  describe 'put' do
+    let(:obj) { ball }
+    let(:container) { chest_open }
+
+    before(:each) { move_entity(dest: actor, entity: ball) }
+
+    shared_examples('put in container') do |cmd:|
+      context 'container is closed' do
+        before(:each) do
+          get_component(container, :closable).closed = true
+          run_cmd(actor, cmd)
+        end
+
+        it 'will output "<container> is closed."' do
+          expect(player_output(actor)).to include(' is closed.')
+        end
+
+        it 'will not move the object' do
+          expect(entity_location(obj)).to eq(actor)
+        end
+      end
+
+      context 'container is at max volume' do
+        before(:each) do
+          get_component(container, :container).max_volume = 0
+          run_cmd(actor, cmd)
+        end
+        it 'will output "will not fit"' do
+          expect(player_output(actor)).to include(' will not fit ')
+        end
+        it 'will not move the object' do
+          expect(entity_location(obj)).to eq(actor)
+        end
+      end
+
+      context 'container is at max weight' do
+        before(:each) do
+          get_component(container, :container).max_weight = 0
+          run_cmd(actor, cmd)
+        end
+        it 'will output "is too heavy"' do
+          expect(player_output(actor)).to include(' is too heavy ')
+        end
+        it 'will not move the object' do
+          expect(entity_location(obj)).to eq(actor)
+        end
+      end
+
+      context 'container is open and has space' do
+        before(:each) { run_cmd(actor, cmd) }
+
+        it 'will output "You put <obj> in <container>."' do
+          expect(player_output(actor))
+              .to match(/^You put .*? in .*?.$/)
+        end
+
+        it 'will move the object into the container' do
+          expect(entity_location(obj)).to eq(container)
+        end
+      end
+    end
+
+    context 'container not present' do
+      before(:each) do
+        run_cmd(actor, 'put ball chest')
+      end
+
+      it 'will output "You do not see a chest here."' do
+        expect(player_output(actor))
+            .to include('You do not see a chest here.')
+      end
+
+      it 'will not move the object' do
+        expect(entity_location(obj)).to eq(actor)
+      end
+    end
+
+    context 'object not in inventory' do
+      before(:each) do
+        move_entity(dest: room, entity: container)
+        run_cmd(actor, 'put missing chest')
+      end
+
+      it 'will output "You do not have a missing."' do
+        expect(player_output(actor))
+            .to include('You do not have a missing')
+      end
+
+      it 'will not move the object' do
+        expect(entity_location(obj)).to eq(actor)
+      end
+    end
+
+    context 'container in room' do
+      before(:each) { move_entity(dest: room, entity: container) }
+
+      include_examples('put in container', cmd: 'put ball chest')
+    end
+
+    context 'container in inventory' do
+      before(:each) { move_entity(dest: actor, entity: container) }
+
+      include_examples('put in container', cmd: 'put ball chest')
+    end
+
+    context 'container in room, and in inventory' do
+      let(:room_chest) { create_entity(base: chest_open) }
+      let(:inv_chest) { create_entity(base: chest_open) }
+
+      before(:each) do
+        move_entity(dest: room, entity: room_chest)
+        move_entity(dest: actor, entity: inv_chest)
+      end
+
+      context 'without "my" keyword' do
+        let(:container) { room_chest }
+
+        include_examples('put in container', cmd: 'put ball chest')
+      end
+
+      context 'with "my" keyword' do
+        let(:container) { inv_chest }
+
+        include_examples('put in container', cmd: 'put ball my chest')
+      end
+    end
+  end
 end
