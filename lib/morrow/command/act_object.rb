@@ -17,8 +17,8 @@ module Morrow
 
         if cont_keyword
           possible_containers = []
-          possible_containers += visible_items(actor, room: room) unless my
-          possible_containers += visible_items(actor, room: actor)
+          possible_containers += visible_objects(actor, room: room) unless my
+          possible_containers += visible_objects(actor, room: actor)
 
           cont = match_keyword(cont_keyword, possible_containers) or
               command_error("You do not see #{cont_keyword.en.a} here.")
@@ -26,13 +26,15 @@ module Morrow
           command_error('%s is closed.' % entity_short(cont).capitalize) if
               entity_closed?(cont)
 
-          obj = match_keyword(obj_keyword, visible_items(actor, room: cont)) or
+          cont_objs = visible_objects(actor, room: cont)
+          obj = match_keyword(obj_keyword, cont_objs) or
               command_error('You do not see %s in %s.' %
                   [ obj_keyword.en.a, entity_short(cont) ])
 
         else
-          obj = match_keyword(obj_keyword, visible_items(actor, room: cont)) or
-              command_error("You do not see #{obj_keyword.en.a} here.")
+          obj = match_keyword(obj_keyword,
+              visible_objects(actor, room: cont)) or
+                  command_error("You do not see #{obj_keyword.en.a} here.")
         end
 
         command_error('Your hand passes right through %s!' %
