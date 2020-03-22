@@ -62,7 +62,7 @@ module Morrow
       def drop(actor, arg)
         room = entity_location!(actor)
 
-        obj = match_keyword(arg, visible_items(actor, room: actor)) or
+        obj = match_keyword(arg, visible_objects(actor, room: actor)) or
             command_error("You do not have #{arg.en.a}.")
 
         move_entity(entity: obj, dest: room)
@@ -82,12 +82,13 @@ module Morrow
             command_error("unsupported syntax; see 'help put'")
         obj_keyword, my, cont_keyword = $~.captures
 
-        obj = match_keyword(obj_keyword, visible_items(actor, room: actor)) or
-            command_error("You do not have #{arg.en.a}.")
+        obj = match_keyword(obj_keyword,
+            visible_objects(actor, room: actor)) or
+                command_error("You do not have #{arg.en.a}.")
 
         possible_containers = []
-        possible_containers += visible_items(actor, room: room) unless my
-        possible_containers += visible_items(actor, room: actor)
+        possible_containers += visible_objects(actor, room: room) unless my
+        possible_containers += visible_objects(actor, room: actor)
 
         cont = match_keyword(cont_keyword, possible_containers) or
             command_error("You do not see #{cont_keyword.en.a} here.")
