@@ -383,7 +383,7 @@ module Morrow
 
     # return the list of inanimate entities within a container that are visible
     # to the actor.
-    def visible_items(actor, room: nil)
+    def visible_objects(actor, room: nil)
       room ||= entity_location(actor)
       visible_contents(actor: actor, cont: room) { |e| !entity_animate?(e) }
     end
