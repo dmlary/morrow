@@ -52,6 +52,22 @@ module Morrow
       rescue EntityTooLarge
         command_error('Your hands are full.')
       end
+
+      # Drop an item
+      #
+      # Syntax: drop <obj>
+      #
+      def drop(actor, arg)
+        room = entity_location!(actor)
+
+        obj = match_keyword(arg, visible_items(actor, room: actor)) or
+            command_error("You do not have #{arg.en.a}.")
+
+        move_entity(entity: obj, dest: room)
+        act('%{actor} %{v:drop} %{obj}.', actor: actor, obj: obj)
+      rescue EntityWillNotFit
+        command_error 'There is no space to drop that here.'
+      end
     end
   end
 end

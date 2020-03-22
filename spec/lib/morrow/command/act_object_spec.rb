@@ -209,4 +209,68 @@ describe Morrow::Command::ActObject do
       end
     end
   end
+
+  describe 'drop' do
+    shared_examples 'drop' do |cmd:, drop:, output:|
+      before(:each) do
+        move_entity(entity: obj, dest: obj_location)
+        run_cmd(actor, cmd)
+      end
+
+      if move
+        it 'will move the item' do
+          expect(entity_location(obj)).to eq(actor)
+        end
+      else
+        it 'will not move the item' do
+          expect(entity_location(obj)).to eq(obj_location)
+        end
+      end
+
+      it 'will output %s to actor' % [ output.inspect ] do
+        expect(player_output(actor)).to include(output)
+      end
+    end
+
+    context 'object not in inventory' do
+      before(:each) { run_cmd(actor, 'drop ball') }
+
+      it 'will output "You do not have a ball."' do
+        expect(player_output(actor)).to include('You do not have a ball.')
+      end
+    end
+
+    context 'room is full' do
+      before(:each) do
+        move_entity(dest: actor, entity: ball)
+        get_component!(room, :container).max_volume = 0
+        run_cmd(actor, 'drop ball')
+      end
+
+      it 'will output "There is no space to drop that here."' do
+        expect(player_output(actor))
+            .to include('There is no space to drop that here.')
+      end
+
+      it 'will not move the object' do
+        expect(entity_location(ball)).to eq(actor)
+      end
+    end
+
+    context 'object in inventory' do
+      before(:each) do
+        move_entity(dest: actor, entity: ball)
+        run_cmd(actor, 'drop ball')
+      end
+
+      it 'will output "You drop a red rubber ball."' do
+        expect(player_output(actor))
+            .to include('You drop a red rubber ball.')
+      end
+
+      it 'will move the object' do
+        expect(entity_location(ball)).to eq(room)
+      end
+    end
+  end
 end
