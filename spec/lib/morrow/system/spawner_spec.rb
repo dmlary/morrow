@@ -3,7 +3,7 @@ describe Morrow::System::Spawner do
 
   let(:bag) { 'spec:obj/spawn-bag' }
   let(:spawn_point) { get_component(bag, :spawn_point) }
-  let(:ball) { 'spec:obj/junk/ball' }
+  let(:ball) { 'spec:obj/ball' }
   let(:spawn_id) { 'spec:spawn/ball' }
   let(:spawn) { get_component(spawn_id, :spawn) }
 

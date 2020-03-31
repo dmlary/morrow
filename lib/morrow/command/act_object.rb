@@ -6,7 +6,15 @@ module Morrow
     class << self
       # Get an item
       #
-      # Syntax: get <obj>, get <obj> [from] [my] <container>
+      # Syntax:
+      #   get <object>
+      #   get 2.<object>
+      #   get all.<object>
+      #   get all
+      #   get <object> [from] [my] <container>
+      #   get 2.<object> [from] [my] <container>
+      #   get all.<object> [from] [my] <container>
+      #   get all [from] [my] <container>
       #
       def get(actor, arg)
         room = entity_location!(actor)
@@ -27,32 +35,39 @@ module Morrow
               entity_closed?(cont)
 
           cont_objs = visible_objects(actor, room: cont)
-          obj = match_keyword(obj_keyword, cont_objs) or
-              command_error('You do not see %s in %s.' %
-                  [ obj_keyword.en.a, entity_short(cont) ])
+          objs = match_keyword(obj_keyword, cont_objs, multiple: true)
+
+          command_error('You do not see %s in %s.' %
+                  [ obj_keyword.en.a, entity_short(cont) ]) if objs.empty?
 
         else
-          obj = match_keyword(obj_keyword,
-              visible_objects(actor, room: cont)) or
-                  command_error("You do not see #{obj_keyword.en.a} here.")
+          objs = match_keyword(obj_keyword, visible_objects(actor, room: cont),
+              multiple: true)
+          command_error("You do not see #{obj_keyword.en.a} here.") if
+              objs.empty?
         end
 
-        command_error('Your hand passes right through %s!' %
-            entity_short(obj)) unless entity_corporeal?(obj)
+        objs.each do |obj|
+          unless entity_corporeal?(obj)
+            send_to_char(char: actor,
+                buf: "Your hand passes right through #{entity_short(obj)}.")
+            next
+          end
 
-        move_entity(entity: obj, dest: actor)
+          move_entity(entity: obj, dest: actor)
 
-        if cont
-          act('%{actor} %{v:get} %{obj} from %{cont}.',
-              actor: actor, obj: obj, cont: cont)
-        else
-          act('%{actor} %{v:pick} up %{obj}.', actor: actor, obj: obj)
+          if cont
+            act('%{actor} %{v:get} %{obj} from %{cont}.',
+                actor: actor, obj: obj, cont: cont)
+          else
+            act('%{actor} %{v:pick} up %{obj}.', actor: actor, obj: obj)
+          end
+        rescue EntityTooHeavy
+          command_error('%s is too heavy for you to carry.' %
+              entity_short(obj).capitalize)
+        rescue EntityTooLarge
+          command_error('Your hands are full.')
         end
-      rescue EntityTooHeavy
-        command_error('%s is too heavy for you to carry.' %
-            entity_short(obj).capitalize)
-      rescue EntityTooLarge
-        command_error('Your hands are full.')
       end
 
       # Drop an object

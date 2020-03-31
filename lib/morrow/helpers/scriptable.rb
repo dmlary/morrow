@@ -161,40 +161,35 @@ module Morrow
     #   when not multiple: first entity in ++pool++ that matches
     #
     def match_keyword(buf, *pool, multiple: false)
+      return pool.flatten if buf == 'all'
 
       raise Error, "unparsable keyword; #{buf}" unless
-          buf =~ /^(?:(all|\d+)\.)?(.*)$/
-      index = $1
-      keywords = $2.split('-').uniq
+          buf =~ /^(?:(all).|(\d+).)?(.*)$/
+      all = !!$1
+      index = $2 ? $2.to_i : 1
+      keywords = $3.split('-').uniq
+
+      # short circut for invalid indexes < 1
+      return multiple ? [] : nil if index < 1
 
       # ensure the user isn't using 'all.item' when the caller expects only a
       # single item
-      raise Command::SyntaxError,
-          "'#{buf}' is not a valid target for this command" if
-              index == 'all' and !multiple
+      raise Command::Error,
+          'The "all" modifier is not supported for this command.' if
+              all and !multiple
 
       pool.flatten!
 
-      # if the user hasn't specified an index, or the caller hasn't specified
-      # that they want multiple matches, do the simple find here to grab and
-      # return the first match
-      if index.nil? and multiple != true
-        return pool.find do |entity|
-          comp = get_component(entity, :keywords) or next false
-          (comp.words & keywords).size == keywords.size
-        end
+      matches = []
+      pool.each do |entity|
+        words = get_component(entity, :keywords)&.words or next
+        next unless (words & keywords).size == keywords.size
+        matches << entity
+        break if matches.size == index and !all
       end
 
-      # Anything else requires us to have the full matches list
-      matches = pool.select do |entity|
-        comp = get_component(entity, :keywords) or next false
-        (comp.words & keywords).size == keywords.size
-      end
-
-      return matches if index.nil? or index == 'all'
-
-      index = index.to_i - 1
-      multiple ? [ matches[index] ].compact : matches[index]
+      multiple == false ? matches[index - 1] :
+        all ? matches : [ matches[index - 1] ].compact
     end
 
     # Create a new instance of an entity from a base entity, and move it to

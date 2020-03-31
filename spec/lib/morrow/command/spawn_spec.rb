@@ -25,12 +25,12 @@ describe Morrow::Command::Spawn do
 
   context 'valid entity id' do
     it 'will output creation message' do
-      run_cmd(leo, 'spawn morrow:obj/junk/ball')
+      run_cmd(leo, 'spawn spec:obj/ball')
       expect(output).to include('a red rubber ball')
     end
 
     it 'will spawn the entity in the current room' do
-      run_cmd(leo, 'spawn morrow:obj/junk/ball')
+      run_cmd(leo, 'spawn spec:obj/ball')
       run_cmd(leo, 'look')
       expect(output).to include('a red rubber ball is on the floor')
     end
