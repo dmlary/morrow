@@ -33,7 +33,7 @@ describe Morrow::System::Decay do
 
     shared_examples 'decay the entity' do
       it 'will move entity contents into location contents' do
-        ball = spawn_at(dest: corpse, base: 'morrow:obj/junk/ball')
+        ball = spawn_at(dest: corpse, base: 'spec:obj/ball')
         run_update
         expect(entity_location(ball)).to eq(room)
       end
@@ -77,7 +77,7 @@ describe Morrow::System::Decay do
       end
 
       it 'will destroy entity contents' do
-        ball = spawn_at(dest: corpse, base: 'morrow:obj/junk/ball')
+        ball = spawn_at(dest: corpse, base: 'spec:obj/ball')
         run_update
         expect(entity_destroyed?(ball)).to be(true)
       end

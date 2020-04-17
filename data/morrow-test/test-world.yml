@@ -36,10 +36,52 @@
       closed: false
   - container:
       contents:
-      - spec:obj/junk/ball
+      - spec:obj/ball
 
-- id: spec:obj/junk/ball
-  base: morrow:obj/junk/ball
+- id: spec:obj/ball
+  base: morrow:obj
+  components:
+  - keywords:
+    - [red, rubber, ball]
+  - viewable:
+      short: a red rubber ball
+      long: a red rubber ball is on the floor
+  - corporeal:
+      weight: 0.1
+      volume: 1
+
+- id: spec:obj/ball/red
+  base: spec:obj/ball
+
+- id: spec:obj/ball/green
+  base: spec:obj/ball
+  components:
+  - keywords:
+    - [ green, rubber, ball ]
+  - viewable:
+      short: a green rubber ball
+      long: a green rubber ball is on the floor
+
+- id: spec:obj/ball/blue
+  base: spec:obj/ball
+  components:
+  - keywords:
+    - [ blue, rubber, ball ]
+  - viewable:
+      short: a blue rubber ball
+      long: a blue rubber ball is on the floor
+
+- id: spec:obj/flower
+  base: morrow:obj
+  components:
+  - keywords:
+    - [ flower, yellow, wildflower ]
+  - viewable:
+      short: a yellow wildflower
+      long: a yellow wildflower has been cut and left on the ground here.
+  - corporeal:
+      weight: 0.1
+      volume: 0.1
 
 - id: spec:char
   base: morrow:player
@@ -185,7 +227,7 @@
 - id: spec:spawn/ball
   components:
   - spawn:
-      entity: spec:obj/junk/ball
+      entity: spec:obj/ball
       min: 2
       max: 5
 

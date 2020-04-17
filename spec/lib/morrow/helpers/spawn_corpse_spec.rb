@@ -1,7 +1,7 @@
 describe 'Morrow::Helpers.spawn_corpse' do
   let(:room) { 'spec:room/empty' }
   let(:entity) { create_entity(base: 'spec:char/victim') }
-  let(:ball) { create_entity(base: 'morrow:obj/junk/ball') }
+  let(:ball) { create_entity(base: 'spec:obj/ball') }
   let(:leo) { 'spec:mob/leonidas' }
   let(:corpse) { entity_contents(room).last }
 

@@ -62,6 +62,9 @@
       formatter: obj
       short: an object
       long: You see nothing special...
+  - corporeal:
+      weight: 1
+      volume: 1
 
 - id: morrow:room/void
   base: morrow:room

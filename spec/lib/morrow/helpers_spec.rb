@@ -31,9 +31,148 @@ describe Morrow::Helpers do
   end
 
   describe '.match_keyword(buf, *pool, multiple: false)' do
-    context 'multiple: false' do
+    shared_examples 'match' do |match_max:|
+      context 'multiple is false' do
+        context 'buf is "<keyword>"' do
+          if match_max == 0
+            it 'will return nil' do
+              expect(match_keyword(keyword, pool)).to eq(nil)
+            end
+          else
+            it 'will return first match' do
+              expect(match_keyword(keyword, pool)).to eq(matches.first)
+            end
+          end
+        end
+
+        (match_max + 2).times do |i|
+          context "buf is \"#{i}.<keyword>\"" do
+            let(:arg) { "#{i}.#{keyword}" }
+
+            if i == 0 or i > match_max
+              it 'will return nil' do
+                expect(match_keyword(arg, pool)).to eq(nil)
+              end
+            else
+              it "will return match[#{i-1}]" do
+                expect(match_keyword(arg, pool)).to eq(matches[i - 1])
+              end
+            end
+          end
+        end
+
+        context 'buf is "all.<keyword>"' do
+          it 'will raise an error' do
+            expect{ match_keyword("all.#{keyword}", pool) }
+                .to raise_error(Morrow::Command::Error)
+          end
+        end
+
+        context 'buf is "all"' do
+          it 'will raise an error' do
+            expect{ match_keyword("all.#{keyword}", pool) }
+                .to raise_error(Morrow::Command::Error)
+          end
+        end
+      end
+
+      context 'multiple is true' do
+        context 'buf is "<keyword>"' do
+          if match_max == 0
+            it 'will return empty array' do
+              expect(match_keyword(keyword, pool, multiple: true)).to eq([])
+            end
+          else
+            it 'will return [ first match ]' do
+              expect(match_keyword(keyword, pool, multiple: true))
+                  .to eq([ matches.first ])
+            end
+          end
+        end
+
+        (match_max + 2).times do |i|
+          context "buf is \"#{i}.<keyword>\"" do
+            let(:arg) { "#{i}.#{keyword}" }
+
+            if i == 0 or i > match_max
+              it 'will return empty array' do
+                expect(match_keyword(arg, pool, multiple: true)).to eq([])
+              end
+            else
+              it "will return [ match[#{i-1}] ]" do
+                expect(match_keyword(arg, pool, multiple: true))
+                    .to eq([ matches[i - 1] ])
+              end
+            end
+          end
+        end
+
+        context 'buf is "all.<keyword>"' do
+          it 'will return all matches' do
+            expect(match_keyword("all.#{keyword}", pool, multiple: true))
+                .to eq(matches)
+          end
+        end
+
+        context 'buf is "all"' do
+          it 'will return everything in pool' do
+            expect(match_keyword('all', pool, multiple: true))
+                .to contain_exactly(*pool)
+          end
+        end
+      end
     end
-    context 'mutliple: true' do
+
+    context 'pool is empty' do
+      let(:pool) { [] }
+      let(:matches) { [] }
+      let(:keyword) { 'ball' }
+
+      include_examples 'match', match_max: 0
+    end
+
+    context 'pool contains a single item' do
+      let(:ball) { create_entity(id: 'ball', base: 'spec:obj/ball') }
+      let(:pool) { [ ball ] }
+      let(:matches) { [ ball ] }
+      let(:keyword) { 'ball' }
+
+      include_examples 'match', match_max: 1
+    end
+
+    context 'pool contains a number of unique items' do
+      let(:red) { create_entity(id: 'red', base: 'spec:obj/ball/red') }
+      let(:blue) { create_entity(id: 'blue', base: 'spec:obj/ball/blue') }
+      let(:flower) { create_entity(id: 'flower', base: 'spec:obj/flower') }
+      let(:pool) { [ red, blue, flower ] }
+      let(:matches) { [ red ] }
+      let(:keyword) { 'red' }
+
+      include_examples 'match', match_max: 1
+    end
+
+    context 'pool contains a number of copies of a single item' do
+      let(:red_1) { create_entity(id: 'red_1', base: 'spec:obj/ball/red') }
+      let(:red_2) { create_entity(id: 'red_2', base: 'spec:obj/ball/red') }
+      let(:red_3) { create_entity(id: 'red_3', base: 'spec:obj/ball/red') }
+      let(:pool) { [ red_1, red_2, red_3 ] }
+      let(:matches) { [ red_1, red_2, red_3 ] }
+      let(:keyword) { 'ball' }
+
+      include_examples 'match', match_max: 3
+    end
+
+    context 'pool contains unique items with common keyword' do
+      let(:red_1) { create_entity(id: 'red_1', base: 'spec:obj/ball/red') }
+      let(:red_2) { create_entity(id: 'red_2', base: 'spec:obj/ball/red') }
+      let(:red_3) { create_entity(id: 'red_3', base: 'spec:obj/ball/red') }
+      let(:blue) { create_entity(id: 'blue', base: 'spec:obj/ball/blue') }
+      let(:flower) { create_entity(id: 'flower', base: 'spec:obj/flower') }
+      let(:keyword) { 'ball' }
+      let(:pool) { [ red_1, blue, flower, red_2, red_3 ] }
+      let(:matches) { [ red_1, blue, red_2, red_3 ] }
+
+      include_examples 'match', match_max: 4
     end
   end
 
@@ -62,7 +201,7 @@ describe Morrow::Helpers do
     context 'when an item in the container is visible to the actor' do
       it 'will be in included in the results' do
         bag = create_entity(base: 'morrow:obj/bag/small')
-        ball = spawn_at(dest: bag, base: 'morrow:obj/junk/ball')
+        ball = spawn_at(dest: bag, base: 'spec:obj/ball')
         expect(visible_contents(actor: leo, cont: bag))
             .to contain_exactly(ball)
       end
@@ -89,7 +228,7 @@ describe Morrow::Helpers do
     end
     let(:inventory) do
       10.times.map do
-        spawn_at(dest: player, base: 'morrow:obj/junk/ball')
+        spawn_at(dest: player, base: 'spec:obj/ball')
       end
     end
     let(:entities) { [ player ] + inventory }
@@ -321,7 +460,7 @@ describe Morrow::Helpers do
     context 'entity is within a container in dest' +
         ' and dest is at max weight' do
       let(:bag) { spawn_at(dest: leo, base: 'spec:obj/bag') }
-      let(:ball) { spawn_at(dest: bag, base: 'spec:obj/junk/ball') }
+      let(:ball) { spawn_at(dest: bag, base: 'spec:obj/ball') }
 
       before(:each) do
         get_component!(bag, :corporeal).weight = 100
@@ -340,10 +479,10 @@ describe Morrow::Helpers do
     context 'with nested containers' do
       let(:bag) do
         outer = create_entity(base: 'spec:obj/bag/cumulative_weight')
-        outer_ball = spawn_at(dest: outer, base: 'spec:obj/junk/ball')
+        outer_ball = spawn_at(dest: outer, base: 'spec:obj/ball')
         inner = spawn_at(dest: outer,
             base: 'spec:obj/bag/cumulative_weight')
-        inner_ball = spawn_at(dest: inner, base: 'spec:obj/junk/ball')
+        inner_ball = spawn_at(dest: inner, base: 'spec:obj/ball')
         [ outer, inner, outer_ball, inner_ball ].each do |entity|
           get_component!(entity, :corporeal).weight = 5
         end
