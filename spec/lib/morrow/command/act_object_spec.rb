@@ -466,6 +466,91 @@ describe Morrow::Command::ActObject do
     end
   end
 
+  describe 'get' do
+    shared_examples('move second') do
+      it 'will move the second object'
+      it 'will output "You get <obj>"'
+    end
+
+    shared_examples('get objects from source') do
+      before(:each) do
+        move_entity(entity: ball, dest: source)
+        move_entity(entity: flower, dest: source)
+      end
+
+      context 'no objects matched in source' do
+        before(:each) do
+          move_entity(entity: ball, dest: not_here)
+          move_entity(entity: flower, dest: not_here)
+        end
+        it 'will output \"You do not see .* here\"'
+      end
+
+      context 'first object is too heavy' do
+        before(:each) do
+          get_component!(actor, :container).max_weight = 100
+          get_component!(ball, :corporeal).weight = 200
+        end
+
+        it 'will not move the first object'
+        it 'will output "<obj> is too heavy"'
+        include_examples('move flower')
+      end
+
+      context 'first object is too big' do
+        before(:each) do
+          get_component!(actor, :container).max_volume = 100
+          get_component!(ball, :corporeal).volume = 200
+        end
+
+        it 'will not move the first object'
+        it 'will output "<obj> is too big"'
+        include_examples('move flower')
+      end
+    end
+
+    # XXX re-imagined test layout, but DAAAAMN, this is a lot of work I really
+    # don't want to do.
+    #
+    # shared_examples('objects from source') do |cmd:, src:|
+    # - obj not found/no objects
+    #   - output single error
+    # - obj too heavy
+    #   - output error, try others
+    # - obj too big/hands full
+    #   - output error, try others
+    # - obj non-corporeal
+    #   - output error, try others
+    # - success
+    #   - move the thing
+    #
+    # shared_examples('container not found') do |cmd|
+    # - error
+    #
+    # shared_examples('objects from container') do |cmd|
+    # - container closed
+    #   - error
+    # - container open
+    #   - include_examples('objects from source', cmd, container)
+    #
+    # room:
+    # - include_examples('objects from source', 'get all', room)
+    # my:
+    # - container not found
+    #   - include_examples('container not found', 'get all my chest')
+    # - container in room
+    #   - include_examples('container not found', 'get all my chest')
+    # - container in inventory
+    #   - include_examples('objects from container', 'get all my chest')
+    # not my:
+    # - container not found
+    #   - include_examples('container not found', 'get all chest')
+    # - container in room
+    #   - include_examples('objects from container', 'get all chest')
+    # - container in inventory
+    #   - include_examples('objects from container', 'get all chest')
+  end
+
   describe 'drop' do
     shared_examples 'drop' do |cmd:, drop:, output:|
       before(:each) do
@@ -526,6 +611,38 @@ describe Morrow::Command::ActObject do
 
       it 'will move the object' do
         expect(entity_location(ball)).to eq(room)
+      end
+    end
+
+    context 'drop all' do
+      before(:each) do
+        move_entity(entity: ball, dest: actor)
+        move_entity(entity: flower, dest: actor)
+        run_cmd(actor, 'drop all')
+      end
+
+      it 'will move the ball to the room' do
+        expect(entity_location(ball)).to eq(room)
+      end
+
+      it 'will move the flower to the room' do
+        expect(entity_location(flower)).to eq(room)
+      end
+    end
+
+    context 'drop all.<obj>' do
+      before(:each) do
+        move_entity(entity: ball, dest: actor)
+        move_entity(entity: flower, dest: actor)
+        run_cmd(actor, 'drop all.ball')
+      end
+
+      it 'will move the ball to the room' do
+        expect(entity_location(ball)).to eq(room)
+      end
+
+      it 'will not move the flower' do
+        expect(entity_location(flower)).to eq(actor)
       end
     end
   end
@@ -654,6 +771,66 @@ describe Morrow::Command::ActObject do
         let(:container) { inv_chest }
 
         include_examples('put in container', cmd: 'put ball my chest')
+      end
+    end
+
+    context 'put all <container>' do
+      context 'container in room' do
+        before(:each) do
+          entity_contents(actor).clear
+          move_entity(entity: ball, dest: actor)
+          move_entity(entity: flower, dest: actor)
+          move_entity(entity: chest_open, dest: room)
+          run_cmd(actor, 'put all chest')
+        end
+
+        it 'will move ball into chest' do
+          expect(entity_location(ball)).to eq(chest_open)
+        end
+
+        it 'will move flower into chest' do
+          expect(entity_location(flower)).to eq(chest_open)
+        end
+
+        it 'will leave no items in the actor\'s inventory' do
+          expect(entity_contents(actor)).to be_empty
+        end
+      end
+
+      context 'container in inventory' do
+        before(:each) do
+          entity_contents(actor).clear
+          move_entity(entity: ball, dest: actor)
+          move_entity(entity: flower, dest: actor)
+          move_entity(entity: chest_open, dest: actor)
+          run_cmd(actor, 'put all chest')
+        end
+
+        it 'will not move container' do
+          expect(entity_location(chest_open)).to eq(actor)
+        end
+
+        it 'will move all other objects into container' do
+          expect(entity_contents(actor)).to contain_exactly(chest_open)
+        end
+      end
+    end
+
+    context 'put all.ball <container>' do
+      before(:each) do
+        entity_contents(actor).clear
+        move_entity(entity: ball, dest: actor)
+        move_entity(entity: flower, dest: actor)
+        move_entity(entity: chest_open, dest: room)
+        run_cmd(actor, 'put all.ball chest')
+      end
+
+      it 'will move the ball' do
+        expect(entity_location(ball)).to eq(chest_open)
+      end
+
+      it 'will not move the flower' do
+        expect(entity_location(flower)).to eq(actor)
       end
     end
   end

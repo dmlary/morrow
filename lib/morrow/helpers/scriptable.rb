@@ -96,6 +96,8 @@ module Morrow
       location = get_component!(entity, :location)
       src = location.entity
 
+      raise Morrow::Error, 'cannot move entity into itself' if dest == entity
+
       if !ignore_limits and entity_corporeal?(entity)
 
         # When considering volume, we only consider the volume of the entity,
@@ -161,10 +163,15 @@ module Morrow
     #   when not multiple: first entity in ++pool++ that matches
     #
     def match_keyword(buf, *pool, multiple: false)
-      return pool.flatten if buf == 'all'
+      if buf == 'all'
+        raise Command::Error,
+            'The "all" modifier is not supported for this command.' unless
+                multiple
+        return pool.flatten
+      end
 
       raise Error, "unparsable keyword; #{buf}" unless
-          buf =~ /^(?:(all).|(\d+).)?(.*)$/
+          buf =~ /^(?:(all)\.|(\d+).)?(.*)$/
       all = !!$1
       index = $2 ? $2.to_i : 1
       keywords = $3.split('-').uniq
