@@ -1,17 +1,11 @@
 describe Morrow::Command::Inventory do
-  let(:room) { 'spec:room/act_object' }
-  let(:not_here) { 'spec:room/1' }
   let(:actor) { 'spec:char/actor' }
   let(:ball) { create_entity(id: 'ball', base: 'spec:obj/ball/red') }
   let(:other_ball) { create_entity(id: 'other-ball', base: 'spec:obj/ball/blue') }
   let(:flower) { create_entity(id: 'flower', base: 'spec:obj/flower') }
-  let(:fountain) { create_entity(base: 'spec:obj/fountain') }
-  let(:chest_open) { create_entity(base: 'spec:obj/chest_open_empty') }
-  let(:chest_closed) { create_entity(base: 'spec:obj/chest_closed') }
 
   before(:each) do
     reset_world
-    move_entity(entity: actor, dest: room)
     player_output(actor).clear
   end
 
