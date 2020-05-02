@@ -112,12 +112,6 @@ module Morrow::Command::Look
     #   entity in the target
     # @return [String] human-readable contents of the target entity
     def format_contents(actor, target, method)
-      command_error('%s is not a container.' % entity_short(target)) unless
-          entity_container?(target)
-
-      command_error('%s is closed.' % entity_short(target)) if
-          entity_closed?(target)
-
       buf = visible_contents(actor: actor, cont: target)
           .inject('') do |out,entity|
         next out if entity == actor or
