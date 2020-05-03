@@ -1,38 +1,38 @@
 describe Morrow::Command::Flee do
   let(:actor) { 'spec:char/actor' }
   let(:victim) { 'spec:char/victim' }
-  let(:attacker) { 'spec:char/attacker' }
 
   table = [
     { desc: 'actor not in combat',
       room: 'spec:room/no_exits', 
       in_combat: false,
       move: false,
-      output: described_class::MSG_NOT_IN_COMBAT },
+      to_actor: described_class::MSG_NOT_IN_COMBAT },
     { desc: 'actor in combat in a room with a single closed exit',
       room: 'spec:room/door/closed',
       in_combat: true,
       move: false,
-      output: described_class::MSG_NO_ESCAPE },
+      to_actor: described_class::MSG_NO_ESCAPE },
     { desc: 'actor in combat in a room with single open exit fails check',
       room: 'spec:room/door/open',
       in_combat: true,
       fail: true,
       move: false,
-      output: described_class::MSG_FAILED },
+      to_actor: described_class::MSG_FAILED },
     { desc: 'actor in combat in a room with single open exit passes check',
       room: 'spec:room/door/open',
       in_combat: true,
       fail: false,
       move: true,
-      output: described_class::MSG_SUCCESS },
+      to_actor: described_class::MSG_SUCCESS,
+      to_room: 'Actor flees east!' },
     { desc: 'actor flees successfully, but destination is full',
       room: 'spec:room/door/open',
       in_combat: true,
       fail: false,
       dest_full: true,
       move: false,
-      output: described_class::MSG_EXIT_FULL },
+      to_actor: described_class::MSG_EXIT_FULL },
   ].each do |p|
     context p[:desc] do
       room = p[:room]
@@ -56,9 +56,15 @@ describe Morrow::Command::Flee do
         run_cmd(actor, 'flee')
       end
 
-      msg = strip_color_codes(p[:output])
-      it 'will output "%s"' % msg do
-        expect(player_output(actor)).to include(msg)
+      to_actor = strip_color_codes(p[:to_actor])
+      it 'will send "%s" to actor' % to_actor do
+        expect(player_output(actor)).to include(to_actor)
+      end
+
+      if to_room = strip_color_codes(p[:to_room])
+        it 'will send "%s" to the room' % to_room do
+          expect(player_output(victim)).to include(to_room)
+        end
       end
 
       if p[:move]

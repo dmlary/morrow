@@ -18,7 +18,7 @@ module Morrow::Command::Flee
        "&RYou try to flee, but next room is too crowded for you to fit!&0"
 
   # Message displayed to the player when they successfully flee.
-  MSG_SUCCESS = "MEEP"
+  MSG_SUCCESS = 'You flee head over heels.'
 
   class << self
     # Attempt to escape from combat
@@ -54,10 +54,14 @@ module Morrow::Command::Flee
         return
       end
 
-      dest = exits[open_exits.sample]
+      dir = open_exits.sample
+      dest = exits[dir]
+
       move_entity(entity: actor, dest: dest, look: true)
+
       remove_component(actor, :combat)
       send_to_char(char: actor, buf: MSG_SUCCESS)
+      act("&W%{actor} flees %{dir}!&0", in: room, actor: actor, dir: dir)
     rescue Morrow::EntityWillNotFit
       send_to_char(char: actor, buf: MSG_EXIT_FULL)
     end

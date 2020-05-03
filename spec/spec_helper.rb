@@ -61,6 +61,7 @@ end
 # Make this available to the spec files, not just the tests
 # strip our color codes from a string
 def strip_color_codes(str)
+  return nil unless str
   str.gsub(Morrow::TelnetServer::Connection::COLOR_CODE_REGEX, '')
 end
 
