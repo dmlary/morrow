@@ -259,6 +259,7 @@ module Morrow
     # * `%{actor}` short name of the entity in the `:actor` parameter
     # * `%{<param>}` short name for the entity in the named parameter
     # * `%{v:<verb>}` proper conjugation of the verb for the observer.
+    # * `%{p:<param>}` pronoun of the entity in the named parameter
     # * `%{poss:<param>}` possessive form of the entity in the named parameter
     #
     # Arguments:
@@ -266,6 +267,7 @@ module Morrow
     #
     # Parameters:
     # * actor: required entity performing the action
+    # * in: optional room to perform act in; default is actor location
     # * Any other parameters referenced in format string
     #
     # Examples:
@@ -285,7 +287,8 @@ module Morrow
     def act(fmt, **p)
       raise ArgumentError, 'missing keyword: actor' unless p.has_key?(:actor)
 
-      room_observers(entity_location(p[:actor])).each do |observer|
+      room = p[:in] || entity_location(p[:actor])
+      room_observers(room).each do |observer|
         first = nil
         out = fmt.gsub(/%{(?:([^:}]+):)?([^}]+)}/) do
           op, arg = $1, $2
@@ -295,7 +298,15 @@ module Morrow
           when nil
             arg = arg.to_sym
             first ||= p[arg]
-            observer == p[arg] ? 'you' : entity_short(p[arg])
+            if observer == p[arg]
+              'you'
+            else
+              begin
+                entity_short(p[arg])
+              rescue UnknownEntity
+                p[arg]
+              end
+            end
           when 'v'
             arg.en.conjugate(:present, observer == first ?
                 nil : :third_person_singular)
@@ -633,6 +644,12 @@ module Morrow
       attackers = t.attackers
       attackers << actor unless attackers.include?(actor)
       t.target ||= actor
+    end
+
+    # Check to see if an entity is in combat
+    def entity_in_combat?(entity)
+      combat = get_component(entity, :combat) or return false
+      combat.target || !combat.attackers.empty?
     end
 
     # Damage an entity, and do all the other housekeeping involved with one

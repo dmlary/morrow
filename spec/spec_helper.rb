@@ -58,6 +58,13 @@ module Helpers
   end
 end
 
+# Make this available to the spec files, not just the tests
+# strip our color codes from a string
+def strip_color_codes(str)
+  return nil unless str
+  str.gsub(Morrow::TelnetServer::Connection::COLOR_CODE_REGEX, '')
+end
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"

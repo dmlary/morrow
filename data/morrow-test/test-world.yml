@@ -88,6 +88,7 @@
   remove:
   - template
   components:
+  - connection
   - resources:
       health: 25
       health_max: 25
