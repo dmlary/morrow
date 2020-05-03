@@ -635,6 +635,12 @@ module Morrow
       t.target ||= actor
     end
 
+    # Check to see if an entity is in combat
+    def entity_in_combat?(entity)
+      combat = get_component(entity, :combat) or return false
+      combat.target || !combat.attackers.empty?
+    end
+
     # Damage an entity, and do all the other housekeeping involved with one
     # entity harming another.
     def damage_entity(entity:, actor:, amount:)
