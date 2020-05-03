@@ -10,3 +10,7 @@ file 'dist/index.html' => FileList['src/**'] do
   sh 'npm run build'
 end
 CLOBBER << 'dist/'
+
+file 'tags' => FileList['{lib,spec}/**/*.rb'] do |t|
+  sh 'ctags %s' % t.sources.join(' ')
+end

@@ -49,6 +49,9 @@ module Morrow::System::Combat
       end
 
       do_combat_round(actor: actor, target: target)
+
+      # XXX if the victim is dead, and there are no other attackers, exit
+      # combat now, instead of during the next round
     end
 
     private
