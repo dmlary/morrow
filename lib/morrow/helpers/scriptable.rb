@@ -617,6 +617,9 @@ module Morrow
 
     # Begin combat between an actor and a target.
     def enter_combat(actor:, target:)
+      raise InvalidEntity, "entity cannot enter combat with itself" if
+              actor == target
+
       entity_present!(actor: actor, entity: target)
       entity_has_health!(target)
 
