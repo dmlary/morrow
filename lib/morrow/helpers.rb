@@ -55,7 +55,6 @@ module Morrow::Helpers
     resources = get_component(entity, :resources)
 
     buf = ''
-    buf << "\n" unless config && config.compact
     if target = entity_target(entity) and
         entity_exists?(target) and
         !entity_dead?(target)

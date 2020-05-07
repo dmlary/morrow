@@ -128,6 +128,7 @@ class Morrow::Configuration
       Morrow::System::Combat,
       Morrow::System::Decay,
       Morrow::System::Connection,
+      Morrow::System::Regen,
     ]
 
     # Note: this hash is populated dynamically by modules that extend the

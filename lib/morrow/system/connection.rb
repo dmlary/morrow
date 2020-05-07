@@ -17,10 +17,18 @@ module Morrow::System::Connection
         remove_component(actor, comp)
       end
 
-      if buf = comp.buf and !buf.empty?
+      prompt = comp.last_recv > comp.last_send
+      buf = comp.buf
+      config = get_component(actor, :config)
+
+      if !buf.empty?
         buf.prepend("\n") unless comp.last_recv > comp.last_send
+        buf << "\n" unless config && config.compact
         conn.send_data(buf)
         buf.clear
+        conn.send_data(player_prompt(actor))
+        comp.last_send = now
+      elsif prompt
         conn.send_data(player_prompt(actor))
         comp.last_send = now
       end

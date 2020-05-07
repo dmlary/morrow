@@ -56,4 +56,11 @@ class Morrow::EntityManager::View
       yield([ id, *components ])
     end
   end
+
+  # size
+  #
+  # Number of entities currently tracked in this view.
+  def size
+    @entities.size
+  end
 end

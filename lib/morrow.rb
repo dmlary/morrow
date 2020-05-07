@@ -197,7 +197,7 @@ module Morrow
             log_exception($!)
           end
         end
-        system.append_system_perf(bm)
+        system.append_system_perf(bm, view.size)
       end
 
       # Destroy the requested entities and clear the list

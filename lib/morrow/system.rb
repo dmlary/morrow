@@ -16,12 +16,12 @@ module Morrow::System
   end
 
   # Update the performance data for this Module.  Called from Morrow.update.
-  def append_system_perf(bm)
-    @system_perf << [now, bm]
+  def append_system_perf(bm, count)
+    @system_perf << [now, bm, count]
     @system_perf.shift
 
     if bm.real > 0.25
-      @system_perf_lag << [now, bm]
+      @system_perf_lag << [now, bm, count]
       @system_perf_lag.shift
     end
   end
@@ -43,3 +43,4 @@ require_relative 'system/connection'
 require_relative 'system/teleport'
 require_relative 'system/combat'
 require_relative 'system/decay'
+require_relative 'system/regen'
