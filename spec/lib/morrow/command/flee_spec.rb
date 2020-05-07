@@ -2,7 +2,7 @@ describe Morrow::Command::Flee do
   let(:actor) { 'spec:char/actor' }
   let(:victim) { 'spec:char/victim' }
 
-  table = [
+  [
     { desc: 'actor not in combat',
       room: 'spec:room/no_exits', 
       in_combat: false,

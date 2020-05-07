@@ -133,24 +133,51 @@ describe Morrow::System::Connection do
     end
 
     context 'when there is no pending output' do
-      before(:each) { comp.buf.clear }
-
-      it 'will not send any data' do
-        expect(conn).to_not receive(:send_data)
-        run_update
+      before(:each) do
+        comp.buf.clear
+        comp.last_recv = comp.last_send = now
       end
 
-      it 'will not close the session' do
-        expect(conn).to_not receive(:close_connection_after_writing)
-        expect(conn).to_not receive(:close_connection)
-        run_update
+      context 'when no input has been received' do
+        it 'will not send any data' do
+          expect(conn).to_not receive(:send_data)
+          run_update
+        end
+
+        it 'will not close the session' do
+          expect(conn).to_not receive(:close_connection_after_writing)
+          expect(conn).to_not receive(:close_connection)
+          run_update
+        end
+
+        it 'will not remove the connection component' do
+          run_update
+          expect(entity_has_component?(leo, :connection)).to be(true)
+        end
       end
 
-      it 'will not remove the connection component' do
-        run_update
-        expect(entity_has_component?(leo, :connection)).to be(true)
+      context 'when input has been received' do
+        before(:each) do
+          comp.buf.clear
+          comp.last_send = now-1
+          comp.last_recv = now
+        end
+        it 'will output the prompt' do
+          expect(conn).to receive(:send_data).with(player_prompt(leo))
+          run_update
+        end
+
+        it 'will not close the session' do
+          expect(conn).to_not receive(:close_connection_after_writing)
+          expect(conn).to_not receive(:close_connection)
+          run_update
+        end
+
+        it 'will not remove the connection component' do
+          run_update
+          expect(entity_has_component?(leo, :connection)).to be(true)
+        end
       end
     end
-
   end
 end

@@ -28,7 +28,8 @@ module Morrow::Command::Show
 
     def show_systems
       buf = Morrow.config.systems.inject('') do |out,system|
-        out << "&W#{system}&0:\n"
+        out << "&W#{system}&0: (&W%d&0 entities)\n" %
+            system.system_perf.last.last
 
         all  = system.system_perf.map { |_,bm| bm.to_a[1..] }
         one  = all.last(60 * 4)

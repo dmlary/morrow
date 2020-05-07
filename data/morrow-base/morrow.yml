@@ -32,6 +32,7 @@
   - resources:
       health: 20
       health_max: 20
+      health_regen: 0.012
 
 - id: morrow:char/thief
   base: morrow:char

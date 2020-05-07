@@ -20,6 +20,7 @@ class Morrow::TelnetServer::LoginHandler
   end
 
   def input_line(line)
+    debug(recv: line)
     @conn.last_recv = Time.now
     @input.push(line)
     nil
