@@ -28,7 +28,7 @@ module Morrow::Helpers
   end
 
   def entity_health_status(entity)
-    res = get_component(entity, :resources)
+    res = get_component(entity, :character)
     ratio = res.health.to_f/res.health_max
     if ratio >= 1
       'is in excellent condition'
@@ -52,7 +52,7 @@ module Morrow::Helpers
   # construct the player prompt
   def player_prompt(entity)
     config = get_component(entity, :player_config)
-    resources = get_component(entity, :resources)
+    resources = get_component(entity, :character)
 
     buf = ''
     if target = entity_target(entity) and

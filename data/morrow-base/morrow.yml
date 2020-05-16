@@ -15,10 +15,19 @@
   components:
   - template
 
+# base entities for all class templates
+- id: morrow:class
+  components:
+  - template
+  - class_definition
+
 - id: morrow:char
   base: morrow:template
   components:
-  - animate
+  - character:
+      health: 20
+      health_max: 20
+      health_regen: 0.012
   - corporeal:
       height: 1.8   # meters, because metric is the future!!
       weight: 79    # kg
@@ -29,10 +38,6 @@
       formatter: char
       short: a non-descript character
       long: A non-descript character is doing a thing here
-  - resources:
-      health: 20
-      health_max: 20
-      health_regen: 0.012
 
 - id: morrow:char/thief
   base: morrow:char

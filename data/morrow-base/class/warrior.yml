@@ -1,0 +1,25 @@
+---
+- id: morrow:class/warrior
+  base: morrow:class
+  components:
+  - class_definition:
+      name: warrior
+      short_name: war
+      health_per_level: 20
+      health_regen_mod: 0.5
+  - abilities:
+      kick:
+        type: skill
+        passive: false
+        profiency_max: 95
+        difficulty: 1.0
+        cost:
+          movement: 5
+      dodge:
+        type: skill
+        passive: true
+        profiency_max: 95
+      second_attack:
+        type: skill
+        passive: true
+        profiency_max: 95

@@ -53,6 +53,10 @@ class Morrow::Configuration
   # in the world appear in this Hash.
   attr_accessor :commands
 
+  # Hash of playable classes in the game.  Key is class name, value is entity
+  # that contains the class data.
+  attr_accessor :classes
+
   # Directory that contains runtime data for Morrow.  Used as the default
   # prefix for world_dir and player_dir
   attr_accessor :data_dir
@@ -95,7 +99,8 @@ class Morrow::Configuration
     @components = {
       abilities: Morrow::Component::Abilities,
       affect: Morrow::Component::Affect,
-      animate: Morrow::Component::Animate,
+      character: Morrow::Component::Character,
+      class_definition: Morrow::Component::ClassDefinition,
       closable: Morrow::Component::Closable,
       combat: Morrow::Component::Combat,
       concealed: Morrow::Component::Concealed,
@@ -111,7 +116,6 @@ class Morrow::Configuration
       location: Morrow::Component::Location,
       metadata: Morrow::Component::Metadata,
       player_config: Morrow::Component::PlayerConfig,
-      resources: Morrow::Component::Resources,
       spawn: Morrow::Component::Spawn,
       spawn_point: Morrow::Component::SpawnPoint,
       teleport: Morrow::Component::Teleport,
@@ -129,6 +133,10 @@ class Morrow::Configuration
       Morrow::System::Connection,
       Morrow::System::Regen,
     ]
+
+    @classes = {
+      'warrior' => 'morrow:class/warrior'
+    }
 
     # Note: this hash is populated dynamically by modules that extend the
     # Command module.

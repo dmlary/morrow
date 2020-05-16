@@ -89,7 +89,7 @@
   - template
   components:
   - connection
-  - resources:
+  - character:
       health: 25
       health_max: 25
 

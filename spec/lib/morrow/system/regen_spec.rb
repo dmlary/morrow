@@ -1,7 +1,7 @@
 describe Morrow::System::Regen do
   before(:all) { reset_world }
   let(:entity) { create_entity(base: 'spec:char') }
-  let(:resources) { get_component!(entity, :resources) }
+  let(:resources) { get_component!(entity, :character) }
 
   [ { desc: 'entity at max health, rate is positive',
       resource: :health,

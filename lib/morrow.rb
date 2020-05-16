@@ -281,7 +281,12 @@ end
 
 require_relative 'morrow/component'
 require_relative 'morrow/helpers'
-require_relative 'morrow/components'
+
+# dynamically load all the components
+Dir.glob(File.expand_path('../morrow/component/**.rb', __FILE__)).each do |file|
+  require file
+end
+
 require_relative 'morrow/system'
 require_relative 'morrow/telnet_server'
 require_relative 'morrow/configuration'

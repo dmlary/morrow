@@ -376,7 +376,7 @@ module Morrow
     #
     #   # get the visible characters in a room
     #   visible_contents(actor: leo, cont: entity_location(leo)) do |entity|
-    #     entity_animate?(entity)
+    #     is_char?(entity)
     #   end
     def visible_contents(actor:, cont:)
       get_component(cont, :container)
@@ -387,24 +387,24 @@ module Morrow
           end or []
     end
 
-    # return an array of animate entities within a container that are visible to
+    # return an array of characters within a container that are visible to
     # the actor.
     def visible_chars(actor, room: nil)
       room ||= entity_location(actor)
-      visible_contents(actor: actor, cont: room) { |e| entity_animate?(e) }
+      visible_contents(actor: actor, cont: room) { |e| is_char?(e) }
     end
 
     # return the list of inanimate entities within a container that are visible
     # to the actor.
     def visible_objects(actor, room: nil)
       room ||= entity_location(actor)
-      visible_contents(actor: actor, cont: room) { |e| !entity_animate?(e) }
+      visible_contents(actor: actor, cont: room) { |e| !is_char?(e) }
     end
 
     # return an array of entities in a given room that can observe actions
     # occuring within them.
     def room_observers(room)
-      entity_contents(room).select { |e| entity_animate?(e) }
+      entity_contents(room).select { |e| is_char?(e) }
     end
 
     # Get all the exits in a room; most likely you want to use visible_exits
@@ -483,7 +483,7 @@ module Morrow
     # Get the health of an entity; will return nil if the entity does not have
     # health.
     def entity_health(entity)
-      get_component(entity, :resources)&.health
+      get_component(entity, :character)&.health
     end
 
     # Check if an entity has health as a resource
@@ -500,7 +500,7 @@ module Morrow
 
     # check if the entity is unconscious
     def entity_unconscious?(entity)
-      get_component(entity, :animate)&.unconscious == true
+      get_component(entity, :character)&.unconscious == true
     end
 
     # check if the entity is conscious
@@ -523,9 +523,9 @@ module Morrow
       entity_health(entity) < -20
     end
 
-    # get the position of an animate entity
+    # get the position of a character
     def entity_position(entity)
-      get_component(entity, :animate)&.position
+      get_component(entity, :character)&.position
     end
 
     # entity_has_component?
@@ -569,14 +569,9 @@ module Morrow
       false
     end
 
-    # check if the entity is animate
-    def entity_animate?(entity)
-      get_component(entity, :animate) != nil
-    end
-
-    # check if the entity is inanimate
-    def entity_inanimate?(entity)
-      get_component(entity, :animate) == nil
+    # check if the entity is a character
+    def is_char?(entity)
+      get_component(entity, :character) != nil
     end
 
     # check if the entity is container
@@ -657,9 +652,9 @@ module Morrow
     def damage_entity(entity:, actor:, amount:)
 
       # Entity must have a health resource to be damaged.
-      resources = get_component(entity, :resources)
+      character = get_component(entity, :character)
       raise InvalidEntity, "entity does not have health: #{entity}" if
-          resources.health.nil?
+          character.health.nil?
 
       modifier = 1.0
       case entity_position(entity)
@@ -669,7 +664,7 @@ module Morrow
         modifier += 1
       end
 
-      health = resources.health -= amount * modifier
+      health = character.health -= amount * modifier
       act('%{actor} %{v:hit} %{victim}.', actor: actor, victim: entity)
 
       # If health dropped below 1, set the position to lying down if the entity
@@ -678,9 +673,9 @@ module Morrow
         act('%{victim} %{v:be} dead!', actor: actor, victim: entity)
         spawn_corpse(entity)
         destroy_entity(entity)
-      elsif health < 1 && animate = get_component(entity, :animate)
-        animate.position = :lying
-        animate.unconscious = true
+      elsif health < 1
+        character.position = :lying
+        character.unconscious = true
       end
     end
 
@@ -702,11 +697,10 @@ module Morrow
 
     # Spawn a corpse for the given entity
     def spawn_corpse(entity)
-      return unless get_component(entity, :animate)
+      return unless get_component(entity, :character)
 
       corpse = spawn_at(dest: entity_location(entity),
           base: 'morrow:obj/remains/corpse')
-      remove_component(corpse, :animate)
       get_component(corpse, :keywords)
           .words
           .push(*get_component(entity, :keywords).words)

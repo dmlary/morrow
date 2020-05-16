@@ -10,7 +10,7 @@ describe 'Morrow::Helpers.damage_entity' do
   end
 
   def set_health(entity, health)
-    get_component!(entity, :resources).health = health
+    get_component!(entity, :character).health = health
   end
 
   context 'entity does not have health resource' do
@@ -86,7 +86,7 @@ describe 'Morrow::Helpers.damage_entity' do
 
     context 'entity is sitting' do
       before(:each) do
-        get_component!(victim, :animate).position = :sitting
+        get_component!(victim, :character).position = :sitting
         set_health(victim, 100)
       end
 
@@ -100,7 +100,7 @@ describe 'Morrow::Helpers.damage_entity' do
 
     context 'entity is lying down' do
       before(:each) do
-        get_component!(victim, :animate).position = :lying
+        get_component!(victim, :character).position = :lying
         set_health(victim, 100)
       end
 
