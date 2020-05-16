@@ -765,5 +765,26 @@ module Morrow
         total + entity_volume(entity)
       end
     end
+
+    # Update the level of a character based on their class levels.  If the
+    # character has no class levels, level will not be modified.
+    #
+    # This method also returns the updated level.
+    def update_char_level(entity)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+
+      max = 0
+      char.class_level&.each do |_,v|
+        max = v if v > max
+      end
+      max > 0 ? char.level = max : char.level
+    end
+
+    def char_level(entity)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+      char.level
+    end
   end
 end
