@@ -57,6 +57,10 @@ module Morrow
   # component that is not present on the entity
   class ComponentNotPresent < Error; end
 
+  # This error is raised by Helpers.class_def() when an unknown character class
+  # has been used.
+  class UnknownCharacterClass < Error; end
+
   @exceptions = []
   @systems = []
   @cycle = 0
@@ -281,6 +285,7 @@ end
 
 require_relative 'morrow/component'
 require_relative 'morrow/helpers'
+require_relative 'morrow/function'
 
 # dynamically load all the components
 Dir.glob(File.expand_path('../morrow/component/**.rb', __FILE__)).each do |file|

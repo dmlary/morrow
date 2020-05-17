@@ -5,7 +5,7 @@
   - class_definition:
       name: warrior
       short_name: war
-      health_per_level: 20
+      health_func: !func '{|l| l * 15 + 10 }'
       health_regen_mod: 0.5
   - abilities:
       kick:

@@ -19,7 +19,8 @@
 - id: morrow:class
   components:
   - template
-  - class_definition
+  - class_definition:
+      health_func: !func '{ |l| l * 10 + 10 }'
 
 - id: morrow:char
   base: morrow:template
