@@ -1,4 +1,4 @@
-describe 'Morrow::Helpers.update_entity_level' do
+describe 'Morrow::Helpers.update_char_level' do
   let(:char) { create_entity(base: 'spec:char/actor') }
   let(:char_comp) { get_component!(char, :character) }
 

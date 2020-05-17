@@ -1,4 +1,5 @@
 require 'forwardable'
+require 'facets/array/average'
 
 # For #act() to conjugate verbs
 require 'linguistics'
@@ -785,6 +786,34 @@ module Morrow
       char = get_component(entity, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
       char.level
+    end
+
+    # Update a character's resources, including base value, max value
+    def update_char_resources(entity)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+    end
+
+    # Get the base per-level health of the character based on classes.
+    def char_health_base(entity)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+      
+      health = char.class_level.map do |name, level|
+        klass = class_def(name)
+        klass.health_func.call(level)
+      end.average
+
+      (health * char_con_modifier(entity)).to_i
+    end
+
+    # Get the :class_definition component for a given class
+    def class_def(name)
+      entity = Morrow.config.classes[name] or
+          raise UnknownCharacterClass, "unknown character class: #{name}"
+      get_component(entity, :class_definition) or
+          raise MissingClassDefinition,
+              "no class definition component found: #{entity}"
     end
   end
 end
