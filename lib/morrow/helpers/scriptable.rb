@@ -792,28 +792,59 @@ module Morrow
     def update_char_resources(entity)
       char = get_component(entity, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
+
+      char.health_max = char_health_base(entity) + char.health_modifier
+      char.health = char.health_max if char.health > char.health_max
     end
 
-    # Get the base per-level health of the character based on classes.
+    # Get the base per-level health of the character based on classes.  This
+    # method takes in to account per-level and per-class health,
+    # multi-classing, and the affect of the constitution bonus.
     def char_health_base(entity)
       char = get_component(entity, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
       
-      health = char.class_level.map do |name, level|
+      health = char.class_level&.map do |name, level|
         klass = class_def(name)
         klass.health_func.call(level)
-      end.average
+      end&.average
 
-      (health * char_con_modifier(entity)).to_i
+      (health * char_attr_bonus(entity, :con)).to_i
+    end
+
+    # Get the value for a character's attribute.
+    def char_attr(entity, attr)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+      char['%s_base' % attr] + char['%s_modifier' % attr]
+    end
+
+    # Get a character's bonus/reduction based on a given attribute.  The value
+    # returned will be a Float where 1.0 means no bonus or reduction.
+    #
+    # Right now the math comes out to a 1% reduction for every point below 13,
+    # and a 1% increase for every point above 13.
+    #
+    # Examples:
+    #   # character with a constitution of 13
+    #   char_attr_bonus(char, :con)   # =>  1.0
+    #
+    #   # character with a constitution of 20
+    #   char_attr_bonus(char, :con)   # =>  1.07
+    #
+    def char_attr_bonus(entity, attr)
+      1 + (char_attr(entity, attr) - 13)/100.0
     end
 
     # Get the :class_definition component for a given class
     def class_def(name)
       entity = Morrow.config.classes[name] or
-          raise UnknownCharacterClass, "unknown character class: #{name}"
+          raise UnknownCharacterClass, 'unknown character class: %s' %
+              name.inspect
       get_component(entity, :class_definition) or
           raise MissingClassDefinition,
               "no class definition component found: #{entity}"
     end
+
   end
 end

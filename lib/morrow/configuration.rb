@@ -135,7 +135,7 @@ class Morrow::Configuration
     ]
 
     @classes = {
-      'warrior' => 'morrow:class/warrior'
+      warrior: 'morrow:class/warrior'
     }
 
     # Note: this hash is populated dynamically by modules that extend the

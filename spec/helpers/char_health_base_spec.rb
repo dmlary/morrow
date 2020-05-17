@@ -27,7 +27,7 @@ describe 'Morrow::Helpers.char_health_base' do
       classes: {
         warrior: { level: 10, func: '{ 100 }' },
       },
-      con_mod: 1.1,
+      con_bonus: 1.1,
       expect: (100 * 1.1).to_i },
   ].each do |t|
     context t[:desc] do
@@ -53,8 +53,8 @@ describe 'Morrow::Helpers.char_health_base' do
           class_defs[name]
         end
 
-        allow(self).to receive(:char_con_modifier) do
-          t[:con_mod] ? t[:con_mod] : 1.0
+        expect(self).to receive(:char_attr_bonus) do
+          t[:con_bonus] ? t[:con_bonus] : 1.0
         end
       end
 

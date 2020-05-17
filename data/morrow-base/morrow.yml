@@ -85,6 +85,9 @@
   components:
   - player_config
   - input
+  - character:
+      class_level:
+        warrior: 1
 
 - id: morrow:race/human
   base: morrow:char

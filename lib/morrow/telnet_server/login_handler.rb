@@ -14,6 +14,7 @@ class Morrow::TelnetServer::LoginHandler
     @config.color = true
 
     move_entity(entity: @char, dest: 'morrow:room/void')
+    update_char_resources(@char)
     input_line('look')
 
     remove_component(@char, :template)
