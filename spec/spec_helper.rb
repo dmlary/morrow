@@ -1,5 +1,6 @@
 require "bundler/setup"
 require "morrow"
+require 'rspec-parameterized'
 require 'pry-rescue'
 require 'pry-rescue/rspec'
 

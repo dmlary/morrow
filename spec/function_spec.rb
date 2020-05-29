@@ -1,8 +1,9 @@
 require 'facets/string/indent'
 
 describe Morrow::Function do
-  shared_examples 'various function' do
+  before(:all) { reset_world }
 
+  shared_examples 'various function' do
     # function is safe to run
     shared_examples 'no error' do
       it 'will not raise an error' do
@@ -87,15 +88,23 @@ describe Morrow::Function do
         expect: 'no error',
         code: '{ |l| l > 50 ? l * 1.5 : l }' },
 
+      # permit nicer arguments to functions
+      { desc: 'Hash', code: '{ {} }', expect: 'no error' },
+      { desc: 'Symbol', code: '{ :symbol }', expect: 'no error' },
+
+      # permit calls to specific helper functions
+      { desc: 'base', code: '{ base }', expect: 'no error' },
+      { desc: 'level', code: '{ level }', expect: 'no error' },
+      { desc: 'by_level',
+        code: '{ by_level(1..20, max_at: 20) }',
+        expect: 'no error' },
 
       # denied base types
       { desc: 'nil', code: '{ nil }', expect: 'node error' },
       { desc: 'true', code: '{ true }', expect: 'node error' },
       { desc: 'false', code: '{ false }', expect: 'node error' },
-      { desc: 'Symbol', code: '{ :symbol }', expect: 'node error' },
       { desc: 'String', code: '{ "wolf" }', expect: 'node error' },
       { desc: 'Array', code: '{ [] }', expect: 'node error' },
-      { desc: 'Hash', code: '{ {} }', expect: 'node error' },
 
       # denied variables
       { desc: 'instance variable', code: '{ @var }', expect: 'node error' },
@@ -351,29 +360,10 @@ describe Morrow::Function do
   end
 
   describe '#call()' do
-    [ { desc: 'no arguments',
-        func: '{ 1 }',
-        args: [],
-        result: 1 },
-      { desc: 'one argument',
-        func: '{ |v| v * 2 }',
-        args: [ 2 ],
-        result: 4 },
-      { desc: 'too many arguments passed',
-        func: '{ |v| v }',
-        args: [ 1, 2, 3 ],
-        result: 1 },
-      { desc: 'insufficient arguments passed',
-        func: '{ |a,b| b }',
-        args: [ 1 ],
-        result: nil },
-    ].each do |t|
-      describe t[:desc] do
-        it 'will return %s' % t[:result].inspect do
-          func = described_class.new(t[:func])
-          expect(func.call(*t[:args])).to eq(t[:result])
-        end
-      end
+    it 'will evaluate the function in a sandbox instance' do
+      func = described_class.new('{ level }')
+      expect_any_instance_of(described_class::Sandbox).to receive(:level)
+      func.call()
     end
   end
 end

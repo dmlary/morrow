@@ -14,9 +14,9 @@ describe 'Morrow::Helpers.char_health_base' do
 
   [ { desc: 'single class; passes level to func',
       classes: {
-        warrior: { level: 10, func: '{ |l| l * 25 }' }
+        warrior: { level: 23, func: '{ level }' }
       },
-      expect: 250 },
+      expect: 23 },
     { desc: 'dual class; average health funcs',
       classes: {
         warrior: { level: 1, func: '{ 25 }' },
@@ -29,29 +29,43 @@ describe 'Morrow::Helpers.char_health_base' do
       },
       con_bonus: 1.1,
       expect: (100 * 1.1).to_i },
+    { desc: 'func references base',
+      classes: {
+        warrior: { level: 12, func: '{ base }' },
+      },
+      base: 1234,
+      expect: 1234 },
   ].each do |t|
     context t[:desc] do
 
-      let(:class_defs) do
+      # create a base entity for our test class definitions
+      let(:base) do
+        e = create_entity(base: 'morrow:class')
+        get_component(e, :metadata).base.clear
+        get_component!(e, :class_definition).health_func = t[:base] || 100
+        e
+      end
+
+      # create our class definition entities
+      let(:classes) do
         t[:classes].inject({}) do |o, (name, cfg)|
-          e = create_entity(base: 'morrow:class')
-          c = get_component!(e, :class_definition)
-          c.health_func = Morrow::Function.new(cfg[:func])
-          o[name] = c
+          e = create_entity(base: base)
+          get_component!(e, :class_definition).health_func =
+              Morrow::Function.new(cfg[:func])
+          o[name] = e
           o
         end
       end
 
       before(:each) do
-
+        # set the character level for each class provided
         char_comp.class_level = {}
         t[:classes].each do |name, cfg|
           char_comp.class_level[name] = cfg[:level]
         end
 
-        allow(self).to receive(:class_def) do |name|
-          class_defs[name]
-        end
+        # switch out the real classes for our stubbed classes
+        allow(Morrow.config).to receive(:classes).and_return(classes)
 
         expect(self).to receive(:char_attr_bonus) do
           t[:con_bonus] ? t[:con_bonus] : 1.0

@@ -53,7 +53,8 @@ class Morrow::Function
   #                           *** IMPORTANT ***
   #
   NodeTypeWhitelist = %i{ block int float irange erange begin if case when or
-                          and lvar lvasgn op_asgn and_asgn or_asgn next }
+                          and lvar lvasgn op_asgn and_asgn or_asgn next hash
+                          pair sym }
 
   # InstanceMethodWhitelist
   #
@@ -163,9 +164,12 @@ class Morrow::Function
   # call
   #
   # Call the function with provided arguments.
-  def call(*args)
+  def call(entity: nil, component: nil, field: nil, level: nil)
     raise Morrow::Error, "refusing to run unsafe function: #{self}" unless @proc
-    @proc.call(*args)
+
+    sandbox = Sandbox.new(entity: entity, component: component, field: field,
+                          level: level)
+    sandbox.instance_eval(&@proc)
   end
 
   # to_s
@@ -175,6 +179,19 @@ class Morrow::Function
     @source
   end
 
+=begin
+  func = get_component('morrow:class:warrior', :character).health_func
+  func.call(entity: char, level: war_level)
+  eval_func(entity: 'morrow:class/warrior',
+      component: :character, field: :health_func, level: war_level)
+
+  entity_components(entity) do |comp|
+    comp.each do |field, value|
+      next unless value.is_a?(Morrow::Function)
+      comp[field] = value.eval(entity: entity, comp: comp, field: field)
+    end
+  end
+=end
   private
 
   # safe!
@@ -233,8 +250,10 @@ class Morrow::Function
       # instance method whitelist, otherwise we'll use the list of functionable
       # methods from the sandbox.
       receiver, method = node.children
+      whitelist = receiver ? InstanceMethodWhitelist :
+          Sandbox.instance_methods(false)
       raise ProhibitedMethod.new(method, node) unless
-          InstanceMethodWhitelist.include?(method)
+          whitelist.include?(method)
     else
 
       # If the node type is not supported, raise an exception.
@@ -244,3 +263,5 @@ class Morrow::Function
     node.children.each { |c| node_safe!(c) }
   end
 end
+
+require_relative 'function/sandbox'

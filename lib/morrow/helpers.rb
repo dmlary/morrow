@@ -16,6 +16,7 @@ require 'facets/hash/deep_rekey'
 # extend/include this module to get access to the helpers.
 module Morrow::Helpers
   extend Morrow::Logging
+  extend self
 
   def self.extended(base)
     base.extend(Morrow::Logging)

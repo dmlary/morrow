@@ -103,6 +103,9 @@ module Morrow
           config.load_morrow_base
       load_path(config.world_dir)
       info 'world has been loaded'
+    rescue Exception => ex
+      log_exception(ex)
+      raise ex
     end
 
     # This will wipe the world entirely clean.  Used for testing
@@ -130,6 +133,16 @@ module Morrow
 
       yield config if block_given?
 
+      # If we're running in development mode,
+      #   * pull in and start running Pry on stdin
+      #   * enable pry-rescue
+      #   * start a thread dedicated to running Pry
+      if config.development?
+        require 'pry'
+        require 'pry-rescue'
+        Pry.enable_rescuing!
+      end
+
       info 'Loading the world'
       load_world
       prepare_systems
@@ -137,18 +150,9 @@ module Morrow
       info 'Morrow starting in %s mode' % config.env
       WebServer::Backend.set :environment, config.env
 
-      # If we're running in development mode,
-      #   * pull in and start running Pry on stdin
-      #   * enable pry-rescue
-      #   * allow reloading of the web server code
-      #   * start a thread dedicated to running Pry
-      if config.development?
-        require 'pry'
-        require 'pry-rescue'
-
-        Pry.enable_rescuing!
-        start_reloader
-      end
+      # if we're running in development mode start a thread to reload the
+      # webserver when changed
+      start_reloader if config.development?
 
       # Run everything in the EventMachine loop.
       EventMachine::run do

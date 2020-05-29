@@ -20,7 +20,7 @@
   components:
   - template
   - class_definition:
-      health_func: !func '{ |l| l * 10 + 10 }'
+      health_func: !func '{ level * 10 + 10 }'
 
 - id: morrow:char
   base: morrow:template
@@ -40,6 +40,19 @@
       short: a non-descript character
       long: A non-descript character is doing a thing here
 
+- id: morrow:char/template/base
+  base: morrow:char
+  components:
+  - character:
+      health_max: !func '{ 10 + level * 10 }'
+
+- id: morrow:char/template/warrior
+  base: morrow:char/template/base
+  components:
+  - character:
+      health_max: !func '{ base * 1.5 }'
+      con_base: !func '{ by_level(15..30, max_at: 50) }'
+
 - id: morrow:char/thief
   base: morrow:char
   components:
@@ -49,16 +62,6 @@
       formatter: char
       short: a thief
       long: A thief stands partially concealed within the shadows.
-  - abilities:
-      dodge:
-        type: :skill
-        passive: true
-        proficiency: 95
-        proficiency_mod: 0
-        proficiency_max: 95
-        difficulty: 1
-        level: 1
-        cost: { mana: 0, health: 0, movement: 1 }
 
 - id: morrow:obj
   base: morrow:template

@@ -218,6 +218,14 @@ module Morrow
     def spawn(base:, area: nil)
       entity = create_entity(base: base)
       debug("spawning #{entity} from #{base}")
+
+      # evaluate_template(entity)
+      # apply_template(entity)
+      # expand_template(entity)
+      # template_expand(entity)
+      # template_eval(entity)
+
+      # apply template here
       remove_component(entity, :template)
       get_component!(entity, :metadata).area = area
 
@@ -803,10 +811,17 @@ module Morrow
     def char_health_base(entity)
       char = get_component(entity, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
-      
+ 
       health = char.class_level&.map do |name, level|
-        klass = class_def(name)
-        klass.health_func.call(level)
+        klass = Morrow.config.classes[name] or
+            raise UnknownCharacterClass, 'unknown character class: %s' %
+                name.inspect
+        comp = get_component(klass, :class_definition) or
+            raise ComponentNotPresent,
+                "no class definition component found: #{entity}"
+
+        comp.health_func.call(entity: klass, level: level,
+            component: :class_definition, field: :health_func)
       end&.average
 
       (health * char_attr_bonus(entity, :con)).to_i
@@ -846,5 +861,9 @@ module Morrow
               "no class definition component found: #{entity}"
     end
 
+    # get the base entities for this entity
+    def entity_base(entity)
+      get_component(entity, :metadata)&.base || []
+    end
   end
 end
