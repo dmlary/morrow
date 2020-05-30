@@ -11,8 +11,6 @@ class Morrow::Component
       other.instance_variable_set(:@unique, true)
     end
 
-    # desc
-    #
     # Set/get the description of this component.  Will only set the first time.
     def desc(desc=nil)
       @desc ||= desc
@@ -138,8 +136,6 @@ class Morrow::Component
     end
   end
 
-  # unique?
-  #
   # Return if this Component is unique per-Entity.
   #
   # Note, this method is replaced when the subclass calls #not_unique in it's
@@ -148,8 +144,6 @@ class Morrow::Component
     true
   end
 
-  # merge?
-  #
   # Return if this Component should be merged by Entity#merge
   #
   # Note: this method is replaced when the subclass calls Component.not_merged
@@ -157,17 +151,12 @@ class Morrow::Component
     true
   end
 
-  # save?
-  #
   # Check if this Component should be saved
   def save?
     true  # replaced by Component.no_save()
   end
 
-  # to_h
-  #
   # Return a Hash of field/value pairs
-  #
   def to_h
     self.class.fields.inject({}) do |o,(field,_)|
       o[field] = send(field)
@@ -175,8 +164,6 @@ class Morrow::Component
     end
   end
 
-  # - / diff
-  #
   # Return a Hash of the difference between this Component and another
   # Component of the same type, or a Hash with the same field keys
   def -(other)
@@ -186,16 +173,12 @@ class Morrow::Component
     to_h.reject { |k,v| other[k] == v }
   end
 
-  # clone
-  #
   # Clone a component
   def clone
     values = self.class.fields.map { |k,_| send(k) }
     self.class.new(values)
   end
 
-  # clear_modified!
-  #
   # Clear all modified flags on this instance.  Used in EntityManager after
   # merging all the base entities into a class.
   def clear_modified!
@@ -208,8 +191,6 @@ class Morrow::Component
     self
   end
 
-  # get_modified_fields
-  #
   # Obscenely long name to try to not conflict with a possible field value, but
   # this will get a Hash containing field & modified value for every field in
   # this component that has been modified.
@@ -220,8 +201,11 @@ class Morrow::Component
     end
   end
 
-  # merge!
-  #
+  # Check if a field has been modified in this component.
+  def field_modified?(name)
+    instance_variable_get("@__modified_#{k}") == true
+  end
+
   # Merge in another Component, or component values
   #
   # Arguments:
@@ -233,23 +217,17 @@ class Morrow::Component
     other.each { |k,v| send("#{k}=", v) }
   end
 
-  # hash
-  #
   # Hash this component instance for use in ruby eql? method
   def hash
     to_h.hash
   end
 
-  # ==
-  #
   # This instance equals another instance
   def ==(other)
     self.class == other.class && to_h == other.to_h
   end
   alias eql? ==
 
-  # []
-  #
   # Get the value for a field.  Slower method created to support Script.
   def [](key)
     key = key.to_sym unless key.is_a?(Symbol)

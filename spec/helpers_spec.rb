@@ -176,13 +176,6 @@ describe Morrow::Helpers do
     end
   end
 
-  describe '.spawn(base:, area: nil)' do
-    it 'will set Metadata.area to the area provided' do
-      entity = spawn(base: [], area: :passed)
-      expect(get_component(entity, :metadata).area).to eq(:passed)
-    end
-  end
-
   describe '.visible_contents(actor: nil, cont: nil)' do
     context 'when the container does not have the ContainerComponent' do
       it 'will return an empty array' do

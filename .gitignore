@@ -15,6 +15,7 @@ tags
 
 # generic temporary files
 .*.sw[a-z]
+.sw[a-z]
 .AppleDouble
 .DS_Store
 

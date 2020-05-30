@@ -219,14 +219,21 @@ module Morrow
       entity = create_entity(base: base)
       debug("spawning #{entity} from #{base}")
 
-      # evaluate_template(entity)
-      # apply_template(entity)
-      # expand_template(entity)
-      # template_expand(entity)
-      # template_eval(entity)
+      # if the base was a template, sweep through all of the component fields,
+      # and evaluate any Morrow::Function values we find.
+      if entity_has_component?(entity, :template)
 
-      # apply template here
-      remove_component(entity, :template)
+        entity_components(entity).each do |comp|
+          comp.each do |field, value|
+            next unless value.is_a?(Morrow::Function)
+            comp[field] = value.call(entity: entity, component: comp.class,
+                field: field)
+          end
+        end
+
+        remove_component(entity, :template)
+      end
+
       get_component!(entity, :metadata).area = area
 
       if container = get_component(entity, :container)
@@ -239,6 +246,9 @@ module Morrow
       end
 
       entity
+    rescue
+      destroy_entity(entity) if entity
+      raise
     end
 
     # Send output to entity if they have a connected ConnectionComponent

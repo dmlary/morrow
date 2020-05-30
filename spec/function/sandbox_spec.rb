@@ -42,11 +42,11 @@ RSpec.describe Morrow::Function::Sandbox do
     shared_examples 'leak check' do
       it 'will not leak an entity' do
         # ensure the entity is created before we grab the entity count
-        entity
-        count = entities.size
+        sandbox
+        original = entities.clone
 
         sandbox.base
-        expect(entities.size).to eq(count)
+        expect(entities).to contain_exactly(*original)
       end
     end
 
@@ -76,20 +76,44 @@ RSpec.describe Morrow::Function::Sandbox do
       include_examples 'leak check'
     end
 
-    context 'base field has func' do
+    context 'base field has func that returns value' do
       before do
-        # set up the function; use dup to create an unfrozen instance we can
-        # mock.
         get_component(base, :character).health_max =
-            Morrow::Function.new('{}').dup
+            Morrow::Function.new('{ :passed }')
       end
 
       it 'will call the function' do
-        expect(get_component(base, :character).health_max).to receive(:call)
-        sandbox.base
+        expect(sandbox.base).to eq(:passed)
       end
 
       include_examples 'leak check'
     end
+
+    context 'base field has func that calls base' do
+      let(:grand_base) { create_entity }
+
+      before do
+        get_component(base, :metadata).base = [ grand_base ]
+        get_component!(grand_base, :character).health_max =
+            Morrow::Function.new('{ :passed }')
+        get_component!(base, :character).health_max =
+            Morrow::Function.new('{ base }')
+      end
+
+      it 'will call the function' do
+        expect(sandbox.base).to eq(:passed)
+      end
+
+      include_examples 'leak check'
+    end
+
+
+
+    # missing the context where we chain a few templates.  So think:
+    # entity -> morrow:char/template/warrior -> morrow:char/template/base
+    # At the moment there is a bug in this because we create a new
+    # entity from the base, BUT that new entity's base is exactly what we
+    # just created.  So we end up creating the same entity over and over
+    # again, thinking we're traversing.
   end
 end

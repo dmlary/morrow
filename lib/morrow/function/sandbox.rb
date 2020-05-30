@@ -15,7 +15,16 @@ module Morrow
 
     # get the value for this field from the base entity
     def base 
-      b = Morrow.em.create_entity(base: Helpers.entity_base(@entity))
+
+      # we're going to create a new entity from the base entities of this
+      # entity.  We'll then patch up the base of that entity to point at the
+      # grandparent bases, so that we can safely iterate up the entity
+      # ancestry.
+      bases = Helpers.entity_base(@entity)
+      b = Helpers.create_entity(base: bases)
+      Helpers.get_component!(b, :metadata).base =
+          bases.map { |b| Helpers.entity_base(b) }.flatten.compact
+
       begin
         value = Helpers.get_component!(b, @component)[@field]
 

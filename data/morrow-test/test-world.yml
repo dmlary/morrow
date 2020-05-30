@@ -449,3 +449,28 @@
   components:
   - corporeal:
       weight: 1
+
+# entity set to check for collisions
+- id: spec:collide/result
+  base:
+  - 'spec:collide/left'
+  - 'spec:collide/right'
+
+- id: spec:collide/left
+  base: spec:collide/left_parent
+  components:
+  - viewable:
+      short: from left
+
+- id: spec:collide/left_parent
+
+- id: spec:collide/right
+  base: spec:collide/right_parent
+
+- id: spec:collide/right_parent
+  components:
+  - viewable:
+      short: from right parent
+
+
+

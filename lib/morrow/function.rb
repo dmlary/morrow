@@ -179,19 +179,6 @@ class Morrow::Function
     @source
   end
 
-=begin
-  func = get_component('morrow:class:warrior', :character).health_func
-  func.call(entity: char, level: war_level)
-  eval_func(entity: 'morrow:class/warrior',
-      component: :character, field: :health_func, level: war_level)
-
-  entity_components(entity) do |comp|
-    comp.each do |field, value|
-      next unless value.is_a?(Morrow::Function)
-      comp[field] = value.eval(entity: entity, comp: comp, field: field)
-    end
-  end
-=end
   private
 
   # safe!
