@@ -26,4 +26,3 @@ class Morrow::Component::Viewable < Morrow::Component
   # Container contents are viewable
   field :contents, type: :boolean, default: false
 end
-

@@ -15,5 +15,3 @@ class Morrow::Component::Metadata < Morrow::Component
   # array of base entities on which this entity is built
   field :base, type: [:entity]
 end
-
-

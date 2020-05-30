@@ -12,5 +12,3 @@ class Morrow::Component::Corporeal < Morrow::Component
   # volume this entity takes up within a container.
   field :volume, type: Numeric, default: 0
 end
-
-

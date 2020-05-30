@@ -14,5 +14,3 @@ class Morrow::Component::Affect < Morrow::Component
   # value to use for affect
   field :value
 end
-
-

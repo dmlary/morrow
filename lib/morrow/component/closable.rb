@@ -19,5 +19,3 @@ class Morrow::Component::Closable < Morrow::Component
   # entity that can be used to unlock this entity
   field :key, type: :entity
 end
-
-

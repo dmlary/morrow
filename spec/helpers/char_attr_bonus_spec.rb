@@ -12,28 +12,20 @@ describe 'Morrow::Helpers.char_attr_bonus' do
     end
   end
 
-  [ { desc: 'constitution of 13',
-      attr: :con,
-      value: 13,
-      bonus: 1.0 },
-    { desc: 'constitution of 25',
-      attr: :con,
-      value: 25,
-      bonus: 1.12 },
-    { desc: 'constitution of 3',
-      attr: :con,
-      value: 3,
-      bonus: 0.9 },
-  ].each do |t|
-    describe t[:desc] do
-      before(:each) do
-        allow(self).to receive(:char_attr).and_return(t[:value])
-      end
+  where(:attr, :value, :bonus) do
+    [ [ :con, 13, 1.0 ],
+      [ :con, 25, 1.12 ],
+      [ :con, 3, 0.9 ],
+    ]
+  end
 
-      it 'will return %s' % t[:bonus] do
-        expect(char_attr_bonus(entity, t[:attr])).to eq(t[:bonus])
-      end
+  with_them do
+    before(:each) do
+      allow(self).to receive(:char_attr).and_return(value)
+    end
+
+    it 'will return bonus' do
+      expect(char_attr_bonus(entity, attr)).to eq(bonus)
     end
   end
 end
-

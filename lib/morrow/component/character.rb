@@ -52,4 +52,3 @@ class Morrow::Component::Character < Morrow::Component
   # bonus.
   field :con_modifier, type: (-Float::INFINITY..5), default: 0
 end
-

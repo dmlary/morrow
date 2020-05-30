@@ -9,4 +9,3 @@ class Morrow::Component::Input < Morrow::Component
   # time at which the next command in the queue can be processed
   field :blocked_until, type: Time
 end
-

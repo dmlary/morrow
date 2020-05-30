@@ -11,7 +11,7 @@ describe 'Morrow::Helpers.update_char_level' do
           .to raise_error(Morrow::InvalidEntity)
     end
   end
-      
+
   [ { desc: 'character has nil class_level',
       class_level: nil,
       before: 10,

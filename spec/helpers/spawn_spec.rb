@@ -24,7 +24,7 @@ RSpec.describe 'Morrow::Helpers#spawn' do
     it 'will pass the correct arguments to a function field value' do
       expect(get_component(base, :character).health_max)
           .to receive(:call) do |**p|
-        expect(p[:component]).to be_a(Class)
+        expect(p[:component]).to eq(Morrow.config.components[:character])
         expect(p[:field]).to eq(:health_max)
       end
       spawn(base: base)

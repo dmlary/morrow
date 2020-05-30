@@ -29,4 +29,3 @@ class Morrow::Component::Container < Morrow::Component
   #   entity: Entity being moved
   field :on_enter
 end
-

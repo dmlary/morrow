@@ -5,5 +5,3 @@ class Morrow::Component::Location < Morrow::Component
   # the entity (with a Container component) that this entity is inside
   field :entity, type: :entity
 end
-
-

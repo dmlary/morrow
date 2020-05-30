@@ -106,14 +106,5 @@ RSpec.describe Morrow::Function::Sandbox do
 
       include_examples 'leak check'
     end
-
-
-
-    # missing the context where we chain a few templates.  So think:
-    # entity -> morrow:char/template/warrior -> morrow:char/template/base
-    # At the moment there is a bug in this because we create a new
-    # entity from the base, BUT that new entity's base is exactly what we
-    # just created.  So we end up creating the same entity over and over
-    # again, thinking we're traversing.
   end
 end
