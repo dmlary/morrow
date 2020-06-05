@@ -3,7 +3,10 @@ class Morrow::TelnetServer::LoginHandler
   include Morrow::Helpers
 
   def initialize(conn)
-    @char = spawn_at(dest: 'morrow:room/void', base: 'morrow:player')
+    @char = spawn(base: 'morrow:player')
+
+    # update the character for all the dynamic bits.
+    update_char_resources(@char)
 
     @conn = get_component!(@char, :connection)
     @conn.conn = conn
@@ -13,10 +16,8 @@ class Morrow::TelnetServer::LoginHandler
     @config = get_component!(@char, :player_config)
     @config.color = true
 
-    update_char_resources(@char)
+    move_entity(entity: @char, dest: 'morrow:room/void')
     input_line('look')
-
-    remove_component(@char, :template)
   end
 
   def input_line(line)
