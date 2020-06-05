@@ -1,6 +1,6 @@
 ---
 - id: morrow:class/warrior
-  base: morrow:class
+  base: morrow:class/base
   components:
   - class_definition:
       name: warrior

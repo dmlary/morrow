@@ -1,0 +1,7 @@
+---
+# base entities for all class templates
+- id: morrow:class/base
+  components:
+  - template
+  - class_definition:
+      health_func: !func '{ level * 10 + 10 }'

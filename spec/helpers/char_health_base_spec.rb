@@ -23,12 +23,6 @@ describe 'Morrow::Helpers.char_health_base' do
         thief:   { level: 5, func: '{ 10 }' },
       },
       expect: 17 },
-    { desc: 'con bonus of 1.1; con modifier is applied',
-      classes: {
-        warrior: { level: 10, func: '{ 100 }' },
-      },
-      con_bonus: 1.1,
-      expect: (100 * 1.1).to_i },
     { desc: 'func references base',
       classes: {
         warrior: { level: 12, func: '{ base }' },
@@ -40,7 +34,7 @@ describe 'Morrow::Helpers.char_health_base' do
 
       # create a base entity for our test class definitions
       let(:base) do
-        e = create_entity(base: 'morrow:class')
+        e = create_entity(base: 'morrow:class/base')
         get_component(e, :metadata).base.clear
         get_component!(e, :class_definition).health_func = t[:base] || 100
         e
@@ -66,10 +60,6 @@ describe 'Morrow::Helpers.char_health_base' do
 
         # switch out the real classes for our stubbed classes
         allow(Morrow.config).to receive(:classes).and_return(classes)
-
-        expect(self).to receive(:char_attr_bonus) do
-          t[:con_bonus] ? t[:con_bonus] : 1.0
-        end
       end
 
       it 'will return %d' % t[:expect] do

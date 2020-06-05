@@ -19,15 +19,18 @@ class Morrow::Component::Character < Morrow::Component
   # Per-class level for this character.
   field :class_level, type: class_level_type
 
-  # Maximum health of this entity.  This is the combination of
-  # char_health_base() and health_modifier.  This is updated by
-  # update_char_resources().
-  field :health_max, type: Integer, default: 20
+  # Unmodified base health of this non-player character.  This value will be
+  # nil for players, as their base health is calculated in char_health_base().
+  field :health_base, type: Integer
 
   # Temporary modifications to the character's health.  Primarly from equipment
   # and spell affects.  This value is added to the base health of a character
   # to get their maximum health.
   field :health_modifier, type: Integer, default: 0
+
+  # Maximum health of this entity.  This value is updated by
+  # update_char_resources().
+  field :health_max, type: Integer, default: 20
 
   # Current health of this entity; may be higher than #health_max for due to
   # temporary hit points.

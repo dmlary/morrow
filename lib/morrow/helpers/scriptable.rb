@@ -811,18 +811,20 @@ module Morrow
       char = get_component(entity, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
 
-      char.health_max = char_health_base(entity) + char.health_modifier
+      max  = char.health_base || char_health_base(entity)
+      max += char.health_modifier
+      char.health_max = (max * char_attr_bonus(entity, :con)).to_i
       char.health = char.health_max if char.health > char.health_max
     end
 
     # Get the base per-level health of the character based on classes.  This
     # method takes in to account per-level and per-class health,
-    # multi-classing, and the affect of the constitution bonus.
+    # and multi-classing.
     def char_health_base(entity)
       char = get_component(entity, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
  
-      health = char.class_level&.map do |name, level|
+      char.class_level&.map do |name, level|
         klass = Morrow.config.classes[name] or
             raise UnknownCharacterClass, 'unknown character class: %s' %
                 name.inspect
@@ -832,9 +834,7 @@ module Morrow
 
         comp.health_func.call(entity: klass, level: level,
             component: :class_definition, field: :health_func)
-      end&.average
-
-      (health * char_attr_bonus(entity, :con)).to_i
+      end&.average&.to_i
     end
 
     # Get the value for a character's attribute.

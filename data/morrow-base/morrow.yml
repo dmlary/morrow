@@ -1,6 +1,8 @@
 --- !morrow-v1
 # Base Entities used throughout the system.  Any Entity may be used as the base
 # for another Entity, these are just the most generic among them.
+
+# Room
 - id: morrow:room
   components:
   - exits
@@ -11,20 +13,9 @@
       desc: |-
         There is space here.
 
-- id: morrow:template
-  components:
-  - template
-
-# base entities for all class templates
-- id: morrow:class
-  components:
-  - template
-  - class_definition:
-      health_func: !func '{ level * 10 + 10 }'
-
 - id: morrow:char
-  base: morrow:template
   components:
+  - template
   - character:
       health: 20
       health_max: 20
@@ -44,28 +35,23 @@
   base: morrow:char
   components:
   - character:
-      health_max: !func '{ 10 + level * 10 }'
+      health_base: !func '{ 10 + level * 10 }'
 
 - id: morrow:char/template/warrior
   base: morrow:char/template/base
   components:
   - character:
-      health_max: !func '{ base * 1.5 }'
+      health_base: !func '{ base * 1.5 }'
       con_base: !func '{ by_level(15..30, max_at: 50) }'
-
-- id: morrow:char/thief
-  base: morrow:char
-  components:
-  - keywords:
-    - [ thief ]
   - viewable:
-      formatter: char
-      short: a thief
-      long: A thief stands partially concealed within the shadows.
+      short: a warrior
+      long: A warrior, body wrapped in armor, studded with weapons is here.
+  - keywords:
+    - [ warrior ]
 
 - id: morrow:obj
-  base: morrow:template
   components:
+  - template
   - keywords:
     - [ obj ]
   - viewable:
