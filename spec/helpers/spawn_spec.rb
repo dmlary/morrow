@@ -12,20 +12,21 @@ RSpec.describe 'Morrow::Helpers#spawn' do
     let(:base) { create_entity(components: %i{ template }) }
 
     before do
-      get_component!(base, :character).health_max =
+      get_component!(base, :character).health_base =
           Morrow::Function.new('{ 1234 }').dup
     end
 
     it 'will evaluate any function field values' do
       entity = spawn(base: base)
-      expect(get_component(entity, :character).health_max).to eq(1234)
+      expect(get_component(entity, :character).health_base).to eq(1234)
     end
 
     it 'will pass the correct arguments to a function field value' do
-      expect(get_component(base, :character).health_max)
+      expect(get_component(base, :character).health_base)
           .to receive(:call) do |**p|
         expect(p[:component]).to eq(Morrow.config.components[:character])
-        expect(p[:field]).to eq(:health_max)
+        expect(p[:field]).to eq(:health_base)
+        100
       end
       spawn(base: base)
     end
@@ -37,12 +38,13 @@ RSpec.describe 'Morrow::Helpers#spawn' do
     end
 
     before do
-      get_component!(base, :character).health_max =
+      get_component!(base, :character).health_base =
           Morrow::Function.new('{ }').dup
+      allow(self).to receive(:update_char_resources)
     end
 
     it 'will not evaluate any function field values' do
-      expect(get_component(base, :character).health_max)
+      expect(get_component(base, :character).health_base)
           .to_not receive(:call)
       spawn(base: base)
     end
@@ -57,7 +59,7 @@ RSpec.describe 'Morrow::Helpers#spawn' do
       # template entity to pull the value from the base.  This should cause an
       # UnknownEntity exception when we spawn.
       get_component!(template, :metadata).base = [ 'does not exist' ]
-      get_component!(template, :character).health_max =
+      get_component!(template, :character).health_base =
           Morrow::Function.new('{ base }')
     end
 

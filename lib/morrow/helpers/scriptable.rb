@@ -215,8 +215,8 @@ module Morrow
     # spawn
     #
     # Create a new instance of an entity from a base entity
-    def spawn(base:, area: nil)
-      entity = create_entity(base: base)
+    def spawn(base:, area: nil, id: nil)
+      entity = create_entity(base: base, id: id)
       debug("spawning #{entity} from #{base}")
 
       # if the base was a template, sweep through all of the component fields,
@@ -233,6 +233,8 @@ module Morrow
 
         remove_component(entity, :template)
       end
+
+      update_char_resources(entity)
 
       get_component!(entity, :metadata).area = area
 
@@ -808,8 +810,7 @@ module Morrow
 
     # Update a character's resources, including base value, max value
     def update_char_resources(entity)
-      char = get_component(entity, :character) or
-          raise InvalidEntity, 'not a character: #{entity}'
+      char = get_component(entity, :character) or return
 
       max  = char.health_base || char_health_base(entity)
       max += char.health_modifier

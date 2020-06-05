@@ -1,0 +1,32 @@
+# This is the base class for all non-player characters.  This defines the
+# default curves for resources (health, mana, move), along with attributes.
+# Individual character-type templates further modify these values based on
+# the type of character; see morrow:npc/template/warrior.
+- id: morrow:npc/template/base
+  base: morrow:character
+  components:
+  - template
+  - character:
+      level: 1
+      # This is the base health curve for all mobs in the world.  Individual
+      # NPC templates increase/decrease this value based on the type of NPC.
+      # See morrow:npc/template/warrior for an example.
+      health_base: !func '{ 10 + level * 10 }'
+
+      # default curve for NPC statistics
+      con_base: !func '{ by_level(10..18, max_at: 100) }'
+  - viewable:
+      short: a non-player character
+      long: A non-player character is here, occasionally bumping into things
+
+- id: morrow:npc/template/warrior
+  base: morrow:npc/template/base
+  components:
+  - character:
+      health_base: !func '{ base * 1.5 }'
+      con_base: !func '{ by_level(15..30, max_at: 50) }'
+  - viewable:
+      short: a warrior
+      long: A warrior, body wrapped in armor, studded with weapons is here.
+  - keywords:
+    - [ warrior ]

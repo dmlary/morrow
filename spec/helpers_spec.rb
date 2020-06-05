@@ -207,7 +207,7 @@ describe Morrow::Helpers do
 
   describe '.save_entities(dest, *entities)' do
     let(:player) do
-      player = create_entity(base: [ 'spec:save/base', 'morrow:race/elf' ])
+      player = create_entity(base: [ 'spec:save/base', 'spec:save/affects' ])
       remove_component(player, :spawn_point)
 
       # Add some non-unique components to the player

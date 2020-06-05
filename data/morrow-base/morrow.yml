@@ -13,12 +13,12 @@
       desc: |-
         There is space here.
 
-- id: morrow:char
+# This is the base entity that defines all characters in the world.  It defines
+# baseline values for all character attributes, along with baseline values for
+# non-player characters (resources, stats).
+- id: morrow:character
   components:
-  - template
   - character:
-      health: 20
-      health_max: 20
       health_regen: 0.012
   - corporeal:
       height: 1.8   # meters, because metric is the future!!
@@ -31,23 +31,24 @@
       short: a non-descript character
       long: A non-descript character is doing a thing here
 
-- id: morrow:char/template/base
-  base: morrow:char
+# This is the base class for all player characters.
+- id: morrow:player
+  base: morrow:character
   components:
+  - player_config
+  - input
   - character:
-      health_base: !func '{ 10 + level * 10 }'
-
-- id: morrow:char/template/warrior
-  base: morrow:char/template/base
-  components:
-  - character:
-      health_base: !func '{ base * 1.5 }'
-      con_base: !func '{ by_level(15..30, max_at: 50) }'
-  - viewable:
-      short: a warrior
-      long: A warrior, body wrapped in armor, studded with weapons is here.
+      # Right now, we're all warriors!
+      class_level:
+        warrior: 1
   - keywords:
-    - [ warrior ]
+    - [ player ]
+  - viewable:
+      short: a player
+      long: A generic player is here doing player stuff
+
+- id: morrow:npc
+  base: morrow:npc/template/base
 
 - id: morrow:obj
   components:
@@ -68,34 +69,6 @@
   - viewable:
       short: The Void
       desc: You are floating in nothing
-
-- id: morrow:player
-  base: morrow:char
-  components:
-  - player_config
-  - input
-  - character:
-      class_level:
-        warrior: 1
-
-- id: morrow:race/human
-  base: morrow:char
-  components:
-  - viewable:
-      short: a human
-
-- id: morrow:race/elf
-  base: morrow:char
-  components:
-  - viewable:
-      short: an elf
-  - affect: [ attributes, strength, modify, -2 ]
-  - affect: [ attributes, dexterity, modify, 1 ]
-  - affect: [ attributes, wisdon, modify, 1 ]
-  - corporeal:
-      height: 1.8   # meters, because metric is the future!!
-      weight: 70    # kg
-      volume: 78    # lighter than human, but still take up the same space
 
 - id: morrow:door/closed
   components:

@@ -65,6 +65,7 @@ module Morrow
   @systems = []
   @cycle = 0
   @entities_to_be_destroyed = []
+  @pause = false
 
   class << self
 
@@ -85,6 +86,10 @@ module Morrow
     # This is the list of entities that need to be destroyed in this update.
     # Don't access this directly, use Morrow::Helpers.destroy_entity
     attr_reader :entities_to_be_destroyed
+
+    # This flag allows the pausing of the main update loop to simplify
+    # debugging.
+    attr_accessor :pause
 
     # Get the server configuration.
     def config
@@ -161,7 +166,7 @@ module Morrow
         begin
           # Set up a periodic timer to update the world every quarter second.
           EventMachine::PeriodicTimer.new(@config.update_interval) do
-            Morrow.update
+            Morrow.update unless @pause
           end
 
           Rack::Handler.get('thin').run(WebServer.app,

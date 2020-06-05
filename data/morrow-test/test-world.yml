@@ -84,17 +84,15 @@
       volume: 0.1
 
 - id: spec:char
-  base: morrow:player
-  remove:
-  - template
+  base: morrow:npc
   components:
   - connection
-  - character:
-      health: 25
-      health_max: 25
+  - character
 
 - id: spec:mob/leonidas
   base: spec:char
+  remove:
+  - template
   components:
   - keywords:
     - [ leonidas ]
@@ -255,6 +253,19 @@
       value: -1
   # XXX need to find another way to test `remove_comp`; got rid of hook
 
+# more save_entites() test stuff
+- id: spec:save/affects
+  components:
+  - viewable:
+      short: an elf
+  - affect: [ attributes, strength, modify, -2 ]
+  - affect: [ attributes, dexterity, modify, 1 ]
+  - affect: [ attributes, wisdon, modify, 1 ]
+  - corporeal:
+      height: 1.8   # meters, because metric is the future!!
+      weight: 70    # kg
+      volume: 78    # lighter than human, but still take up the same space
+
 # Entities for use in movement tests
 - id: spec:room/movement
   base: morrow:room
@@ -403,6 +414,12 @@
   - viewable:
       short: Victim
       long: A victim is crouched here, flinching at the slightest movement.
+
+- id: spec:char/victim/10
+  base: spec:char/victim
+  components:
+  - character:
+      level: 10
 
 - id: spec:char/observer
   base: spec:char

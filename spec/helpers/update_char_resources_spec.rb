@@ -1,14 +1,13 @@
 describe 'Morrow::Helpers.update_char_resources' do
-  let(:entity) { create_entity(base: 'spec:char/actor') }
+  let(:entity) { spawn(base: 'spec:char/actor') }
   let(:char) { get_component!(entity, :character) }
 
   before(:all) { reset_world }
 
   context 'entity is not a character' do
-    it 'will raise InvalidEntity' do
+    it 'will not raise an error' do
       ball = create_entity(base: 'spec:obj/ball')
-      expect { update_char_resources(ball) }
-          .to raise_error(Morrow::InvalidEntity)
+      expect { update_char_resources(ball) }.to_not raise_error
     end
   end
 
@@ -40,6 +39,7 @@ describe 'Morrow::Helpers.update_char_resources' do
           char.health_base = base
           expect(self).to_not receive(:char_health_base)
         else
+          char.health_base = nil
           expect(self).to receive(:char_health_base)
               .with(entity)
               .and_return(char_health_base)
@@ -61,8 +61,9 @@ describe 'Morrow::Helpers.update_char_resources' do
 
     context 'new health_max is higher than current health' do
       before(:each) do
-        expect(self).to receive(:char_health_base).and_return(100)
+        char.health_base = 100
         char.health = 200
+        allow(self).to receive(:char_attr_bonus).and_return(1)
         update_char_resources(entity)
       end
 
