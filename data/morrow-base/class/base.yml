@@ -4,4 +4,9 @@
   components:
   - template
   - class_definition:
-      health_func: !func '{ level * 10 + 10 }'
+      # default health curve for all player classes.
+      health: !func '{ level * 10 + 10 }'
+
+      # default health regeneration rate for all classes is set so that
+      # the player will be at full health if they stand for five minutes.
+      health_regen: !func '{ 1.0 / (5 * 60) }'

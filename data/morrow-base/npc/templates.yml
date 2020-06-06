@@ -13,6 +13,10 @@
       # See morrow:npc/template/warrior for an example.
       health_base: !func '{ 10 + level * 10 }'
 
+      # by default it will take a mob 3 minutes to recover to full health when
+      # standing around idle.
+      health_regen_base: 0.006
+
       # default curve for NPC statistics
       con_base: !func '{ by_level(10..18, max_at: 100) }'
   - viewable:

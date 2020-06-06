@@ -5,8 +5,8 @@
   - class_definition:
       name: warrior
       short_name: war
-      health_func: !func '{ base * 1.5 }'
-      health_regen_mod: 0.5
+      health: !func '{ base * 1.5 }'
+      health_regen: !func '{ base * 1.5 }'
   - abilities:
       kick:
         type: skill

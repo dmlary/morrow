@@ -40,7 +40,9 @@ module Morrow::System::Combat
       unless entity_exists?(target) and entity_location(target) == room
         unless target = find_next_attacker(combat, room)
           debug("#{entity_short(actor)} exit combat")
+          # XXX need to create Helpers.exit_combat()
           remove_component(actor, combat)
+          update_char_regen(actor)
           return
         end
 

@@ -595,6 +595,16 @@ module Morrow
       get_component(entity, :character) != nil
     end
 
+    # check if the entity is a player character
+    def is_player?(entity)
+      get_component(entity, :character)&.class_level != nil
+    end
+
+    # check if the entity is a non-player character
+    def is_npc?(entity)
+      !is_player?(entity)
+    end
+
     # check if the entity is container
     def entity_container?(entity)
       get_component(entity, :container) != nil
@@ -611,8 +621,6 @@ module Morrow
       get_component(entity, :viewable)&.long
     end
 
-    # entity_desc
-    #
     # Get the desc description for an entity
     def entity_desc(entity)
       get_component(entity, :viewable)&.desc
@@ -623,15 +631,11 @@ module Morrow
       entity_has_component?(entity, :corporeal)
     end
 
-    # entity_volume
-    #
     # Get the volume for an entity
     def entity_volume(entity)
       get_component(entity, :corporeal)&.volume || 0
     end
 
-    # entity_weight
-    #
     # Get the weight for an entity
     def entity_weight(entity)
       get_component(entity, :corporeal)&.weight || 0
@@ -660,6 +664,8 @@ module Morrow
       attackers = t.attackers
       attackers << actor unless attackers.include?(actor)
       t.target ||= actor
+      update_char_regen(actor)
+      update_char_regen(target)
     end
 
     # Check to see if an entity is in combat
@@ -694,10 +700,20 @@ module Morrow
         act('%{victim} %{v:be} dead!', actor: actor, victim: entity)
         spawn_corpse(entity)
         destroy_entity(entity)
-      elsif health < 1
+        return
+      end
+
+      # stunned knocks them down & unconscious
+      if health < 1
         character.position = :lying
         character.unconscious = true
       end
+
+      # mortally wounded requires a regen update
+      if health < -10
+        update_char_regen(entity)
+      end
+
     end
 
     # Attempt to hit another entity with an auto-attack
@@ -812,30 +828,65 @@ module Morrow
     def update_char_resources(entity)
       char = get_component(entity, :character) or return
 
-      max  = char.health_base || char_health_base(entity)
+      max = char.health_base ||
+          player_class_def_value(entity, :health).to_i
       max += char.health_modifier
       char.health_max = (max * char_attr_bonus(entity, :con)).to_i
       char.health = char.health_max if char.health > char.health_max
     end
 
-    # Get the base per-level health of the character based on classes.  This
-    # method takes in to account per-level and per-class health,
-    # and multi-classing.
-    def char_health_base(entity)
-      char = get_component(entity, :character) or
+    # update character resource regeneration rate
+    def update_char_regen(entity)
+      char = get_component(entity, :character) or return
+
+      # when a character is mortally wounded, they will lose half a hit
+      # point every second until they die.  At most this should take 20
+      # seconds (unless someone saves them.
+      if entity_mortally_wounded?(entity)
+        char.health_regen = -0.5/char.health_max
+
+      # while in combat, all regen is stopped, unless the character has some
+      # yet-to-be-created skills
+      elsif entity_in_combat?(entity)
+        char.health_regen = 0
+
+      # default case for regen takes in to account per-class/per-level regen
+      # along with attributes and position.
+      else
+        regen = is_npc?(entity) ? char.health_regen_base :
+            player_class_def_value(entity, :health_regen)
+        regen += char.health_regen_modifier
+        regen *= char_attr_bonus(entity, :con)
+
+        case char.position
+        when :sitting
+          regen *= 1.5
+        when :lying
+          regen *= 2.0
+        end
+
+        char.health_regen = regen
+      end
+    end
+
+    # For a player, get the value from the ClassDefinition for any classes
+    # the player has.  If they have multiple classes, the average of class
+    # values is returned.
+    def player_class_def_value(player, field)
+      char = get_component(player, :character) or
           raise InvalidEntity, 'not a character: #{entity}'
- 
-      char.class_level&.map do |name, level|
+      raise InvalidEntity, 'not a player: #{entity}' unless char.class_level
+
+      char.class_level.map do |name, level|
         klass = Morrow.config.classes[name] or
             raise UnknownCharacterClass, 'unknown character class: %s' %
                 name.inspect
         comp = get_component(klass, :class_definition) or
             raise ComponentNotPresent,
                 "no class definition component found: #{entity}"
-
-        comp.health_func.call(entity: klass, level: level,
-            component: :class_definition, field: :health_func)
-      end&.average&.to_i
+        comp[field].call(entity: klass, level: level,
+            component: :class_definition, field: field)
+      end.average
     end
 
     # Get the value for a character's attribute.

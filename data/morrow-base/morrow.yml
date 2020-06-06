@@ -18,7 +18,6 @@
 - id: morrow:character
   components:
   - character:
-      health_regen: 0.012
       con_base: 13
   - corporeal:
       height: 1.8   # meters, because metric is the future!!

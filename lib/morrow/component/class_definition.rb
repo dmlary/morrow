@@ -6,10 +6,10 @@ class Morrow::Component::ClassDefinition < Morrow::Component
   # abbreviated name for the class
   field :short_name
 
-  # mathematical function used to calculate the health of a character with this
-  # class at a given level.
-  field :health_func, type: Morrow::Function
+  # function used to calculate the health of a character with this class at a
+  # given level.
+  field :health, type: Morrow::Function
 
   # health regeneration modifier provided by the class
-  field :health_regen_mod, type: Float, default: 0
+  field :health_regen, type: Morrow::Function
 end

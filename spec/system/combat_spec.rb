@@ -101,6 +101,12 @@ describe Morrow::System::Combat do
             run_update
             expect(get_component(actor, :combat)).to eq(nil)
           end
+
+          it 'will call update_char_regen() on actor' do
+            expect(described_class).to receive(:update_char_regen)
+                .with(actor)
+            run_update
+          end
         else
           it 'will not remove the combat component from actor' do
             run_update

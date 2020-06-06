@@ -15,4 +15,12 @@ describe 'Morrow::Helpers.enter_combat' do
           .to raise_error(Morrow::InvalidEntity)
     end
   end
+
+  context 'target is not actor' do
+    it 'will call update_char_regen() for actor and victim' do
+      expect(self).to receive(:update_char_regen).with(actor)
+      expect(self).to receive(:update_char_regen).with(victim)
+      enter_combat(actor: actor, target: victim)
+    end
+  end
 end

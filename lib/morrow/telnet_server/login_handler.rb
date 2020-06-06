@@ -7,6 +7,7 @@ class Morrow::TelnetServer::LoginHandler
 
     # update the character for all the dynamic bits.
     update_char_resources(@char)
+    update_char_regen(@char)
 
     @conn = get_component!(@char, :connection)
     @conn.conn = conn

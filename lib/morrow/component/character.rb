@@ -36,8 +36,16 @@ class Morrow::Component::Character < Morrow::Component
   # temporary hit points.
   field :health, type: Integer, default: 20
 
+  # Unmodified health regeneration rate for the character.  This is a
+  # percentage of health_max that will be regenerated every second.
+  field :health_regen_base, type: Float
+
+  # Modifier to health_regen_base.  This is added to the health_regen_base to
+  # set health_regen in update_char_regen()
+  field :health_regen_modifier, type: Float, default: 0
+
   # Percentage of health_max that will be regenerated each second.
-  field :health_regen, type: Float
+  field :health_regen, type: Float, default: 100.0/(5 * 60)
 
   # position of the entity.  Affects ability to do specific commands,
   # resource regeneration, damage received.

@@ -68,6 +68,19 @@ describe 'Morrow::Helpers.damage_entity' do
       end
     end
 
+    context 'damaged health < -10 (mortally wounded)' do
+      before(:each) do
+        set_health(victim, 0)
+      end
+      let(:amount) { 11 }
+
+      it 'will call update_char_regen()' do
+        expect(self).to receive(:update_char_regen).with(victim)
+        call_damage_entity
+      end
+    end
+
+
     context 'damaged health < -20' do
       before(:each) do
         set_health(victim, 0)
