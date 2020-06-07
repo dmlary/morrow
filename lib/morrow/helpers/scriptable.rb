@@ -913,16 +913,6 @@ module Morrow
       1 + (char_attr(entity, attr) - 13)/100.0
     end
 
-    # Get the :class_definition component for a given class
-    def class_def(name)
-      entity = Morrow.config.classes[name] or
-          raise UnknownCharacterClass, 'unknown character class: %s' %
-              name.inspect
-      get_component(entity, :class_definition) or
-          raise MissingClassDefinition,
-              "no class definition component found: #{entity}"
-    end
-
     # get the base entities for this entity
     def entity_base(entity)
       get_component(entity, :metadata)&.base || []

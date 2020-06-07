@@ -57,10 +57,6 @@ module Morrow
   # component that is not present on the entity
   class ComponentNotPresent < Error; end
 
-  # This error is raised by Helpers.class_def() when an unknown character class
-  # has been used.
-  class UnknownCharacterClass < Error; end
-
   @exceptions = []
   @systems = []
   @cycle = 0

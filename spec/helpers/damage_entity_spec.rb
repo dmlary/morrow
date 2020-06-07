@@ -80,7 +80,6 @@ describe 'Morrow::Helpers.damage_entity' do
       end
     end
 
-
     context 'damaged health < -20' do
       before(:each) do
         set_health(victim, 0)
