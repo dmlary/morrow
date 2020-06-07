@@ -66,7 +66,7 @@ class Morrow::Component::Abilities < Morrow::Component
     },
   }
 
-  %i{ second_attack dodge }.each do |name|
+  %i{ kick second_attack dodge }.each do |name|
     add_ability(name)
   end
 end

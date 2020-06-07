@@ -12,7 +12,7 @@ module Morrow::System::Regen
     end
 
     def view
-      { all: :resources }
+      { all: :character }
     end
 
     def update(entity, resources)

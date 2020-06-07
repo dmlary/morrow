@@ -55,7 +55,7 @@ module Morrow::Command::Look
         out << "%s\n" % viewable.desc if viewable.desc
         out << "%s %s.\n" %
             [ entity_short(target), entity_health_status(target) ] if
-                entity_animate?(target)
+                is_char?(target)
         out << "%s may be referred to as '&W%s&0'." %
             [ viewable.short, entity_keywords(target) ]
 
@@ -116,7 +116,7 @@ module Morrow::Command::Look
           .inject('') do |out,entity|
         next out if entity == actor or
             !line = get_component(entity, :viewable)[method]
-        out << "&%s%s&0\n" % [ entity_animate?(entity) ? 'C' : 'c', line ]
+        out << "&%s%s&0\n" % [ is_char?(entity) ? 'C' : 'c', line ]
       end
 
       buf.empty? ? nil : buf

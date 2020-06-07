@@ -1,6 +1,8 @@
 --- !morrow-v1
 # Base Entities used throughout the system.  Any Entity may be used as the base
 # for another Entity, these are just the most generic among them.
+
+# Room
 - id: morrow:room
   components:
   - exits
@@ -11,14 +13,12 @@
       desc: |-
         There is space here.
 
-- id: morrow:template
+# This is the base entity that defines all characters in the world.  It defines
+# baseline values for all character attributes.
+- id: morrow:character
   components:
-  - template
-
-- id: morrow:char
-  base: morrow:template
-  components:
-  - animate
+  - character:
+      con_base: 13
   - corporeal:
       height: 1.8   # meters, because metric is the future!!
       weight: 79    # kg
@@ -29,34 +29,29 @@
       formatter: char
       short: a non-descript character
       long: A non-descript character is doing a thing here
-  - resources:
-      health: 20
-      health_max: 20
-      health_regen: 0.012
 
-- id: morrow:char/thief
-  base: morrow:char
+# This is the base class for all player characters.
+- id: morrow:player
+  base: morrow:character
   components:
+  - player_config
+  - input
+  - character:
+      # Right now, we're all warriors!
+      class_level:
+        warrior: 1
   - keywords:
-    - [ thief ]
+    - [ player ]
   - viewable:
-      formatter: char
-      short: a thief
-      long: A thief stands partially concealed within the shadows.
-  - abilities:
-      dodge:
-        type: :skill
-        passive: true
-        proficiency: 95
-        proficiency_mod: 0
-        proficiency_max: 95
-        difficulty: 1
-        level: 1
-        cost: { mana: 0, health: 0, movement: 1 }
+      short: a player
+      long: A generic player is here doing player stuff
+
+- id: morrow:npc
+  base: morrow:npc/template/base
 
 - id: morrow:obj
-  base: morrow:template
   components:
+  - template
   - keywords:
     - [ obj ]
   - viewable:
@@ -73,31 +68,6 @@
   - viewable:
       short: The Void
       desc: You are floating in nothing
-
-- id: morrow:player
-  base: morrow:char
-  components:
-  - player_config
-  - input
-
-- id: morrow:race/human
-  base: morrow:char
-  components:
-  - viewable:
-      short: a human
-
-- id: morrow:race/elf
-  base: morrow:char
-  components:
-  - viewable:
-      short: an elf
-  - affect: [ attributes, strength, modify, -2 ]
-  - affect: [ attributes, dexterity, modify, 1 ]
-  - affect: [ attributes, wisdon, modify, 1 ]
-  - corporeal:
-      height: 1.8   # meters, because metric is the future!!
-      weight: 70    # kg
-      volume: 78    # lighter than human, but still take up the same space
 
 - id: morrow:door/closed
   components:

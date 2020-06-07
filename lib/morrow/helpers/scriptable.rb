@@ -1,4 +1,5 @@
 require 'forwardable'
+require 'facets/array/average'
 
 # For #act() to conjugate verbs
 require 'linguistics'
@@ -214,10 +215,27 @@ module Morrow
     # spawn
     #
     # Create a new instance of an entity from a base entity
-    def spawn(base:, area: nil)
-      entity = create_entity(base: base)
+    def spawn(base:, area: nil, id: nil)
+      entity = create_entity(base: base, id: id)
       debug("spawning #{entity} from #{base}")
-      remove_component(entity, :template)
+
+      # if the base was a template, sweep through all of the component fields,
+      # and evaluate any Morrow::Function values we find.
+      if entity_has_component?(entity, :template)
+
+        entity_components(entity).each do |comp|
+          comp.each do |field, value|
+            next unless value.is_a?(Morrow::Function)
+            comp[field] = value.call(entity: entity, component: comp.class,
+                field: field)
+          end
+        end
+
+        remove_component(entity, :template)
+      end
+
+      update_char_resources(entity)
+
       get_component!(entity, :metadata).area = area
 
       if container = get_component(entity, :container)
@@ -230,6 +248,9 @@ module Morrow
       end
 
       entity
+    rescue
+      destroy_entity(entity) if entity
+      raise
     end
 
     # Send output to entity if they have a connected ConnectionComponent
@@ -376,7 +397,7 @@ module Morrow
     #
     #   # get the visible characters in a room
     #   visible_contents(actor: leo, cont: entity_location(leo)) do |entity|
-    #     entity_animate?(entity)
+    #     is_char?(entity)
     #   end
     def visible_contents(actor:, cont:)
       get_component(cont, :container)
@@ -387,24 +408,24 @@ module Morrow
           end or []
     end
 
-    # return an array of animate entities within a container that are visible to
+    # return an array of characters within a container that are visible to
     # the actor.
     def visible_chars(actor, room: nil)
       room ||= entity_location(actor)
-      visible_contents(actor: actor, cont: room) { |e| entity_animate?(e) }
+      visible_contents(actor: actor, cont: room) { |e| is_char?(e) }
     end
 
     # return the list of inanimate entities within a container that are visible
     # to the actor.
     def visible_objects(actor, room: nil)
       room ||= entity_location(actor)
-      visible_contents(actor: actor, cont: room) { |e| !entity_animate?(e) }
+      visible_contents(actor: actor, cont: room) { |e| !is_char?(e) }
     end
 
     # return an array of entities in a given room that can observe actions
     # occuring within them.
     def room_observers(room)
-      entity_contents(room).select { |e| entity_animate?(e) }
+      entity_contents(room).select { |e| is_char?(e) }
     end
 
     # Get all the exits in a room; most likely you want to use visible_exits
@@ -483,7 +504,7 @@ module Morrow
     # Get the health of an entity; will return nil if the entity does not have
     # health.
     def entity_health(entity)
-      get_component(entity, :resources)&.health
+      get_component(entity, :character)&.health
     end
 
     # Check if an entity has health as a resource
@@ -500,7 +521,7 @@ module Morrow
 
     # check if the entity is unconscious
     def entity_unconscious?(entity)
-      get_component(entity, :animate)&.unconscious == true
+      get_component(entity, :character)&.unconscious == true
     end
 
     # check if the entity is conscious
@@ -523,9 +544,9 @@ module Morrow
       entity_health(entity) < -20
     end
 
-    # get the position of an animate entity
+    # get the position of a character
     def entity_position(entity)
-      get_component(entity, :animate)&.position
+      get_component(entity, :character)&.position
     end
 
     # entity_has_component?
@@ -569,14 +590,19 @@ module Morrow
       false
     end
 
-    # check if the entity is animate
-    def entity_animate?(entity)
-      get_component(entity, :animate) != nil
+    # check if the entity is a character
+    def is_char?(entity)
+      get_component(entity, :character) != nil
     end
 
-    # check if the entity is inanimate
-    def entity_inanimate?(entity)
-      get_component(entity, :animate) == nil
+    # check if the entity is a player character
+    def is_player?(entity)
+      get_component(entity, :character)&.class_level != nil
+    end
+
+    # check if the entity is a non-player character
+    def is_npc?(entity)
+      !is_player?(entity)
     end
 
     # check if the entity is container
@@ -595,8 +621,6 @@ module Morrow
       get_component(entity, :viewable)&.long
     end
 
-    # entity_desc
-    #
     # Get the desc description for an entity
     def entity_desc(entity)
       get_component(entity, :viewable)&.desc
@@ -607,15 +631,11 @@ module Morrow
       entity_has_component?(entity, :corporeal)
     end
 
-    # entity_volume
-    #
     # Get the volume for an entity
     def entity_volume(entity)
       get_component(entity, :corporeal)&.volume || 0
     end
 
-    # entity_weight
-    #
     # Get the weight for an entity
     def entity_weight(entity)
       get_component(entity, :corporeal)&.weight || 0
@@ -644,6 +664,8 @@ module Morrow
       attackers = t.attackers
       attackers << actor unless attackers.include?(actor)
       t.target ||= actor
+      update_char_regen(actor)
+      update_char_regen(target)
     end
 
     # Check to see if an entity is in combat
@@ -657,9 +679,9 @@ module Morrow
     def damage_entity(entity:, actor:, amount:)
 
       # Entity must have a health resource to be damaged.
-      resources = get_component(entity, :resources)
+      character = get_component(entity, :character)
       raise InvalidEntity, "entity does not have health: #{entity}" if
-          resources.health.nil?
+          character.health.nil?
 
       modifier = 1.0
       case entity_position(entity)
@@ -669,7 +691,7 @@ module Morrow
         modifier += 1
       end
 
-      health = resources.health -= amount * modifier
+      health = character.health -= amount * modifier
       act('%{actor} %{v:hit} %{victim}.', actor: actor, victim: entity)
 
       # If health dropped below 1, set the position to lying down if the entity
@@ -678,10 +700,20 @@ module Morrow
         act('%{victim} %{v:be} dead!', actor: actor, victim: entity)
         spawn_corpse(entity)
         destroy_entity(entity)
-      elsif health < 1 && animate = get_component(entity, :animate)
-        animate.position = :lying
-        animate.unconscious = true
+        return
       end
+
+      # stunned knocks them down & unconscious
+      if health < 1
+        character.position = :lying
+        character.unconscious = true
+      end
+
+      # mortally wounded requires a regen update
+      if health < -10
+        update_char_regen(entity)
+      end
+
     end
 
     # Attempt to hit another entity with an auto-attack
@@ -702,11 +734,10 @@ module Morrow
 
     # Spawn a corpse for the given entity
     def spawn_corpse(entity)
-      return unless get_component(entity, :animate)
+      return unless get_component(entity, :character)
 
       corpse = spawn_at(dest: entity_location(entity),
           base: 'morrow:obj/remains/corpse')
-      remove_component(corpse, :animate)
       get_component(corpse, :keywords)
           .words
           .push(*get_component(entity, :keywords).words)
@@ -770,6 +801,121 @@ module Morrow
       entity_contents(container).inject(0) do |total,entity|
         total + entity_volume(entity)
       end
+    end
+
+    # Update the level of a character based on their class levels.  If the
+    # character has no class levels, level will not be modified.
+    #
+    # This method also returns the updated level.
+    def update_char_level(entity)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+
+      max = 0
+      char.class_level&.each do |_,v|
+        max = v if v > max
+      end
+      max > 0 ? char.level = max : char.level
+    end
+
+    def char_level(entity)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+      char.level
+    end
+
+    # Update a character's resources, including base value, max value
+    def update_char_resources(entity)
+      char = get_component(entity, :character) or return
+
+      max = char.health_base ||
+          player_class_def_value(entity, :health).to_i
+      max += char.health_modifier
+      char.health_max = (max * char_attr_bonus(entity, :con)).to_i
+      char.health = char.health_max if char.health > char.health_max
+    end
+
+    # update character resource regeneration rate
+    def update_char_regen(entity)
+      char = get_component(entity, :character) or return
+
+      # when a character is mortally wounded, they will lose half a hit
+      # point every second until they die.  At most this should take 20
+      # seconds (unless someone saves them.
+      if entity_mortally_wounded?(entity)
+        char.health_regen = -0.5/char.health_max
+
+      # while in combat, all regen is stopped, unless the character has some
+      # yet-to-be-created skills
+      elsif entity_in_combat?(entity)
+        char.health_regen = 0
+
+      # default case for regen takes in to account per-class/per-level regen
+      # along with attributes and position.
+      else
+        regen = is_npc?(entity) ? char.health_regen_base :
+            player_class_def_value(entity, :health_regen)
+        regen += char.health_regen_modifier
+        regen *= char_attr_bonus(entity, :con)
+
+        case char.position
+        when :sitting
+          regen *= 1.5
+        when :lying
+          regen *= 2.0
+        end
+
+        char.health_regen = regen
+      end
+    end
+
+    # For a player, get the value from the ClassDefinition for any classes
+    # the player has.  If they have multiple classes, the average of class
+    # values is returned.
+    def player_class_def_value(player, field)
+      char = get_component(player, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+      raise InvalidEntity, 'not a player: #{entity}' unless char.class_level
+
+      char.class_level.map do |name, level|
+        klass = Morrow.config.classes[name] or
+            raise UnknownCharacterClass, 'unknown character class: %s' %
+                name.inspect
+        comp = get_component(klass, :class_definition) or
+            raise ComponentNotPresent,
+                "no class definition component found: #{entity}"
+        comp[field].call(entity: klass, level: level,
+            component: :class_definition, field: field)
+      end.average
+    end
+
+    # Get the value for a character's attribute.
+    def char_attr(entity, attr)
+      char = get_component(entity, :character) or
+          raise InvalidEntity, 'not a character: #{entity}'
+      char['%s_base' % attr] + char['%s_modifier' % attr]
+    end
+
+    # Get a character's bonus/reduction based on a given attribute.  The value
+    # returned will be a Float where 1.0 means no bonus or reduction.
+    #
+    # Right now the math comes out to a 1% reduction for every point below 13,
+    # and a 1% increase for every point above 13.
+    #
+    # Examples:
+    #   # character with a constitution of 13
+    #   char_attr_bonus(char, :con)   # =>  1.0
+    #
+    #   # character with a constitution of 20
+    #   char_attr_bonus(char, :con)   # =>  1.07
+    #
+    def char_attr_bonus(entity, attr)
+      1 + (char_attr(entity, attr) - 13)/100.0
+    end
+
+    # get the base entities for this entity
+    def entity_base(entity)
+      get_component(entity, :metadata)&.base || []
     end
   end
 end

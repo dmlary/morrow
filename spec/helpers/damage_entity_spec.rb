@@ -10,7 +10,7 @@ describe 'Morrow::Helpers.damage_entity' do
   end
 
   def set_health(entity, health)
-    get_component!(entity, :resources).health = health
+    get_component!(entity, :character).health = health
   end
 
   context 'entity does not have health resource' do
@@ -68,6 +68,18 @@ describe 'Morrow::Helpers.damage_entity' do
       end
     end
 
+    context 'damaged health < -10 (mortally wounded)' do
+      before(:each) do
+        set_health(victim, 0)
+      end
+      let(:amount) { 11 }
+
+      it 'will call update_char_regen()' do
+        expect(self).to receive(:update_char_regen).with(victim)
+        call_damage_entity
+      end
+    end
+
     context 'damaged health < -20' do
       before(:each) do
         set_health(victim, 0)
@@ -86,7 +98,7 @@ describe 'Morrow::Helpers.damage_entity' do
 
     context 'entity is sitting' do
       before(:each) do
-        get_component!(victim, :animate).position = :sitting
+        get_component!(victim, :character).position = :sitting
         set_health(victim, 100)
       end
 
@@ -100,7 +112,7 @@ describe 'Morrow::Helpers.damage_entity' do
 
     context 'entity is lying down' do
       before(:each) do
-        get_component!(victim, :animate).position = :lying
+        get_component!(victim, :character).position = :lying
         set_health(victim, 100)
       end
 

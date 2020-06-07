@@ -1,7 +1,7 @@
 describe Morrow::System::Combat do
   let(:room) { 'spec:room/1' }
-  let(:actor) { 'spec:char/actor' }
-  let(:victim) { 'spec:char/victim' }
+  let(:actor) { spawn(base: 'spec:char/actor') }
+  let(:victim) { spawn(base: 'spec:char/victim') }
   let(:observer) { 'spec:char/observer' }
   let(:attacker) { 'spec:char/attacker' }
   let(:absent) { 'spec:char/absent' }
@@ -101,6 +101,12 @@ describe Morrow::System::Combat do
             run_update
             expect(get_component(actor, :combat)).to eq(nil)
           end
+
+          it 'will call update_char_regen() on actor' do
+            expect(described_class).to receive(:update_char_regen)
+                .with(actor)
+            run_update
+          end
         else
           it 'will not remove the combat component from actor' do
             run_update
@@ -121,7 +127,7 @@ describe Morrow::System::Combat do
 
     context 'invalid attacker' do
       before(:each) do
-        attacker = create_entity(base: 'spec:char/attacker')
+        attacker = spawn(base: 'spec:char/attacker')
         attacker_combat.target = actor
         destroy_entity(attacker)
       end
@@ -167,8 +173,7 @@ describe Morrow::System::Combat do
     context 'multiple attackers present' do
       before(:each) do
         @attackers = 5.times.map do |i|
-          e = create_entity(id: "spec:char/attacker-#{i}",
-              base: 'spec:char/attacker')
+          e = spawn(id: "spec:char/attacker-#{i}", base: 'spec:char/attacker')
           get_component!(e, :combat).target = actor
           actor_combat.attackers << e
           e

@@ -176,13 +176,6 @@ describe Morrow::Helpers do
     end
   end
 
-  describe '.spawn(base:, area: nil)' do
-    it 'will set Metadata.area to the area provided' do
-      entity = spawn(base: [], area: :passed)
-      expect(get_component(entity, :metadata).area).to eq(:passed)
-    end
-  end
-
   describe '.visible_contents(actor: nil, cont: nil)' do
     context 'when the container does not have the ContainerComponent' do
       it 'will return an empty array' do
@@ -214,7 +207,7 @@ describe Morrow::Helpers do
 
   describe '.save_entities(dest, *entities)' do
     let(:player) do
-      player = create_entity(base: [ 'spec:save/base', 'morrow:race/elf' ])
+      player = create_entity(base: [ 'spec:save/base', 'spec:save/affects' ])
       remove_component(player, :spawn_point)
 
       # Add some non-unique components to the player

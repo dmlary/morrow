@@ -13,7 +13,7 @@ describe 'Morrow::Helpers.spawn_corpse' do
 
   context 'inanimate entity' do
     before(:each) do
-      remove_component(entity, :animate)
+      remove_component(entity, :character)
       spawn_corpse(entity)
     end
 

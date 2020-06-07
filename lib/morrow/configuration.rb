@@ -53,6 +53,10 @@ class Morrow::Configuration
   # in the world appear in this Hash.
   attr_accessor :commands
 
+  # Hash of playable classes in the game.  Key is class name, value is entity
+  # that contains the class data.
+  attr_accessor :classes
+
   # Directory that contains runtime data for Morrow.  Used as the default
   # prefix for world_dir and player_dir
   attr_accessor :data_dir
@@ -93,32 +97,31 @@ class Morrow::Configuration
     @update_interval = 0.25
 
     @components = {
-      template: Morrow::TemplateComponent,
-      keywords: Morrow::KeywordsComponent,
-      container: Morrow::ContainerComponent,
-      location: Morrow::LocationComponent,
-      viewable: Morrow::ViewableComponent,
-      animate: Morrow::AnimateComponent,
-      corporeal: Morrow::CorporealComponent,
-      concealed: Morrow::ConcealedComponent,
-      exits: Morrow::Component::Exits,
-      environment: Morrow::EnvironmentComponent,
-      destination: Morrow::DestinationComponent,
-      player_config: Morrow::PlayerConfigComponent,
-      metadata: Morrow::MetadataComponent,
-      closable: Morrow::ClosableComponent,
-      spawn_point: Morrow::SpawnPointComponent,
-      spawn: Morrow::SpawnComponent,
-      input: Morrow::InputComponent,
-      connection: Morrow::ConnectionComponent,
-      teleporter: Morrow::TeleporterComponent,
-      teleport: Morrow::TeleportComponent,
-      affect: Morrow::AffectComponent,
-      help: Morrow::HelpComponent,
-      combat: Morrow::Component::Combat,
-      resources: Morrow::Component::Resources,
-      decay: Morrow::Component::Decay,
       abilities: Morrow::Component::Abilities,
+      affect: Morrow::Component::Affect,
+      character: Morrow::Component::Character,
+      class_definition: Morrow::Component::ClassDefinition,
+      closable: Morrow::Component::Closable,
+      combat: Morrow::Component::Combat,
+      concealed: Morrow::Component::Concealed,
+      connection: Morrow::Component::Connection,
+      container: Morrow::Component::Container,
+      corporeal: Morrow::Component::Corporeal,
+      decay: Morrow::Component::Decay,
+      environment: Morrow::Component::Environment,
+      exits: Morrow::Component::Exits,
+      help: Morrow::Component::Help,
+      input: Morrow::Component::Input,
+      keywords: Morrow::Component::Keywords,
+      location: Morrow::Component::Location,
+      metadata: Morrow::Component::Metadata,
+      player_config: Morrow::Component::PlayerConfig,
+      spawn: Morrow::Component::Spawn,
+      spawn_point: Morrow::Component::SpawnPoint,
+      teleport: Morrow::Component::Teleport,
+      teleporter: Morrow::Component::Teleporter,
+      template: Morrow::Component::Template,
+      viewable: Morrow::Component::Viewable,
     }
 
     @systems = [
@@ -130,6 +133,10 @@ class Morrow::Configuration
       Morrow::System::Connection,
       Morrow::System::Regen,
     ]
+
+    @classes = {
+      warrior: 'morrow:class/warrior'
+    }
 
     # Note: this hash is populated dynamically by modules that extend the
     # Command module.

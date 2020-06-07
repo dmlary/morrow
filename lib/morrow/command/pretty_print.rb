@@ -9,6 +9,7 @@ module Morrow::Command::PrettyPrint
     def pp(actor, target)
       location = entity_location(actor)
       target ||= location
+      target = actor if target == 'self'
 
       unless entity_exists?(target)
         all = [

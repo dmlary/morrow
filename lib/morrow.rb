@@ -61,6 +61,7 @@ module Morrow
   @systems = []
   @cycle = 0
   @entities_to_be_destroyed = []
+  @pause = false
 
   class << self
 
@@ -82,6 +83,10 @@ module Morrow
     # Don't access this directly, use Morrow::Helpers.destroy_entity
     attr_reader :entities_to_be_destroyed
 
+    # This flag allows the pausing of the main update loop to simplify
+    # debugging.
+    attr_accessor :pause
+
     # Get the server configuration.
     def config
       @config ||= Configuration.new
@@ -99,6 +104,9 @@ module Morrow
           config.load_morrow_base
       load_path(config.world_dir)
       info 'world has been loaded'
+    rescue Exception => ex
+      log_exception(ex)
+      raise ex
     end
 
     # This will wipe the world entirely clean.  Used for testing
@@ -126,6 +134,16 @@ module Morrow
 
       yield config if block_given?
 
+      # If we're running in development mode,
+      #   * pull in and start running Pry on stdin
+      #   * enable pry-rescue
+      #   * start a thread dedicated to running Pry
+      if config.development?
+        require 'pry'
+        require 'pry-rescue'
+        Pry.enable_rescuing!
+      end
+
       info 'Loading the world'
       load_world
       prepare_systems
@@ -133,18 +151,9 @@ module Morrow
       info 'Morrow starting in %s mode' % config.env
       WebServer::Backend.set :environment, config.env
 
-      # If we're running in development mode,
-      #   * pull in and start running Pry on stdin
-      #   * enable pry-rescue
-      #   * allow reloading of the web server code
-      #   * start a thread dedicated to running Pry
-      if config.development?
-        require 'pry'
-        require 'pry-rescue'
-
-        Pry.enable_rescuing!
-        start_reloader
-      end
+      # if we're running in development mode start a thread to reload the
+      # webserver when changed
+      start_reloader if config.development?
 
       # Run everything in the EventMachine loop.
       EventMachine::run do
@@ -153,7 +162,7 @@ module Morrow
         begin
           # Set up a periodic timer to update the world every quarter second.
           EventMachine::PeriodicTimer.new(@config.update_interval) do
-            Morrow.update
+            Morrow.update unless @pause
           end
 
           Rack::Handler.get('thin').run(WebServer.app,
@@ -281,7 +290,13 @@ end
 
 require_relative 'morrow/component'
 require_relative 'morrow/helpers'
-require_relative 'morrow/components'
+require_relative 'morrow/function'
+
+# dynamically load all the components
+Dir.glob(File.expand_path('../morrow/component/**.rb', __FILE__)).each do |file|
+  require file
+end
+
 require_relative 'morrow/system'
 require_relative 'morrow/telnet_server'
 require_relative 'morrow/configuration'
