@@ -289,6 +289,8 @@ module Morrow
     # Parameters:
     # * actor: required entity performing the action
     # * in: optional room to perform act in; default is actor location
+    # * to_actor: send the message to the actor even if they're unconscious, or
+    #     not present
     # * Any other parameters referenced in format string
     #
     # Examples:
@@ -309,7 +311,16 @@ module Morrow
       raise ArgumentError, 'missing keyword: actor' unless p.has_key?(:actor)
 
       room = p[:in] || entity_location(p[:actor])
-      room_observers(room).each do |observer|
+
+      # grab the room observers, and ensure the actor is in that list.  This
+      # resolves issues with act() when the observer is unconscious.  If the
+      # action is visible to the room, it should be visible to the actor.  Best
+      # example of this is the sleep command, where the act() happens after
+      # unconscious is set.
+      observers = room_observers(room)
+      observers.unshift(p[:actor]) if p[:to_actor]
+
+      observers.each do |observer|
         first = nil
         out = fmt.gsub(/%{(?:([^:}]+):)?([^}]+)}/) do
           op, arg = $1, $2
@@ -325,7 +336,8 @@ module Morrow
               begin
                 entity_short(p[arg])
               rescue UnknownEntity
-                p[arg]
+                p[arg] or raise ArgumentError,
+                    "missing parameter (#{arg}) for #{fmt.inspect}"
               end
             end
           when 'v'
@@ -425,7 +437,7 @@ module Morrow
     # return an array of entities in a given room that can observe actions
     # occuring within them.
     def room_observers(room)
-      entity_contents(room).select { |e| is_char?(e) }
+      entity_contents(room).select { |e| is_char?(e) && entity_conscious?(e) }
     end
 
     # Get all the exits in a room; most likely you want to use visible_exits
@@ -862,7 +874,7 @@ module Morrow
         when :sitting
           regen *= 1.5
         when :lying
-          regen *= 2.0
+          regen *= (entity_unconscious?(entity) ? 2.0 : 1.75)
         end
 
         char.health_regen = regen

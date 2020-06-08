@@ -28,39 +28,49 @@ RSpec.describe 'Helpers.update_char_regen' do
   where(is_npc: [ true, false ])
 
   with_them do
-    where(:health, :pos, :in_combat, :base, :mod, :attr_bonus, :result) do
-      [ [  10, :standing, false, 0.2,    0, 1.0, 0.2 ],
-        [  10, :standing, true,  0.2,    0, 1.0, 0.0 ],
-        [  10, :sitting,  false, 0.2,    0, 1.0, (0.2 * 1.5) ],
-        [  10, :sitting,  true,  0.2,    0, 1.0, 0.0 ],
-        [  10, :lying,    false, 0.2,    0, 1.0, (0.2 * 2.0) ],
-        [  10, :lying,    true,  0.2,    0, 1.0, 0.0 ],
+    where(:health, :pos, :in_combat, :unconscious, :base, :mod, :attr_bonus,
+         :result) do
+      [ [  10, :standing, false, false, 0.2,    0, 1.0, 0.2 ],
+        [  10, :standing, true,  false, 0.2,    0, 1.0, 0.0 ],
+        [  10, :sitting,  false, false, 0.2,    0, 1.0, (0.2 * 1.5) ],
+        [  10, :sitting,  true,  false, 0.2,    0, 1.0, 0.0 ],
+        [  10, :lying,    false, false, 0.2,    0, 1.0, (0.2 * 1.75) ],
+        [  10, :lying,    true,  false, 0.2,    0, 1.0, 0.0 ],
+        [  10, :lying,    false, true,  0.2,    0, 1.0, (0.2 * 2.0) ],
+        [  10, :lying,    true,  true,  0.2,    0, 1.0, 0.0 ],
 
-        [  10, :standing, false, 0.2, -0.3, 1.0, (0.2 - 0.3) ],
-        [  10, :sitting,  false, 0.2, -0.3, 1.0, ((0.2 - 0.3) * 1.5) ],
-        [  10, :lying,    false, 0.2, -0.3, 1.0, ((0.2 - 0.3) * 2.0) ],
+        [  10, :standing, false, false, 0.2, -0.3, 1.0, (0.2 - 0.3) ],
+        [  10, :sitting,  false, false, 0.2, -0.3, 1.0, ((0.2 - 0.3) * 1.5) ],
+        [  10, :lying,    false, false, 0.2, -0.3, 1.0, ((0.2 - 0.3) * 1.75) ],
+        [  10, :lying,    false, true,  0.2, -0.3, 1.0, ((0.2 - 0.3) * 2.0) ],
 
-        [  10, :standing, false, 0.2,    0, 1.2, (0.2 * 1.2) ],
-        [  10, :sitting,  false, 0.2,    0, 1.2, (0.2 * 1.2 * 1.5) ],
-        [  10, :lying,    false, 0.2,    0, 1.2, (0.2 * 1.2 * 2.0) ],
+        [  10, :standing, false, false, 0.2,    0, 1.2, (0.2 * 1.2) ],
+        [  10, :sitting,  false, false, 0.2,    0, 1.2, (0.2 * 1.2 * 1.5) ],
+        [  10, :lying,    false, false, 0.2,    0, 1.2, (0.2 * 1.2 * 1.75) ],
+        [  10, :lying,    false, true,  0.2,    0, 1.2, (0.2 * 1.2 * 2.0) ],
 
-        [ -10, :standing, false, 0.2,    0, 1.0, (0.2 * 1.0) ],
-        [ -10, :standing, true,  0.2,    0, 1.0, 0.0 ],
-        [ -10, :sitting,  false, 0.2,    0, 1.0, (0.2 * 1.5) ],
-        [ -10, :sitting,  true,  0.2,    0, 1.0, 0.0 ],
-        [ -10, :lying,    false, 0.2,    0, 1.0, (0.2 * 2.0) ],
-        [ -10, :lying,    true,  0.2,    0, 1.0, 0.0 ],
+        [ -10, :standing, false, false, 0.2,    0, 1.0, (0.2 * 1.0) ],
+        [ -10, :standing, true,  false, 0.2,    0, 1.0, 0.0 ],
+        [ -10, :sitting,  false, false, 0.2,    0, 1.0, (0.2 * 1.5) ],
+        [ -10, :sitting,  true,  false, 0.2,    0, 1.0, 0.0 ],
+        [ -10, :lying,    false, false, 0.2,    0, 1.0, (0.2 * 1.75) ],
+        [ -10, :lying,    true,  false, 0.2,    0, 1.0, 0.0 ],
+        [ -10, :lying,    false, true,  0.2,    0, 1.0, (0.2 * 2.0) ],
+        [ -10, :lying,    true,  true,  0.2,    0, 1.0, 0.0 ],
 
         # This is the mortally wounded case, health < -10.  We expect the
         # character to slowly die (< -20 health) over the next 20 seconds.
         # To make this math easy, we're going to hard-code the character's
-        # health_max to 10 in the before()
-        [ -11, :standing, false, 0.2,    0, 1.0, -0.05 ],
-        [ -11, :standing, true,  0.2,    0, 1.0, -0.05 ],
-        [ -11, :sitting,  false, 0.2,    0, 1.0, -0.05 ],
-        [ -11, :sitting,  true,  0.2,    0, 1.0, -0.05 ],
-        [ -11, :lying,    false, 0.2,    0, 1.0, -0.05 ],
-        [ -11, :lying,    true,  0.2,    0, 1.0, -0.05 ],
+        # health_max to 10 in the before().
+        #
+        # Note: all of these test cases are unconscious because a character
+        # will not be conscious when mortally wounded.
+        [ -11, :standing, false, true,  0.2,    0, 1.0, -0.05 ],
+        [ -11, :standing, true,  true,  0.2,    0, 1.0, -0.05 ],
+        [ -11, :sitting,  false, true,  0.2,    0, 1.0, -0.05 ],
+        [ -11, :sitting,  true,  true,  0.2,    0, 1.0, -0.05 ],
+        [ -11, :lying,    false, true,  0.2,    0, 1.0, -0.05 ],
+        [ -11, :lying,    true,  true,  0.2,    0, 1.0, -0.05 ],
       ]
     end
 
@@ -71,6 +81,7 @@ RSpec.describe 'Helpers.update_char_regen' do
         char.health_max = 10   # in support of mortally wounded regen
         char.position = pos
         get_component!(entity, :combat).target = 'meep' if in_combat
+        char.unconscious = unconscious
 
         char.health_regen_base = base
 
