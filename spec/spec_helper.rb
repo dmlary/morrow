@@ -30,6 +30,13 @@ module Helpers
     str.gsub(Morrow::TelnetServer::Connection::COLOR_CODE_REGEX, '')
   end
 
+  # return the stripped output for a given character
+  def stripped_output(char)
+    buf = get_component(char, :connection)&.buf or
+        raise "entity does not have a connection: #{char}"
+    strip_color_codes(buf)
+  end
+
   # Toggle logging output.  Useful for tests that raise exceptions that go into
   # log_exception(), otherwise the rspec output would get very noisy.
   def toggle_logging
