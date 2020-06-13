@@ -123,5 +123,45 @@ describe 'Morrow::Helpers.damage_entity' do
         expect(entity_health(victim)).to eq(80)
       end
     end
+
+    context 'entity is unconscious' do
+      before do
+        get_component(victim, :character).position = :lying
+        get_component(victim, :character).unconscious = true
+      end
+
+      let(:amount) { 10 }
+
+      context 'health > 0' do
+        before do
+          set_health(victim, 100)
+          call_damage_entity
+        end
+
+        it 'will wake the entity' do
+          expect(get_component(victim, :character).unconscious).to eq(false)
+        end
+
+        it 'will output the damage message to the victim' do
+          expect(player_output(victim)).to_not be_empty
+        end
+      end
+
+      context 'health <= 0' do
+        before do
+          set_health(victim, 0)
+          player_output(victim).clear
+          call_damage_entity
+        end
+
+        it 'will not wake the entity' do
+          expect(get_component(victim, :character).unconscious).to eq(true)
+        end
+
+        it 'will not output the damage message to the victim' do
+          expect(player_output(victim)).to be_empty
+        end
+      end
+    end
   end
 end

@@ -713,6 +713,11 @@ module Morrow
         modifier += 1
       end
 
+      # The damage is going to wake them, so let's just do it now so they can
+      # see the damage message.
+      character.unconscious = false if character.unconscious and
+          character.health > 0
+
       health = character.health -= amount * modifier
       act('%{actor} %{v:hit} %{victim}.', actor: actor, victim: entity)
 
