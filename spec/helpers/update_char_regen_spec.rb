@@ -80,7 +80,7 @@ RSpec.describe 'Helpers.update_char_regen' do
         char.health = health
         char.health_max = 10   # in support of mortally wounded regen
         char.position = pos
-        get_component!(entity, :combat).target = 'meep' if in_combat
+        get_component!(entity, :combat).attackers << 'meep' if in_combat
         char.unconscious = unconscious
 
         char.health_regen_base = base

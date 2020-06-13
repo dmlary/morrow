@@ -17,7 +17,7 @@ describe 'Morrow::Helpers.act' do
   end
 
   def output(entity)
-    strip_color_codes(player_output(entity))
+    player_output(entity)
   end
 
   [ { fmt: '%{actor} %{v:smile} at %{victim}.',
@@ -43,6 +43,8 @@ describe 'Morrow::Helpers.act' do
       to_actor: false,
       to_victim: 'Actor flees to the north!',
       to_observer: 'Actor flees to the north!' },
+    { fmt: '&Ract will skip color codes for capitalization!&0',
+      to_actor: '&RAct will skip color codes for capitalization!&0' },
   ].each do |p|
     describe p[:fmt].inspect do
       before(:each) do

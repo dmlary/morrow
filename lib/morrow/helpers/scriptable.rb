@@ -352,7 +352,7 @@ module Morrow
           end
         end
 
-        out.gsub!(/^./) { |c| c.upcase }
+        out.gsub!(/^(?:&.)?./) { |c| c.upcase }
 
         send_to_char(char: observer, buf: out)
       end
@@ -666,24 +666,34 @@ module Morrow
       entity_present!(actor: actor, entity: target)
       entity_has_health!(target)
 
-      # If the actor isn't already in combat with a target, set them to be
-      # targeting the target.
-      get_component!(actor, :combat).target ||= target
+      # append the target to the actor's attackers list if it's not already in
+      # there.  The first entity on this list is the actor's target.
+      attackers = get_component!(actor, :combat).attackers
+      attackers << target unless attackers.include?(target)
 
-      # Grab the target's entity, add the actor to the attackers list, and if the
-      # target isn't engaged with anyone already, have them target the actor.
+      # Grab the target's entity, add the actor to the attackers list.
       t = get_component!(target, :combat)
       attackers = t.attackers
       attackers << actor unless attackers.include?(actor)
-      t.target ||= actor
+
+      # Now let's update everyone's regen now that we're in combat
+      # XXX enter_combat() gets called for every call to hit_entity().
+      # update_char_regen may be too slow here.
       update_char_regen(actor)
       update_char_regen(target)
     end
 
+    # called after combat has ended by System::Combat.  Do not call directly;
+    # it will not stop combat.
+    def exit_combat(actor)
+      debug("#{entity_short(actor)} exit combat")
+      remove_component(actor, :combat)
+      update_char_regen(actor)
+    end
+
     # Check to see if an entity is in combat
     def entity_in_combat?(entity)
-      combat = get_component(entity, :combat) or return false
-      combat.target || !combat.attackers.empty?
+      combat = get_component(entity, :combat) and !combat.attackers.empty?
     end
 
     # Damage an entity, and do all the other housekeeping involved with one
@@ -769,7 +779,7 @@ module Morrow
 
     # get the combat target for an entity
     def entity_target(entity)
-      get_component(entity, :combat)&.target
+      get_component(entity, :combat)&.attackers&.first
     end
 
     # get an entity's proficiency at an ability
@@ -928,6 +938,12 @@ module Morrow
     # get the base entities for this entity
     def entity_base(entity)
       get_component(entity, :metadata)&.base || []
+    end
+
+    # Get the number of attacks a character has
+    def char_attacks(char)
+      # XXX one day this will be different
+      1
     end
   end
 end
