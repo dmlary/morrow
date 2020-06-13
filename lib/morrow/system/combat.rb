@@ -18,62 +18,54 @@ module Morrow::System::Combat
     end
 
     def update(actor, combat)
-      if entity_dead?(actor)
-        return
-      elsif entity_mortally_wounded?(actor)
-        act("&r%{actor} %{v:be} mortally wounded," +
-            " and will die if not aided soon.&0", actor: actor)
-        return
-      elsif entity_incapacitated?(actor)
-        act("&r%{actor} %{v:be} incapacitated," +
-            " and will die slowly if not aided.&0", actor: actor)
-        return
-      elsif entity_unconscious?(actor)
-        act("&r%{actor} %{v:be} stunned, but will regain consciousness.&0",
-            actor: actor)
-        return
+      # get the location of the combat
+      unless room = entity_location(actor)
+        remove_component(actor, :combat)
+        raise Morrow::Error, "combat actor has no location: #{actor}"
       end
 
-      target = combat.target
-      room = entity_location(actor)
+      # prune the attackers list of dead & fled entities
+      combat.attackers.delete_if do |entity|
+        entity_dead?(entity) or entity_location(entity) != room
+      end
 
-      unless entity_exists?(target) and entity_location(target) == room
-        unless target = find_next_attacker(combat, room)
-          debug("#{entity_short(actor)} exit combat")
-          # XXX need to create Helpers.exit_combat()
-          remove_component(actor, combat)
-          update_char_regen(actor)
+      # figure out how many attacks the actor gets
+      attacks = char_attacks(actor)
+
+      # Loop through attacking things as we can
+      while attacks > 0 && target = combat.attackers.first
+
+        # Handle all those states that prevent us from attacking
+        if entity_dead?(actor)
+          exit_combat(actor)
           return
+        elsif entity_mortally_wounded?(actor)
+          act("&r%{actor} %{v:be} mortally wounded," +
+              " and will die if not aided soon.&0", actor: actor,
+              to_actor: true)
+          break
+        elsif entity_incapacitated?(actor)
+          act("&r%{actor} %{v:be} incapacitated," +
+              " and will die slowly if not aided.&0", actor: actor,
+             to_actor: true)
+          break
+        elsif entity_unconscious?(actor)
+          act("&r%{actor} %{v:be} stunned, but will regain consciousness.&0",
+              actor: actor, to_actor: true)
+          break
         end
 
-        combat.target = target
-        debug("#{entity_short(actor)} target #{entity_short(target)}")
+        # hit the target
+        attacks -= 1
+        hit_entity(actor: actor, entity: target)
+
+        # the target may have died or fled, in which case we have to move on to
+        # the next target
+        combat.attackers.shift if entity_dead?(target) or
+            entity_location(target) != room
       end
 
-      do_combat_round(actor: actor, target: target)
-
-      # XXX if the victim is dead, and there are no other attackers, exit
-      # combat now, instead of during the next round
-    end
-
-    private
-
-    # Perform a round of combat by actor against target.
-    #
-    # By the time this is called, actor and target have been verified to both
-    # exist, and be in the same room.
-    def do_combat_round(actor:, target:)
-      hit_entity(actor: actor, entity: target)
-    end
-
-    def find_next_attacker(combat, room)
-      attackers = combat.attackers
-      attackers.select! do |attacker|
-        entity_location(attacker) == room
-      rescue Morrow::UnknownEntity
-        false
-      end
-      attackers.first
+      exit_combat(actor) if combat.attackers.empty?
     end
   end
 end
