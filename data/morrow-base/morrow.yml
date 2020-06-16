@@ -36,6 +36,7 @@
   components:
   - player_config
   - input
+  - container
   - character:
       # Right now, we're all warriors!
       class_level:

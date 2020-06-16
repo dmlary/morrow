@@ -17,8 +17,24 @@
       # standing around idle.
       health_regen_base: 0.006
 
-      # default curve for NPC statistics
-      con_base: !func '{ by_level(10..18, max_at: 100) }'
+      # default curve for NPC attributes
+      # 
+      # These are the default values for an attribute not overriden by a
+      # template.  **These values are INTENTIONALLY low.**  The individual npc
+      # templates will override those attributes the npc will be good at.
+      # These values are the equivalent of a non-specialized character in the
+      # world.  They start with a -5% penalty to everything, and end up with
+      # a 0% penalty at level 75.
+      #
+      # The guiding principal here is that npcs should have some stats that are
+      # just awful.  It doesn't make sense for every warrior to have a charisma
+      # of 30.  This creates weak-points for players to try to attack.
+      str_base: !func '{ by_level(8..13, max_at: 75) }'
+      int_base: !func '{ by_level(8..13, max_at: 75) }'
+      wis_base: !func '{ by_level(8..13, max_at: 75) }'
+      dex_base: !func '{ by_level(8..13, max_at: 75) }'
+      con_base: !func '{ by_level(8..13, max_at: 75) }'
+      cha_base: !func '{ by_level(8..13, max_at: 75) }'
   - viewable:
       short: a non-player character
       long: A non-player character is here, occasionally bumping into things
@@ -28,7 +44,12 @@
   components:
   - character:
       health_base: !func '{ base * 1.5 }'
+      str_base: !func '{ by_level(15..30, max_at: 65) }'
+      int_base: !func '{ by_level( 8..13, max_at: 90) }'
+      wis_base: !func '{ by_level( 8..13, max_at: 90) }'
+      dex_base: !func '{ by_level(13..20, max_at: 75) }'
       con_base: !func '{ by_level(15..30, max_at: 50) }'
+      cha_base: !func '{ by_level( 5..13, max_at: 100) }'
   - viewable:
       short: a warrior
       long: A warrior, body wrapped in armor, studded with weapons is here.
