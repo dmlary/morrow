@@ -76,6 +76,15 @@ class Morrow::Configuration
   # Update frequency in seconds; default 0.25
   attr_accessor :update_interval
 
+  # Character inventory maximum weight by strength table.  Default value is a
+  # table where:
+  # This table is used in `update_char_inventory_limits()`
+  attr_accessor :char_inventory_max_weight
+
+  # Character inventory maximum volume by dexterity table.  This table is used
+  # in `update_char_inventory_limits()`.
+  attr_accessor :char_inventory_max_volume
+
   def initialize
 
     @env = ENV['APP_ENV']&.to_sym || :development
@@ -95,6 +104,59 @@ class Morrow::Configuration
     @disconnect_timeout = 15 * 60
 
     @update_interval = 0.25
+
+    # For determining the maximum weight a character can carry, I based it on
+    # the weight of a full suit of plate armor, which google says weighs
+    # 15 - 25 kg.  I wanted even characters with baseline strength 13 to be
+    # able to carry that much, so baseline carry weight is 30kg.  Maximum carry
+    # weight at 30 strength is 500kg (losely based off of world record for
+    # squats).  Weak carry weight (at 8 strength) is 7kg, based off of stupid
+    # airline weight limits for personal items.  Then, figure a carry weight of
+    # 0 at 1 strength.
+    #
+    # I threw all of these points into wolfram alpha, plotted a curve, tossed
+    # that into a spreadsheet to fill in the gaps, then simplified the numbers
+    # by hand to create a smoothish/regular/round progression. 
+    #
+    # * 1 strength gives 0 kg max weight
+    # * 8 strength (weak) gives 7 kg max weight
+    # * 13 strength (normal) gives 30 kg max weight
+    # * 30 strength (strongest) gives 500 kg max weight
+    #
+    # These numbers are grounded roughly based on:
+    # * 7kg is a carry-on backpack for crappier airlines
+    # * full set of plate armor is 15-25kg, average strength should be able to
+    #   carry that
+    # * world record for un-assisted squat is ~500kg
+    #
+    @char_inventory_max_weight = [
+      0, 0, 1, 2, 3, 4, 5, 6, 7,    #  0 - 7    (severly weakened)
+      10, 14, 19, 24, 30,           #  8 - 13   (weak to average)
+      40, 50, 60, 75, 90,           # 14 - 18   
+      110, 130, 150, 180, 210, 240, # 19 - 24
+      280, 320, 360, 400, 450, 500, # 25 - 30   (very very strong)
+    ]
+
+    # Volume of inventory is strange.  We base it off of dexterity, as if it's
+    # the number of items you could comfortably carry.  That's a little absurd
+    # when you're carrying 100 potions just in your inventory.
+    #
+    # So we're going to try to establish a baseline for the average dex of 13.
+    # A character with average/baseline dex of 13 should be able to carry:
+    # * 6 liters of water, 2 liters per day, for 3 days
+    # * 6 liters of food, 2 liters per day, for 3 days
+    # * 0.150 liters of potions; 30 ml per potion, carry 5
+    # * 10 liters for extra items/loot (equiped items don't count)
+    #
+    # This scale will probably need to be adjusted at some point.  It's all
+    # just random numbers that get bigger.
+    @char_inventory_max_volume = [
+      0, 0, 1, 2, 4, 6, 8, 10, 12,  #  0 - 7    (severly clumsy)
+      14, 16, 18, 20, 22,           #  8 - 13   (weak to average)
+      25, 30, 35, 40, 45,           # 14 - 18   
+      50, 60, 70, 80, 90, 100,      # 19 - 24
+      110, 120, 130, 140, 150, 160, # 25 - 30   (very very dex)
+    ]
 
     @components = {
       abilities: Morrow::Component::Abilities,

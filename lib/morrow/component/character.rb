@@ -55,6 +55,30 @@ class Morrow::Component::Character < Morrow::Component
   # actions.
   field :unconscious, type: :boolean, default: false
 
+  # Character's unmodified strength.  Affects how much the character can carry.
+  field :str_base, type: 3..30, default: 13
+
+  # Any temporary modifiers to str_base; capped at +5 bonus
+  field :str_modifier, type: (-Float::INFINITY..5), default: 0
+
+  # Character's unmodified intelligence.
+  field :int_base, type: 3..30, default: 13
+
+  # Temporary modifiers to int_base; capped at +5 bonus.
+  field :int_modifier, type: (-Float::INFINITY..5), default: 0
+
+  # Character's unmodified wisdom.
+  field :wis_base, type: 3..30, default: 13
+
+  # Temporary modifiers to wis_base; capped at +5 bonus.
+  field :wis_modifier, type: (-Float::INFINITY..5), default: 0
+
+  # Character's unmodified dexterity
+  field :dex_base, type: 3..30, default: 13
+
+  # Temporary modifiers to dex_base; capped at +5 bonus.
+  field :dex_modifier, type: (-Float::INFINITY..5), default: 0
+
   # Character's unmodified constitution.  Affects health, regeneration, and
   # constitution based saves.
   field :con_base, type: 3..30, default: 13
@@ -62,4 +86,10 @@ class Morrow::Component::Character < Morrow::Component
   # Any temporary modifiers to the character's constitution.  Capped at a +5
   # bonus.
   field :con_modifier, type: (-Float::INFINITY..5), default: 0
+
+  # character's unmodified charisma.
+  field :cha_base, type: 3..30, default: 13
+
+  # Temporary modifiers to cha_base; capped at +5 bonus
+  field :cha_modifier, type: (-Float::INFINITY..5), default: 0
 end

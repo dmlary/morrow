@@ -896,6 +896,45 @@ module Morrow
       end
     end
 
+    # update character inventory limits
+    #
+    # Thinking behind the formula used in this function.
+    #
+    # For max_weight, I based it off the weight of a full suit of plate armor,
+    # which is 15 - 25kg.  I wanted even characters with baseline strength 13
+    # to be able to carry that much, so baseline carry weight is 30kg.  Maximum
+    # carry weight at 30 strength is 500kg (losely based off of world record
+    # for squats).  Weak carry weight (at 8 strength) is 7kg, based off of
+    # stupid airline weight limits for personal items.  Then, figure a carry
+    # weight of 0 at 1 strength.
+    #
+    # I threw all of these points into wolfram alpha, plotted a curve, tossed
+    # that into a spreadsheet to fill in the gaps, then simplified the numbers
+    # by hand to create a smoothish/regular/round progression.  Now as to where
+    # to stick this table...
+    #
+    # For max_volume, I picked a roundish number based on backpack sizes.
+    def update_char_inventory_limits(entity)
+      inv = get_component(entity, :container) or return
+      inv.max_weight = Morrow.config
+          .char_inventory_max_weight[char_attr(entity, :str)]
+      inv.max_volume = Morrow.config
+          .char_inventory_max_volume[char_attr(entity, :dex)]
+    end
+
+    # Update everything possible in a character entity.
+    # This method will call all supporting update methods for a given
+    # character entity.
+    # THIS CALL IS VERY EXPENSIVE.
+    # If you need to update a character frequently, consider using one of the
+    # more specialized update_char_*() methods based on what you're changing.
+    def update_char(entity)
+      update_char_level(entity)
+      update_char_resources(entity)
+      update_char_regen(entity)
+      update_char_inventory_limits(entity)
+    end
+
     # For a player, get the value from the ClassDefinition for any classes
     # the player has.  If they have multiple classes, the average of class
     # values is returned.
