@@ -26,6 +26,10 @@ module Morrow::Command::Flee
     # Syntax: flee
     #
     def flee(actor, _)
+      in_combat!(actor)
+      standing!(actor)
+      conscious!(actor)
+
       room = entity_location(actor) or fault("actor has no location: #{actor}")
 
       if !entity_in_combat?(actor)

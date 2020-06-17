@@ -17,6 +17,8 @@ module Morrow
       #   get all [from] [my] <container>
       #
       def get(actor, arg)
+        conscious!(actor)
+
         room = entity_location!(actor)
 
         arg =~ %r{^(\S+)(?:\s+from)?(\s+my)?(?:\s+(\S+))?} or
@@ -75,6 +77,8 @@ module Morrow
       # Syntax: drop <obj>
       #
       def drop(actor, arg)
+        conscious!(actor)
+
         room = entity_location!(actor)
 
         matches = match_keyword(arg, visible_objects(actor, room: actor),
@@ -94,6 +98,8 @@ module Morrow
       # Syntax: put <obj> [my] <container>
       #
       def put(actor, arg)
+        conscious!(actor)
+
         room = entity_location!(actor)
 
         arg =~ %r{^(\S+)(\s+my)?(?:\s+(\S+))?} or

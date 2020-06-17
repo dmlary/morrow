@@ -7,6 +7,8 @@ module Morrow::Command::ActClosable
     # Syntax: open <door>, open <container>
     #
     def open(actor, arg)
+      conscious!(actor)
+
       command_error 'What would you like to open?' unless arg
 
       target = match_keyword(arg, closable_entities(actor)) or
@@ -25,6 +27,8 @@ module Morrow::Command::ActClosable
     # Syntax: close <door>, close <container>
     #
     def close(actor, arg)
+      conscious!(actor)
+
       command_error 'What would you like to close?' unless arg
 
       target = match_keyword(arg, closable_entities(actor)) or

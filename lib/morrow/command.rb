@@ -31,6 +31,36 @@ module Morrow::Command
     @priority = priority.to_i
   end
 
+  # ensure the actor is standing or raise a command error
+  def standing!(actor)
+    entity_position(actor) == :standing or
+        command_error('You must be standing to do this.')
+  end
+
+  # ensure the actor is conscious or raise a command error
+  def conscious!(actor)
+    entity_conscious?(actor) or
+        command_error('You are currently unconscious and unable to act.')
+  end
+
+  # ensure the actor is not incapacitated, or unable to act on their own
+  def able!(actor)
+    entity_health(actor) > 0 or
+        command_error('You are incapacitated and unable to act.')
+  end
+
+  # ensure the actor is out of combat
+  def out_of_combat!(actor)
+    entity_in_combat?(actor) and
+        command_error('You cannot do that while in combat!')
+  end
+
+  # ensure the actor is in combat
+  def in_combat!(actor)
+    entity_in_combat?(actor) or
+        command_error('You can only do that while in combat!')
+  end
+
   # Any public singleton methods added to a module that extends this module
   # will automatically be added to the command list for Morrow.
   def singleton_method_added(name)

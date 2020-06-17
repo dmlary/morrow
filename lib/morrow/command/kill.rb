@@ -7,6 +7,10 @@ module Morrow::Command::Kill
     # Syntax: kill <character>
     #
     def kill(actor, target)
+      able!(actor)
+      out_of_combat!(actor)
+      standing!(actor)
+
       command_error 'What would you like to attack?' unless target
 
       room = entity_location(actor) or fault("actor has no location: #{actor}")
