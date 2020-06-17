@@ -8,8 +8,8 @@ module Morrow::Command::Kill
     #
     def kill(actor, target)
       able!(actor)
-      out_of_combat!(actor)
-      standing!(actor)
+      out_of_combat!(actor, 'You are already engaged in combat.')
+      standing!(actor, 'You must be standing to attack.')
 
       command_error 'What would you like to attack?' unless target
 

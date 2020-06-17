@@ -7,7 +7,7 @@ module Morrow::Command::ActClosable
     # Syntax: open <door>, open <container>
     #
     def open(actor, arg)
-      conscious!(actor)
+      conscious!(actor, 'You must be awake to open things.')
 
       command_error 'What would you like to open?' unless arg
 
@@ -27,7 +27,7 @@ module Morrow::Command::ActClosable
     # Syntax: close <door>, close <container>
     #
     def close(actor, arg)
-      conscious!(actor)
+      conscious!(actor, 'You must be awake to close things.')
 
       command_error 'What would you like to close?' unless arg
 

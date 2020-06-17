@@ -26,37 +26,22 @@ module Morrow::Command::Flee
     # Syntax: flee
     #
     def flee(actor, _)
-      in_combat!(actor)
-      standing!(actor)
+      in_combat!(actor, MSG_NOT_IN_COMBAT)
       conscious!(actor)
+      standing!(actor, 'You must be standing to flee!')
 
-      room = entity_location(actor) or fault("actor has no location: #{actor}")
+      room = entity_location!(actor)
+      exits = get_component(room, :exits) or command_error(MSG_NO_ESCAPE) 
 
-      if !entity_in_combat?(actor)
-        send_to_char(char: actor, buf: MSG_NOT_IN_COMBAT)
-        return
-      end
-
-      unless exits = get_component(room, :exits)
-        send_to_char(char: actor, buf: MSG_NO_ESCAPE)
-        return
-      end
-
-      open_exits= Morrow::Helpers.exit_directions.select do |dir|
+      open_exits = Morrow::Helpers.exit_directions.select do |dir|
         next false unless exits[dir]
         next true unless door = exits["#{dir}_door"]
         entity_closed?(door) == false
       end
 
-      if open_exits.empty?
-        send_to_char(char: actor, buf: MSG_NO_ESCAPE)
-        return
-      end
+      command_error(MSG_NO_ESCAPE) if open_exits.empty?
 
-      if rand(100) < 15
-        send_to_char(char: actor, buf: MSG_FAILED)
-        return
-      end
+      command_error(MSG_FAILED) if rand(100) < 15
 
       dir = open_exits.sample
       dest = exits[dir]
@@ -67,7 +52,7 @@ module Morrow::Command::Flee
       send_to_char(char: actor, buf: MSG_SUCCESS)
       act("&W%{actor} flees %{dir}!&0", in: room, actor: actor, dir: dir)
     rescue Morrow::EntityWillNotFit
-      send_to_char(char: actor, buf: MSG_EXIT_FULL)
+      command_error(MSG_EXIT_FULL)
     end
   end
 end

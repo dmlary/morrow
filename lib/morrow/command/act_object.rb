@@ -17,7 +17,7 @@ module Morrow
       #   get all [from] [my] <container>
       #
       def get(actor, arg)
-        conscious!(actor)
+        conscious!(actor, 'You must be awake to get something.')
 
         room = entity_location!(actor)
 
@@ -77,7 +77,7 @@ module Morrow
       # Syntax: drop <obj>
       #
       def drop(actor, arg)
-        conscious!(actor)
+        conscious!(actor, 'You must be awake to drop anything.')
 
         room = entity_location!(actor)
 
@@ -98,7 +98,7 @@ module Morrow
       # Syntax: put <obj> [my] <container>
       #
       def put(actor, arg)
-        conscious!(actor)
+        conscious!(actor, 'You must be awake to do that.')
 
         room = entity_location!(actor)
 

@@ -46,7 +46,7 @@ module Morrow::Command::CharPosition
     #
     def rest(actor, _)
       able!(actor)
-      out_of_combat!(actor)
+      out_of_combat!(actor, 'You cannot rest while engaged in combat.')
 
       char = get_component(actor, :character) or
           fault("non-character entity: #{actor}")
@@ -70,7 +70,7 @@ module Morrow::Command::CharPosition
     #
     def sleep(actor, _)
       able!(actor)
-      out_of_combat!(actor)
+      out_of_combat!(actor, 'You cannot sleep while engaged in combat.')
 
       char = get_component(actor, :character) or
           fault("non-character entity: #{actor}")
