@@ -7,6 +7,8 @@ module Morrow::Command::CharPosition
     # Syntax: stand
     #
     def stand(actor, _)
+      able!(actor)
+
       char = get_component(actor, :character) or
           fault("non-character entity: #{actor}")
 
@@ -23,6 +25,8 @@ module Morrow::Command::CharPosition
     # Syntax: sit
     #
     def sit(actor, _)
+      able!(actor)
+
       char = get_component(actor, :character) or
           fault("non-character entity: #{actor}")
 
@@ -41,6 +45,9 @@ module Morrow::Command::CharPosition
     # Syntax: rest
     #
     def rest(actor, _)
+      able!(actor)
+      out_of_combat!(actor, 'You cannot rest while engaged in combat.')
+
       char = get_component(actor, :character) or
           fault("non-character entity: #{actor}")
 
@@ -62,6 +69,9 @@ module Morrow::Command::CharPosition
     # Syntax: sleep
     #
     def sleep(actor, _)
+      able!(actor)
+      out_of_combat!(actor, 'You cannot sleep while engaged in combat.')
+
       char = get_component(actor, :character) or
           fault("non-character entity: #{actor}")
 
@@ -84,6 +94,7 @@ module Morrow::Command::CharPosition
     # Syntax: wake
     #
     def wake(actor, target)
+      able!(actor)
 
       # handle the short path for just 'wake' of self
       unless target

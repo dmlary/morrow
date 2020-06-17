@@ -8,6 +8,8 @@ module Morrow::Command::Look
     # Syntax: look, look <character>, look <item>, look self, look in <item>
     #
     def look(actor, arg)
+      conscious!(actor, 'You must be awake to look at anything.')
+
       room = entity_location(actor) or fault("actor has no location: #{actor}")
       into = false
 

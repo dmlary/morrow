@@ -538,7 +538,7 @@ module Morrow
 
     # check if the entity is conscious
     def entity_conscious?(entity)
-      !entity_unconscious?(entity)
+      get_component(entity, :character)&.unconscious != true
     end
 
     # check if the entity is incapacitated

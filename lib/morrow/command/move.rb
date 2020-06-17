@@ -12,6 +12,9 @@ module Morrow::Command::Move
   dirs.each do |dir|
     priority 100
     define_singleton_method(dir) do |actor,_|
+      conscious!(actor, 'You must be awake to move.')
+      standing!(actor, 'You must be standing to move.')
+
       room = entity_location(actor) or
           fault("actor has not location: #{actor}")
 
