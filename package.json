@@ -11,7 +11,7 @@
   "dependencies": {
     "@mdi/font": "^3.6.95",
     "core-js": "^3.4.4",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "roboto-fontface": "*",
     "vue": "^2.6.10",
     "vue-lodash": "^2.0.2",
