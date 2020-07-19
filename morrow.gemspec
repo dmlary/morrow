@@ -54,7 +54,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'pry-stack_explorer'
 
   # breaking change in 2.2 of rack; thin server won't start
-  spec.add_dependency 'rack', '~> 2.0.8'
+  spec.add_dependency 'rack', '>= 2.1.4'
   spec.add_dependency 'thin', '~> 1'
   spec.add_dependency 'sinatra', '~> 2'
   spec.add_dependency 'rack-contrib', '~> 2'
